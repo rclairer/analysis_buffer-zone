@@ -1,0 +1,523 @@
+---
+title: "Buffer-Zone_Fish_Analysis"
+author: "Claire_Rosemond"
+date: "June 23, 2016"
+output: html_document
+---
+Plot AVERAGE???????total abundance per transect versus distance from reef on radiating surveys, then for each species
+****easiest to start with one species
+
+Set working directory
+```{r working_directory}
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+```
+
+Import packages
+
+```{r library}
+
+ library(dplyr)
+```
+
+Read file
+```{r read_file}
+
+  fish <- read.csv("4_clean_data/fish_clean_data_output_new2.csv")
+  #don't forget to upload current Master Fish into Fish Cleaning and this grab the new csv from clean data
+```
+
+Filter fish by season:
+```{r filter_season}
+
+  fishFall <- filter(fish, Sampling_Period == "Fall")
+  fishWinter <- filter(fish, Sampling_Period == "Winter")
+  fishSpring <- filter(fish, Sampling_Period == "Spring")
+  
+```
+
+```{r plot_total_abundance}
+library(ggplot2)
+#function to calculate error:
+  
+  #SE <- function(x) {sd(x)/sqrt(length(x))}
+  #SE.cont <- sapply(Cont.Repro[columnnumber], FUN = SE)
+  #totoal number of fish, then average sum, and SE of sum
+  
+a <- ggplot(fishFall, aes(Transect_Number, Abundance))
+a + geom_bar(stat = "identity") + ggtitle("Total Fish Abundance, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,3500) #+ geom_errorbar(aes(fishFall, ymin= ..., ymax=...), width = 0.2, stat = "identity", postition = "identity")
+#a + ggsave("4_clean_data/Plots/totalabundanceFall2015.png", width = 5, height = 5)
+a + ggsave("4_clean_data/Plots/totalabundanceFall2015witherrorbars.png", width = 5, height = 5)
+
+
+b <- ggplot(fishWinter, aes(Transect_Number, Abundance))
+b + geom_bar(stat = "identity") + ggtitle("Total Fish Abundance, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,3500)
+b + ggsave("4_clean_data/Plots/totalabundanceWinter2015-2016.png", width = 5, height = 5)
+
+#who accounts for this difference in fish hanging out in 2 3 and 4?
+#small structures acting as patch reefs, allowing fish to move from structure to structure?
+#look at number of structures along each radiating
+
+c <- ggplot(fishSpring, aes(Transect_Number, Abundance))
+c + geom_bar(stat = "identity") + ggtitle("Total Fish Abundance, Structural and Radiating, Spring 201b") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,1500)
+c + ggsave("4_clean_data/Plots/totalabundanceSpring2016.png", width = 5, height = 5)
+
+
+# can use ave() as a function in ggplot
+```
+
+By Species: 
+```{r filter_CEST_BlackSeaBass}
+  
+  CESTfall <- filter (fishFall, Species_Code == "CEST")
+  CESTwinter <- filter (fishWinter, Species_Code == "CEST")
+  CESTspring <- filter (fishSpring, Species_Code == "CEST")
+
+```
+
+```{r plot_CEST_BlackSeaBass_abundance}
+library(ggplot2)
+
+d <- ggplot(CESTfall, aes(Transect_Number, Abundance))
+d + geom_bar(stat = "identity") + ggtitle("CEST, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+d + ggsave("4_clean_data/Plots/aveCESTabundanceFall2015.png", width = 5, height = 5)
+  
+e <- ggplot(CESTwinter, aes(Transect_Number, Abundance))
+e + geom_bar(stat = "identity") + ggtitle("CEST, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+e + ggsave("4_clean_data/Plots/CESTabundanceWinter2015-2016.png", width = 5, height = 5)
+
+f <- ggplot(CESTspring, aes(Transect_Number, Abundance))
+f + geom_bar(stat = "identity") + ggtitle("CEST, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+f + ggsave("4_clean_data/Plots/CESTabundanceSpring2016.png", width = 5, height = 5)
+
+```
+
+```{r filter_MYMI_Gag}
+  
+  MYMIfall <- filter (fishFall, Species_Code == "MYMI")
+  MYMIwinter <- filter (fishWinter, Species_Code == "MYMI")
+  MYMIspring <- filter (fishSpring, Species_Code == "MYMI")
+
+```
+
+```{r plot_MYMI_Gag_abundance}
+library(ggplot2)
+
+  #BORING
+g <- ggplot(MYMIfall, aes(Transect_Number, Abundance))
+g + geom_bar(stat = "identity") + ggtitle("MYMI, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+g + ggsave("4_clean_data/Plots/MYMIabundanceFall2015.png", width = 5, height = 5)
+  
+h <- ggplot(MYMIwinter, aes(Transect_Number, Abundance))
+h + geom_bar(stat = "identity") + ggtitle("MYMI, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+h + ggsave("4_clean_data/Plots/MYMIabundanceWinter2015-2016.png", width = 5, height = 5)
+
+i <- ggplot(MYMIspring, aes(Transect_Number, Abundance))
+i + geom_bar(stat = "identity") + ggtitle("MYMI, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+i + ggsave("4_clean_data/Plots/MYMIabundanceSpring2016.png", width = 5, height = 5)
+
+```
+
+```{r filter_DIFO_SandPerch}
+  
+  DIFOfall <- filter (fishFall, Species_Code == "DIFO")
+  DIFOwinter <- filter (fishWinter, Species_Code == "DIFO")
+  DIFOspring <- filter (fishSpring, Species_Code == "DIFO")
+
+```
+
+```{r plot_DIFO_SandPerch_abundance}
+library(ggplot2)
+
+j <- ggplot(DIFOfall, aes(Transect_Number, Abundance))
+j + geom_bar(stat = "identity") + ggtitle("DIFO, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+j + ggsave("4_clean_data/Plots/DIFOabundanceFall2015.png", width = 5, height = 5)
+  
+k <- ggplot(DIFOwinter, aes(Transect_Number, Abundance))
+k + geom_bar(stat = "identity") + ggtitle("DIFO, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+k + ggsave("4_clean_data/Plots/DIFOabundanceWinter2015-2016.png", width = 5, height = 5)
+
+l <- ggplot(DIFOspring, aes(Transect_Number, Abundance))
+l + geom_bar(stat = "identity") + ggtitle("DIFO, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+l + ggsave("4_clean_data/Plots/DIFOabundanceSpring2016.png", width = 5, height = 5)
+
+```
+
+```{r filter_HABI_SlippyDick}
+  
+  HABIfall <- filter (fishFall, Species_Code == "HABI")
+  HABIwinter <- filter (fishWinter, Species_Code == "HABI")
+  HABIspring <- filter (fishSpring, Species_Code == "HABI")
+
+```
+
+```{r plot_HABI_SlipperyDick_abundance}
+library(ggplot2)
+
+m <- ggplot(HABIfall, aes(Transect_Number, Abundance))
+m + geom_bar(stat = "identity") + ggtitle("HABI, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+m + ggsave("4_clean_data/Plots/HABIabundanceFall2015.png", width = 5, height = 5)
+  
+n <- ggplot(HABIwinter, aes(Transect_Number, Abundance))
+n + geom_bar(stat = "identity") + ggtitle("HABI, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+n + ggsave("4_clean_data/Plots/HABIabundanceWinter2015-2016.png", width = 5, height = 5)
+
+o <- ggplot(HABIspring, aes(Transect_Number, Abundance))
+o + geom_bar(stat = "identity") + ggtitle("HABI, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+o + ggsave("4_clean_data/Plots/HABIabundanceSpring2016.png", width = 5, height = 5)
+
+```
+
+```{r filter_ARPR_Sheepshead}
+  
+  ARPRfall <- filter (fishFall, Species_Code == "ARPR")
+  ARPRwinter <- filter (fishWinter, Species_Code == "ARPR")
+  ARPRspring <- filter (fishSpring, Species_Code == "ARPR")
+
+```
+
+```{r plot_ARPR_Sheepshead_abundance}
+library(ggplot2)
+
+p <- ggplot(ARPRfall, aes(Transect_Number, Abundance))
+p + geom_bar(stat = "identity") + ggtitle("ARPR, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+p + ggsave("4_clean_data/Plots/ARPRabundanceFall2015.png", width = 5, height = 5)
+  
+q <- ggplot(ARPRwinter, aes(Transect_Number, Abundance))
+q + geom_bar(stat = "identity") + ggtitle("ARPR, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+q + ggsave("4_clean_data/Plots/ARPRabundanceWinter2015-2016.png", width = 5, height = 5)
+
+r <- ggplot(ARPRspring, aes(Transect_Number, Abundance))
+r + geom_bar(stat = "identity") + ggtitle("ARPR, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+r + ggsave("4_clean_data/Plots/ARPRabundanceSpring2016.png", width = 5, height = 5)
+
+```
+
+```{r filter_HAAU_Tomtate}
+  
+  HAAUfall <- filter (fishFall, Species_Code == "HAAU")
+  HAAUwinter <- filter (fishWinter, Species_Code == "HAAU")
+  HAAUspring <- filter (fishSpring, Species_Code == "HAAU")
+
+```
+
+```{r plot_HAAU_Tomtate_abundance}
+library(ggplot2)
+
+s <- ggplot(HAAUfall, aes(Transect_Number, Abundance))
+s + geom_bar(stat = "identity") + ggtitle("HAAU, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,3000)
+s + ggsave("4_clean_data/Plots/HAAUabundanceFall2015.png", width = 5, height = 5)
+  
+t <- ggplot(HAAUwinter, aes(Transect_Number, Abundance))
+t + geom_bar(stat = "identity") + ggtitle("HAAU, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+t + ggsave("4_clean_data/Plots/HAAUabundanceWinter2015-2016.png", width = 5, height = 5)
+
+u <- ggplot(HAAUspring, aes(Transect_Number, Abundance))
+u + geom_bar(stat = "identity") + ggtitle("HAAU, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+u + ggsave("4_clean_data/Plots/HAAUabundanceSpring2016.png", width = 5, height = 5)
+
+```
+
+```{r filter_DIHO_SpottailPinfish}
+  
+  DIHOfall <- filter (fishFall, Species_Code == "DIHO")
+  DIHOwinter <- filter (fishWinter, Species_Code == "DIHO")
+  DIHOspring <- filter (fishSpring, Species_Code == "DIHO")
+
+```
+
+```{r plot_DIHO_SpottailPinfish_abundance}
+library(ggplot2)
+
+v <- ggplot(DIHOfall, aes(Transect_Number, Abundance))
+v + geom_bar(stat = "identity") + ggtitle("DIHO, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+v + ggsave("4_clean_data/Plots/DIHOabundanceFall2015.png", width = 5, height = 5)
+  
+w <- ggplot(DIHOwinter, aes(Transect_Number, Abundance))
+w + geom_bar(stat = "identity") + ggtitle("DIHO, Structural and Radiating, Winter 2015/2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+w + ggsave("4_clean_data/Plots/DIHOabundanceWinter2015-2016.png", width = 5, height = 5)
+
+x <- ggplot(DIHOspring, aes(Transect_Number, Abundance))
+x + geom_bar(stat = "identity") + ggtitle("DIHO, Structural and Radiating, Spring 2016") + xlab("Transect Number") + ylab("Total Abundance") +ylim (0,500)
+x + ggsave("4_clean_data/Plots/DIHOabundanceSpring2016.png", width = 5, height = 5)
+
+
+
+#A FOR LOOP WOULD HAVE BEEN A GREAT IDEA FOR THISSSSSSSSSSSSSSSSSSSSSSS
+```
+
+Filter and clean data FOR DISTANCE
+
+I want to make a bar plot of abundance on Y axis and a bar for each Transect number in radiating surveys
+I will start with three bins (0-30m, 30-60m, 60-90m). For radiating surveys broken into 6 bins, I will collapse the bins so they fit the three bin design
+
+???How do I list column heading for a file??
+colnames(file)
+levels(radiatingfishwpa$Transect_Number)
+I can separate 1,2,and 3 and 1,2,3,4,5,6 based on summer, fall, winter, or spring
+
+```{r filter_transects}
+#Leave only transect numbers 1,2,3,4,5,6
+  #CESTradtrans <- filter(CESTrad, Transect_Number != "", Transect_Number != "1 and 2")
+  #When filtered, the levels of CESTrad still include blanks and "1 and 2". To fix this, make the levels of Transect_Number into factors
+  #FOR STRUCTURAL AND RADIATING
+  CESTstructradtrans <- filter(CESTstructrad, Transect_Number !="", Transect_Number != "1 and 2")
+  
+  #CESTradtrans$Transect_Number <- factor(CESTradtrans$Transect_Number)
+  #FOR STRUCTURAL AND RADIATING
+  CESTstructradtrans$Transect_Number <- factor(CESTstructradtrans$Transect_Number)
+  
+  
+```
+
+filter by sampling period
+
+```{r filter_sampling_period}
+  
+  #Fall Sampling Period- 3 distance bins
+  fallCESTstructrad <- filter(CESTstructradtrans, Sampling_Period == "Fall")
+  fallCESTstructrad$Transect_Number <- factor(fallCESTstructrad$Transect_Number)
+  fallCESTstructrad$Sampling_Period <- factor(fallCESTstructrad$Sampling_Period)
+
+  #fallCESTstruct <- filter(CESTstruct, Sampling_Period == "Fall")
+  #fallCESTstruct$Transect_Number <- factor(fallCESTstruct$Transect_Number)
+  #fallCESTstruct$Sampling_Period <- factor(fallCESTstruct$Sampling_Period)
+
+  
+  #fallCESTrad <- filter(CESTradtrans, Sampling_Period == "Fall")
+  #fallCESTrad$Transect_Number <- factor(fallCESTrad$Transect_Number)
+  #fallCESTrad$Sampling_Period <- factor(fallCESTrad$Sampling_Period)
+  
+
+  #Winter and Spring Sampling Period- 6 distance bins
+  winterCESTstructrad <- filter(CESTstructradtrans, Sampling_Period == "Winter ")
+  winterCESTstructrad$Transect_Number <- factor(winterCESTstructrad$Transect_Number)
+  winterCESTstructrad$Sampling_Period <- factor(winterCESTstructrad$Sampling_Period)
+
+  
+  #winterCESTrad <- filter(CESTradtrans, Sampling_Period == "Winter ")#there is a space after Winter, I should probably fix this on the main data sheet
+  #winterCESTrad$Transect_Number <- factor(winterCESTrad$Transect_Number)
+  #winterCESTrad$Sampling_Period <- factor(winterCESTrad$Sampling_Period)
+  
+  
+  #springCESTrad <- filter(CESTrad, Sampling_Period == "Spring") NO DATA ENTERED YET
+
+#do I need to make transect number numeric? I dont' think so
+  
+```
+
+okay, now I have for CEST, I can break down abundance by transect number. 
+
+Let's start with the fall, where there are three distance bins
+
+I will need to sum abundance after filtering for each bin
+then plot that sum abundance per transect
+
+DONT NEED TO DO THISSSSS
+``` {r sum_abundance}
+  
+  #I DONT NEED TO DO ANY OF THIS!!!!
+#sumabundance <- sum(fallCESTrad$Abundance, Transect_Number == "1")#didnt work
+  
+#sumabundancefallcesttrans1 <- mutate(fallCESTrad, Trans1 = filter(fallCESTrad, Transect_Number == "1"))#didnt work
+
+#fallCEST1 <- filter(fallCESTrad, Transect_Number == "1")
+#fallCEST1$Transect_Number <- factor(fallCEST1$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+#fallCEST2 <- filter(fallCESTrad, Transect_Number == "2")
+#fallCEST2$Transect_Number <- factor(fallCEST2$Transect_Number)
+#sumfallCEST2 <- sum(fallCEST2$Abundance)
+
+#fallCEST3 <- filter(fallCESTrad, Transect_Number == "3")
+#fallCEST3$Transect_Number <- factor(fallCEST3$Transect_Number)
+#sumfallCEST3 <- sum(fallCEST3$Abundance)
+
+#fallCESTsumabundance1 <- mutate(fallCEST1, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance2 <- mutate(fallCEST2, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance3 <- mutate(fallCEST3, TotalAbundance = sum(Abundance))
+
+
+#combine fallCESTsumabundance1, fallCESTsumabundance2, and fallCESTsumabundance3 into one data frame
+#test <- combine(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)# why didnt this work??
+#test1 <- rbind(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)  
+
+#LOOK AT ME, I DID ITTTTTTTTTTTTT, kinda
+```
+
+now, I want to make a bar graph of total abundance by transect number for CEST for fall
+
+DONT DO THISSS
+
+``` {r}
+  #plot(test1$Transect_Number, test1$TotalAbundance)
+  #barplot(test1$TotalAbundance)
+
+```
+
+Trying to use ggplot2...
+
+```{r plot}
+library(ggplot2)
+#setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/4_Clean_Data/Plots")
+
+
+#g <- ggplot(test1, aes(Transect_Number, Abundance))
+
+#g + geom_bar(stat = "identity")+ ggtitle("CEST, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#h <- ggplot(fallCESTrad, aes(Transect_Number, Abundance))
+
+#h + geom_bar(stat = "identity")+ ggtitle("CEST, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+#yep, this works, too
+
+#p <- ggplot(fallCESTstructrad, aes(Transect_Type, Abundance))
+#p + geom_bar(stat = "identity")+ ggtitle("CEST, all abundance, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#q <- ggplot(fallCESTstruct, aes(Transect_Type, Abundance))
+#q + geom_bar(stat = "identity")+ ggtitle("CEST, Structual, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#w <- ggplot(fallCESTstruct, aes(Transect_Type, Abundance)) + ggplot (fallCESTrad, aes(Transect_Number, Abundance))
+#w + geom_bar(stat = "identity")+ ggtitle("CEST, Structual, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#*****************************#
+i <- ggplot(fallCESTstructrad, aes(Transect_Number, Abundance))
+
+
+#i <- ggplot(fallCESTstructrad, aes(Transect_Number, ave(Abundance)))
+
+i + geom_bar(stat = "identity")+ ggtitle("CEST, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") + ylim (0,300)
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/4_Clean_Data/Plots")
+
+i + ggsave("fallCESTplot.png", width = 5, height = 5)
+#*****************************#
+
+#WINTER
+s <- ggplot(winterCESTstructrad, aes(Transect_Number, Abundance))
+
+#s <- ggplot(winterCESTstructrad, aes(Transect_Number, ave(Abundance))) WHAT IS THIS ACTUALLY DOING?
+
+
+s + geom_bar(stat = "identity")+ ggtitle("CEST, Structural and Radiating, Winter 2015") + xlab("Transect Number") + ylab("Total Abundance") + ylim(0,300)
+
+s + ggsave("winterCESTplot.png", width = 5, height = 5)
+
+#j <- ggplot(winterCESTrad, aes(Transect_Number, Abundance))
+
+#j + geom_bar(stat = "identity")+ ggtitle("CEST, Winter 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#WOOOOOOOOOAH
+
+```
+
+For winter, call bin1- transect 1 and 2
+use combine data sets
+transmute (winterCESTrad, bin3 = "1" + "2), nope just for column headings
+okay, I don't think that is going to work
+Now I will just have to add 1 and 2 together when calculating total abundance per bin
+
+ok, right now, adding structural...
+
+
+things that I want: The labes to say, "structual", 0-30 m, 30- 60m, 60-90 m
+```{r}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+
+#ASK AVERY
+```
+
+
+add together 1 and 2, 3 and 4, and 5 and 6 for winter radiating
+```{r}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+
+wintertrans1<- filter(winterCESTstructrad, Transect_Number == "1")
+wintertrans1$Transect_Number <- factor(wintertrans1$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+#winterCESTstructrad$Transect_Number #replace 1 and 2 with 1, replace 3 and 4 with 2, replace 5 and 6 with 3
+wintertest <- replace(Transect_Number, 2, 1)
+#in winterCESTstructrad$Transect_Number, if Transect_Number == 2, replace with 1
+#HELP MEEEEEE
+
+
+
+wintertrans2 <- filter(winterCESTstructrad, Transect_Number == "2")
+wintertrans2$Transect_Number <- factor(wintertrans2$Transect_Number)
+#sumfallCEST2 <- sum(fallCEST2$Abundance)
+
+#winter3 <- rbind(wintertrans1, wintertrans2)
+#thy rename or unite
+
+wintertrans3 <- filter(winterCESTstructrad, Transect_Number == "3")
+wintertrans3$Transect_Number <- factor(wintertrans3$Transect_Number)
+#sumfallCEST3 <- sum(fallCEST3$Abundance)
+
+wintertrans4<- filter(winterCESTstructrad, Transect_Number == "4")
+wintertrans4$Transect_Number <- factor(wintertrans4$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+wintertrans5<- filter(winterCESTstructrad, Transect_Number == "5")
+wintertrans5$Transect_Number <- factor(wintertrans5$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+wintertrans6<- filter(winterCESTstructrad, Transect_Number == "6")
+wintertrans6$Transect_Number <- factor(wintertrans6$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+
+#fallCESTsumabundance1 <- mutate(fallCEST1, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance2 <- mutate(fallCEST2, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance3 <- mutate(fallCEST3, TotalAbundance = sum(Abundance))
+
+
+#combine fallCESTsumabundance1, fallCESTsumabundance2, and fallCESTsumabundance3 into one data frame
+#test <- combine(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)# why didnt this work??
+#test1 <- rbind(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)  
+
+```
+
+
+find an average abundance per transect
+
+transect 0/ total # of transect 0s, transect 1/total # of transect 1...I think this would be a more telling metric
+
+ALL SPECIES in FALL
+
+```{r}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+
+  allfishalltransects <- filter(fishwithpositiveabundance, Transect_Number !="", Transect_Number != "1 and 2")
+  allfishalltransects$Transect_Number <- factor(allfishalltransects$Transect_Number)
+  fallall <- filter(allfishalltransects, Sampling_Period == "Fall")
+  fallall$Transect_Number <- factor(fallall$Transect_Number)
+  fallall$Sampling_Period <- factor(fallall$Sampling_Period)
+  
+l <- ggplot(fallall, aes(Transect_Number, Abundance))
+
+l + geom_bar(stat = "identity")+ ggtitle("All Species, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") #what does ylim do?
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/4_Clean_Data/Plots")
+
+
+l + ggsave("fallallplot.png", width = 5, height = 5)
+
+
+```
+
+ This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary(cars)
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

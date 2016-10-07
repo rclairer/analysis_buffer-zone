@@ -1,0 +1,83 @@
+---
+title: "Compexity_and_Temperature_Cleaning"
+author: "Claire_Rosemond"
+date: "May 26, 2016"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+Set working directory
+```{r working_directory}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone")
+```
+
+Import packages
+
+```{r library}
+library(plyr)
+library(dplyr)
+```
+
+
+```{r, read_file_compexity}
+
+  comp <- read.csv("Complexity/3_Clean_Data/complexity.csv")
+```
+
+Fitler and clean file
+```{r, clean_data_compexity}
+  
+comp$Site <- revalue(comp$Site, c("AR-330" = "330", "AR-342" = "342", "AR-345" = "345", "AR-364" = "364", "AR-370" = "370", "AR-372" = "372", "AR-378" = "378"))
+comp$Transect_Type <- revalue(comp$Transect_Type, c("R" = "Radiating", "S" = "Structural"))
+comp$Transect_Number <- revalue(comp$Transect_Number, c("T1" = "1", "T2" = "2", "T2_T3" = "2_3", "T3" = "3"))
+
+comp <- filter(comp, Subsite != "UNK")
+comp <- filter(comp, ID != "AR-330_BARGE_2015-12-11_R_T2_T3")
+comp <- filter(comp, ID != "AR-345_PIPES_2015-08-10_S")
+
+comp$Transect_Number <- as.numeric(as.character(comp$Transect_Number))
+comp$Transect_Number [is.na(comp$Transect_Number)] <- 0
+
+```
+
+
+```{r, export_compexity}
+
+# Export information in a csv file
+  write.csv(comp, file = "Complexity/3_Clean_Data/comp_site_change.csv", row.names = FALSE)
+```
+
+
+```{r, read_file_temperature}
+
+  temp <- read.csv("Temperature/3_Clean_Data/temperature.csv")
+```
+
+Fitler and clean file
+```{r, clean_data_temperature}
+  
+temp$Site <- revalue(temp$Site, c("AR-330" = "330", "AR-342" = "342", "AR-345" = "345", "AR-364" = "364", "AR-370" = "370", "AR-372" = "372", "AR-378" = "378"))
+temp$Transect_Type <- revalue(temp$Transect_Type, c("R" = "Radiating", "S" = "Structural"))
+temp$Transect_Number <- revalue(temp$Transect_Number, c("T1" = "1", "T2" = "2", "T2_T3" = "2_3", "T3" = "3"))
+
+temp <- filter(temp, Subsite != "UNK")
+temp <- filter(temp, ID != "AR-330_BARGE_2015-12-11_R_T2_T3")
+temp <- filter(temp, ID != "AR-345_PIPES_2015-08-10_S")
+
+
+temp$Transect_Number <- as.numeric(as.character(temp$Transect_Number))
+temp$Transect_Number [is.na(temp$Transect_Number)] <- 0
+
+
+```
+
+
+```{r, export_temperature}
+
+# Export information in a csv file
+  write.csv(temp, file = "Temperature/3_Clean_Data/temp_site_change.csv", row.names = FALSE)
+```

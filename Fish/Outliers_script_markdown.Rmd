@@ -1,0 +1,89 @@
+---
+title: "Outlier_fish_radiating"
+author: "Avery B Paxton"
+date: "March 25, 2016"
+output: html_document
+---
+
+Finding outlier in fish size and abundance data for all radiating survyes
+
+
+Set working directory
+```{r working_directory}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+```
+
+Import packages
+
+```{r library}
+ library(dplyr)
+```
+
+Read file
+```{r read_file}
+#this is the long way: 
+#fish <- read.csv("~/Dropbox/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/1_Raw_Data/CRFL_AR_Fish_Raw_2016-05-20.csv")
+#short cut- easier for someone else to read in
+  fish <- read.csv("1_Raw_Data/CRFL_AR_Fish_Raw_2016-05-20.csv")
+```
+
+Fitler and clean file
+```{r }
+
+fishwithpositiveabundance <- filter(fish, Abundance !="", Abundance !="NO_FISH", Abundance !="N/A")
+  radiatingfishwpa  <- filter (fishwithpositiveabundance, Transect_Type =="Radiating") 
+  
+#Make sure R knows that size and abundance values are NUMERIC
+# make Size and Abundance numeric BUT to do this, first have to convert w/ as.character 
+  # reference: http://stackoverflow.com/questions/15013482/whats-wrong-with-as-numeric-in-r
+  radiatingfishwpa$Size_cm <- as.numeric(as.character(radiatingfishwpa$Size_cm))
+  #now make sure that R knows that in Abundance all values are numeric
+  radiatingfishwpa$Abundance <- as.numeric(as.character(radiatingfishwpa$Abundance))
+  #make sure that the structure says numeric for Size_cm
+
+# remove rows where size was a range, aka Size_cm is blank
+radiatingfishwpa <- filter(radiatingfishwpa, Size_cm != "")
+
+
+```
+Identify outliers
+```{r }
+## Identify outliers in plots of species abundance vs species size
+  
+  # Identify species by unique identifiers in the column called species
+  uniq <- unique(unlist(radiatingfishwpa$Species_Code))  # saves unique species codes as object called 'uniq' so that can use them in the loop below 
+  # Make data frame to store results of outlier detection
+  results <- data.frame(row.names = integer(), ID = character(), Site = character (), Subsite = character (), Diver_Team = factor(), Date = integer(), Transect_Type = factor (), Sampling_Period = factor (), Transect_Number = factor (), Transect_Heading = integer (), Visibility = factor (), Species_Code = factor (), Species = factor (), Abundance = integer (), Size_cm = integer (), Min_Range_cm = integer (), Max_Range_cm = integer (), Water_Col_Position = factor(), Biomass_kg_m3 = logical (), Data_Entered_By = factor (), Data_Read_By = factor (), NOTES = factor (), QAQC_Name = factor (), QAQC_Dates = factor (), QAQC_Notes = integer ())
+#X = logical(), X.1 = factor()) what is this and why is Biomass logical??
+#remove all rows in fish where abund = no_fish, N/A, or blank
+
+```
+For loop for all species- prints results graph of outliers
+
+
+```{r}
+
+p=1 # p is the counter, initialize it at 1
+  for (p in 1:length(uniq)){
+    fish_sub <- subset(radiatingfishwpa, Species_Code == uniq[p]) # subset data so that each species appears by itself for the plot and outlier detection below. Since it's a loop, this will repeat for all species in 'uniq'
+    plot (fish_sub$Abundance, fish_sub$Size_cm, main=as.character(uniq[p]), cex=0.8, pch=18, col=84, xlab="Species Abundance", ylab="Species Size (cm)") # plot subset corresponding to each species
+    # main=title
+    #print(fish_sub[identify(fish_sub$Abundance, fish_sub$Size_cm, labels=row.names(fish_sub)),]) # identify outliers
+    test<-print(fish_sub[identify(fish_sub$Abundance, fish_sub$Size_cm, labels=row.names(fish_sub)),]) # identify outliers
+      # inside identify is the x, y, and labels
+      # it is in [,] form to give row and and all columns for outliers once selected
+      # print makes the results show up in the console screen
+    results <- rbind(results, test) # this appends the output from the current counter on the loop to the overall / previous results  
+    }
+ 
+
+```
+
+Exports table
+
+```{r}
+
+# Export outliers and associated information in a csv file
+  write.table(results, file = "3_Outliers/fish_outlier_output_new.csv", row.names = FALSE, append = FALSE, col.names = TRUE, sep = ", ")
+```
+

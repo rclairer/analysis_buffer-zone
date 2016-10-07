@@ -1,0 +1,345 @@
+---
+title: "Total_Abundance_vs_Distance"
+author: "Claire Rosemond"
+date: "March 29, 2016"
+output: html_document
+---
+
+Plot AVERAGE???????total abundance per transect versus distance from reef on radiating surveys, then for each species
+****easiest to start with one species
+
+Set working directory
+```{r working_directory}
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+```
+
+Import packages
+
+```{r library}
+
+ library(dplyr)
+```
+
+Read file
+```{r read_file}
+
+  #fish <- read.csv("1_Raw_Data/CRFL_AR_Fish_Raw_abp_2016-03-29.csv")
+  fish <- read.csv("1_Raw_Data/CRFL_AR_Fish_Raw_abp_2016-04-14_Structural_Number_as_0.csv")
+  #fish <- read.csv("1_Raw_Data/CRFL_AR_Fish_Master_2016-06-07")
+```
+
+Filter and clean data FOR FISH
+
+```{r filter_fish}
+
+  #fishwithpositiveabundance <- filter(fish, Abundance !="", Abundance !="NO_FISH", Abundance !="N/A")
+    fishwithpositiveabundance <- filter(fish, Abundance !="", Abundance !="NO_FISH", Abundance !="N/A", Size_cm !="", Size_cm !="N/A", Size_cm !="?", Size_cm !="big", Size_cm !="little")
+
+  #structuralfishwpa <- filter (fishwithpositiveabundance, Transect_Type == "Structural")
+  #radiatingfishwpa  <- filter (fishwithpositiveabundance, Transect_Type =="Radiating") 
+  
+#Make sure R knows that size and abundance values are NUMERIC
+# make Size and Abundance numeric BUT to do this, first have to convert w/ as.character 
+  # reference: http://stackoverflow.com/questions/15013482/whats-wrong-with-as-numeric-in-r
+  #Abundance is numeric:
+  fishwithpositiveabundance$Abundance <- as.numeric(as.character(fishwithpositiveabundance$Abundance))
+  #structuralfishwpa$Abundance <- as.numeric(as.character(structuralfishwpa$Abundance))
+  #radiatingfishwpa$Abundance <- as.numeric(as.character(radiatingfishwpa$Abundance))
+  #Size is numeric:
+  fishwithpositiveabundance$Size_cm <- as.numeric(as.character(fishwithpositiveabundance$Size_cm))
+  #structuralfishwpa$Size_cm <- as.numeric(as.character(structuralfishwpa$Size_cm))
+  #radiatingfishwpa$Size_cm <- as.numeric(as.character(radiatingfishwpa$Size_cm))
+
+
+```
+
+
+To keep structural...CEST for STRUCTURAL AND RADIATING
+```{r structual_and_radiating}
+  #filter structural and radiating for CEST
+  
+  CESTstructrad <- filter(fishwithpositiveabundance, Species.code == "CEST")
+  
+  
+```
+
+JUST STRUCTURAL
+
+```{r filter_structural_for_CEST}
+  
+  #filter structural for CEST
+  #CESTstruct <- filter (structuralfishwpa, Species.code == "CEST")
+
+```
+
+
+JUST RADIATING
+```{r filter_radiating_for_CEST}
+  
+  #filter radiating for CEST
+  #CESTrad <- filter (radiatingfishwpa, Species.code == "CEST")
+
+```
+
+Filter and clean data FOR DISTANCE
+
+I want to make a bar plot of abundance on Y axis and a bar for each Transect number in radiating surveys
+I will start with three bins (0-30m, 30-60m, 60-90m). For radiating surveys broken into 6 bins, I will collapse the bins so they fit the three bin design
+
+???How do I list column heading for a file??
+colnames(file)
+levels(radiatingfishwpa$Transect_Number)
+I can separate 1,2,and 3 and 1,2,3,4,5,6 based on summer, fall, winter, or spring
+
+```{r filter_transects}
+#Leave only transect numbers 1,2,3,4,5,6
+  #CESTradtrans <- filter(CESTrad, Transect_Number != "", Transect_Number != "1 and 2")
+  #When filtered, the levels of CESTrad still include blanks and "1 and 2". To fix this, make the levels of Transect_Number into factors
+  #FOR STRUCTURAL AND RADIATING
+  CESTstructradtrans <- filter(CESTstructrad, Transect_Number !="", Transect_Number != "1 and 2")
+  
+  #CESTradtrans$Transect_Number <- factor(CESTradtrans$Transect_Number)
+  #FOR STRUCTURAL AND RADIATING
+  CESTstructradtrans$Transect_Number <- factor(CESTstructradtrans$Transect_Number)
+  
+  
+```
+
+filter by sampling period
+
+```{r filter_sampling_period}
+  
+  #Fall Sampling Period- 3 distance bins
+  fallCESTstructrad <- filter(CESTstructradtrans, Sampling_Period == "Fall")
+  fallCESTstructrad$Transect_Number <- factor(fallCESTstructrad$Transect_Number)
+  fallCESTstructrad$Sampling_Period <- factor(fallCESTstructrad$Sampling_Period)
+
+  #fallCESTstruct <- filter(CESTstruct, Sampling_Period == "Fall")
+  #fallCESTstruct$Transect_Number <- factor(fallCESTstruct$Transect_Number)
+  #fallCESTstruct$Sampling_Period <- factor(fallCESTstruct$Sampling_Period)
+
+  
+  #fallCESTrad <- filter(CESTradtrans, Sampling_Period == "Fall")
+  #fallCESTrad$Transect_Number <- factor(fallCESTrad$Transect_Number)
+  #fallCESTrad$Sampling_Period <- factor(fallCESTrad$Sampling_Period)
+  
+
+  #Winter and Spring Sampling Period- 6 distance bins
+  winterCESTstructrad <- filter(CESTstructradtrans, Sampling_Period == "Winter ")
+  winterCESTstructrad$Transect_Number <- factor(winterCESTstructrad$Transect_Number)
+  winterCESTstructrad$Sampling_Period <- factor(winterCESTstructrad$Sampling_Period)
+
+  
+  #winterCESTrad <- filter(CESTradtrans, Sampling_Period == "Winter ")#there is a space after Winter, I should probably fix this on the main data sheet
+  #winterCESTrad$Transect_Number <- factor(winterCESTrad$Transect_Number)
+  #winterCESTrad$Sampling_Period <- factor(winterCESTrad$Sampling_Period)
+  
+  
+  #springCESTrad <- filter(CESTrad, Sampling_Period == "Spring") NO DATA ENTERED YET
+
+#do I need to make transect number numeric? I dont' think so
+  
+```
+
+okay, now I have for CEST, I can break down abundance by transect number. 
+
+Let's start with the fall, where there are three distance bins
+
+I will need to sum abundance after filtering for each bin
+then plot that sum abundance per transect
+
+DONT NEED TO DO THISSSSS
+``` {r sum_abundance}
+  
+  #I DONT NEED TO DO ANY OF THIS!!!!
+#sumabundance <- sum(fallCESTrad$Abundance, Transect_Number == "1")#didnt work
+  
+#sumabundancefallcesttrans1 <- mutate(fallCESTrad, Trans1 = filter(fallCESTrad, Transect_Number == "1"))#didnt work
+
+#fallCEST1 <- filter(fallCESTrad, Transect_Number == "1")
+#fallCEST1$Transect_Number <- factor(fallCEST1$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+#fallCEST2 <- filter(fallCESTrad, Transect_Number == "2")
+#fallCEST2$Transect_Number <- factor(fallCEST2$Transect_Number)
+#sumfallCEST2 <- sum(fallCEST2$Abundance)
+
+#fallCEST3 <- filter(fallCESTrad, Transect_Number == "3")
+#fallCEST3$Transect_Number <- factor(fallCEST3$Transect_Number)
+#sumfallCEST3 <- sum(fallCEST3$Abundance)
+
+#fallCESTsumabundance1 <- mutate(fallCEST1, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance2 <- mutate(fallCEST2, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance3 <- mutate(fallCEST3, TotalAbundance = sum(Abundance))
+
+
+#combine fallCESTsumabundance1, fallCESTsumabundance2, and fallCESTsumabundance3 into one data frame
+#test <- combine(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)# why didnt this work??
+#test1 <- rbind(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)  
+
+#LOOK AT ME, I DID ITTTTTTTTTTTTT, kinda
+```
+
+now, I want to make a bar graph of total abundance by transect number for CEST for fall
+
+DONT DO THISSS
+
+``` {r}
+  #plot(test1$Transect_Number, test1$TotalAbundance)
+  #barplot(test1$TotalAbundance)
+
+```
+
+Trying to use ggplot2...
+
+```{r plot}
+library(ggplot2)
+#setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/4_Clean_Data/Plots")
+
+
+#g <- ggplot(test1, aes(Transect_Number, Abundance))
+
+#g + geom_bar(stat = "identity")+ ggtitle("CEST, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#h <- ggplot(fallCESTrad, aes(Transect_Number, Abundance))
+
+#h + geom_bar(stat = "identity")+ ggtitle("CEST, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+#yep, this works, too
+
+#p <- ggplot(fallCESTstructrad, aes(Transect_Type, Abundance))
+#p + geom_bar(stat = "identity")+ ggtitle("CEST, all abundance, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#q <- ggplot(fallCESTstruct, aes(Transect_Type, Abundance))
+#q + geom_bar(stat = "identity")+ ggtitle("CEST, Structual, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#w <- ggplot(fallCESTstruct, aes(Transect_Type, Abundance)) + ggplot (fallCESTrad, aes(Transect_Number, Abundance))
+#w + geom_bar(stat = "identity")+ ggtitle("CEST, Structual, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#*****************************#
+i <- ggplot(fallCESTstructrad, aes(Transect_Number, Abundance))
+
+
+#i <- ggplot(fallCESTstructrad, aes(Transect_Number, ave(Abundance)))
+
+i + geom_bar(stat = "identity")+ ggtitle("CEST, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") + ylim (0,300)
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/4_Clean_Data/Plots")
+
+i + ggsave("fallCESTplot.png", width = 5, height = 5)
+#*****************************#
+
+#WINTER
+s <- ggplot(winterCESTstructrad, aes(Transect_Number, Abundance))
+
+#s <- ggplot(winterCESTstructrad, aes(Transect_Number, ave(Abundance))) WHAT IS THIS ACTUALLY DOING?
+
+
+s + geom_bar(stat = "identity")+ ggtitle("CEST, Structural and Radiating, Winter 2015") + xlab("Transect Number") + ylab("Total Abundance") + ylim(0,300)
+
+s + ggsave("winterCESTplot.png", width = 5, height = 5)
+
+#j <- ggplot(winterCESTrad, aes(Transect_Number, Abundance))
+
+#j + geom_bar(stat = "identity")+ ggtitle("CEST, Winter 2015") + xlab("Transect Number") + ylab("Total Abundance")
+
+#WOOOOOOOOOAH
+
+```
+
+For winter, call bin1- transect 1 and 2
+use combine data sets
+transmute (winterCESTrad, bin3 = "1" + "2), nope just for column headings
+okay, I don't think that is going to work
+Now I will just have to add 1 and 2 together when calculating total abundance per bin
+
+ok, right now, adding structural...
+
+
+things that I want: The labes to say, "structual", 0-30 m, 30- 60m, 60-90 m
+```{r}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+
+#ASK AVERY
+```
+
+
+add together 1 and 2, 3 and 4, and 5 and 6 for winter radiating
+```{r}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+
+wintertrans1<- filter(winterCESTstructrad, Transect_Number == "1")
+wintertrans1$Transect_Number <- factor(wintertrans1$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+#winterCESTstructrad$Transect_Number #replace 1 and 2 with 1, replace 3 and 4 with 2, replace 5 and 6 with 3
+wintertest <- replace(Transect_Number, 2, 1)
+#in winterCESTstructrad$Transect_Number, if Transect_Number == 2, replace with 1
+#HELP MEEEEEE
+
+
+
+wintertrans2 <- filter(winterCESTstructrad, Transect_Number == "2")
+wintertrans2$Transect_Number <- factor(wintertrans2$Transect_Number)
+#sumfallCEST2 <- sum(fallCEST2$Abundance)
+
+#winter3 <- rbind(wintertrans1, wintertrans2)
+#thy rename or unite
+
+wintertrans3 <- filter(winterCESTstructrad, Transect_Number == "3")
+wintertrans3$Transect_Number <- factor(wintertrans3$Transect_Number)
+#sumfallCEST3 <- sum(fallCEST3$Abundance)
+
+wintertrans4<- filter(winterCESTstructrad, Transect_Number == "4")
+wintertrans4$Transect_Number <- factor(wintertrans4$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+wintertrans5<- filter(winterCESTstructrad, Transect_Number == "5")
+wintertrans5$Transect_Number <- factor(wintertrans5$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+wintertrans6<- filter(winterCESTstructrad, Transect_Number == "6")
+wintertrans6$Transect_Number <- factor(wintertrans6$Transect_Number)
+#sumfallCEST1 <- sum(fallCEST1$Abundance)
+
+
+#fallCESTsumabundance1 <- mutate(fallCEST1, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance2 <- mutate(fallCEST2, TotalAbundance = sum(Abundance))
+#fallCESTsumabundance3 <- mutate(fallCEST3, TotalAbundance = sum(Abundance))
+
+
+#combine fallCESTsumabundance1, fallCESTsumabundance2, and fallCESTsumabundance3 into one data frame
+#test <- combine(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)# why didnt this work??
+#test1 <- rbind(fallCESTsumabundance1, fallCESTsumabundance2, fallCESTsumabundance3)  
+
+```
+
+
+find an average abundance per transect
+
+transect 0/ total # of transect 0s, transect 1/total # of transect 1...I think this would be a more telling metric
+
+ALL SPECIES in FALL
+
+```{r}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+
+  allfishalltransects <- filter(fishwithpositiveabundance, Transect_Number !="", Transect_Number != "1 and 2")
+  allfishalltransects$Transect_Number <- factor(allfishalltransects$Transect_Number)
+  fallall <- filter(allfishalltransects, Sampling_Period == "Fall")
+  fallall$Transect_Number <- factor(fallall$Transect_Number)
+  fallall$Sampling_Period <- factor(fallall$Sampling_Period)
+  
+l <- ggplot(fallall, aes(Transect_Number, Abundance))
+
+l + geom_bar(stat = "identity")+ ggtitle("All Species, Structural and Radiating, Fall 2015") + xlab("Transect Number") + ylab("Total Abundance") #what does ylim do?
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish/4_Clean_Data/Plots")
+
+
+l + ggsave("fallallplot.png", width = 5, height = 5)
+
+
+```
+
+ 

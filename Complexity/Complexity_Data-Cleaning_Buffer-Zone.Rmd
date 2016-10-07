@@ -1,0 +1,321 @@
+NC Offshore Reefs, Complexity Data Processing, CRFL-Hardbottom Project
+========================================================
+
+```{r setup, echo = FALSE, results='hide', message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(ggplot2)
+library(plyr)
+library(reshape2)
+```
+
+```{r author-info}
+first_name <- "Rebecca"
+last_name <- "Rosemond"
+affiliation <- "University of North Carolina - Institute of Marine Sciences"
+address <- "3431 Arendell Street, Morehead City, NC 28557, USA"
+email <- "clairerosemond@gmail.com"
+last_updated <-"2016-04-13"
+```
+
+Overview
+---------
+This R Markdown document processes the structural complexity data gathered with an Onset / HOBO Water Level Logger on offshore reefs on 30 m transects.
+- 
+
+Read in all transects
+-----------------------
+This reads in all individual files in the working directory with the extension final.csv. Each individual file in the working directory represents a .csv file that was created by using HoboWare and Excel to identify and extract distance calibration spikes in each 30 m transect. This chunk then combines each file that represents one transect into one large file that contains all transects.  
+
+```{r read_all_transects}
+#### STEP 1: Read in all .csv files in working directoy and put in one big file ####  
+
+  ## Step 1a: Set and check working directory to Complexity/1_Raw_Data
+    setwd('/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Complexity/1_Raw_Data/')
+
+    #setwd('/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Complexity/1_Raw_Data/')
+
+  ## Step 1b: Read in all csv files in working directory
+    library(plyr) 
+    all_data = ldply(list.files(pattern = "*final.csv"), function(fname) {
+      dum = read.csv(fname, header = FALSE, skip = 1)
+      dum$fname = fname
+      return(dum)
+    })
+    
+    #all_data = ldply(list.files(pattern = "*FINAL.csv"), function(fname) {
+      #dum = read.csv(fname, header = FALSE, skip = 1) # no header and then skip first row that was actually header since each header is different because it gives a serial number
+      #dum$fname = fname  # adds the filename it was read from as a column
+      #return(dum)
+     #})
+
+  ## Step 1c: Remove unwanted rows that don't actually have data in them, don't need to do this
+    #all_data <- subset( all_data, select = -c(11:22))
+   
+  ## Step 1d: Remove unwanted columns (columns after number 10) it is read in without headings, and renamed here
+    all_data<-all_data[,1:9]#what do I need to do here? I still have 9 columns, can I have "Sample_Number" instead of "Sample_#"? Can I say "Temp_C" instead of "Temp degrees C"?
+    names(all_data) <- c("ID", "Sample_Number", "Date", "Time", "Abs_Pres_psi", "Temp_C", "Abs_Pres_m", "Trans_Dist_m")
+    #names(all_data) <- c("Sample_#", "ID", "Site", "Sample", "Transect", "Date", "Time", "Abs_Pres_psi", "Abs_Pres_m") # name the columns
+    head(all_data)
+    #all_data$Site<-as.factor(all_data$Site)
+```
+
+Guide to columns. 
+- ID is transect ID that is AR-site_subsite_date_transect-type_transect-number
+- Sample_Number an internal sample number used by the water level logger. It is rather irrelevant here. 
+- Date is date of transect 
+- Time is time when the water level logger was recording (and thus, time of dive)
+- Abs_Pres_psi is the absolute pressure that the wate level logger recorded. 
+- Temp_C is the recorded temperature in degrees Celsius
+- Abs_Pres_m is the depth of the water level logger at each second's sample. This was calculated by converting the abs.pres.psi to absolute pressure in meters
+- Transect_Dist_m expresses the distance along the transect (30 m) every second. These distances were set using spikes in the data collection method every 5 m for calibration
+
+Process structural complexity data
+===========================
+
+This chunk loops over the rest of the script so that the steps for processing data are repeated for each .csv file that corresponds to each transect. This is a critical step and alleviates the tediousness of running the script for each file by hand! 
+-------
+
+```{r Loop_over_script}
+#### Step 2: RUN LOOP OVER NEXT STEPS TO REPEAT FOR EACH CSV FILE THAT CORRESPONDS TO EACH TRANSECT ####
+
+#setwd('/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Complexity/')
+    
+setwd('/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Complexity/')
+
+  p=1 # initialize counter
+  uniq <- unique(unlist(all_data$ID)) # generates all unique transect IDs that include site, date, sample season, transect number, unlist produces vector, unlisted to be taken into unique format, this can stay the same
+
+
+  ## Set up matrix to store all of the complexity metrics that are output as a result of the data processing that will take place below #### before for loops, make frame to dump data in
+    # This must be outside the loop so that it doesn't create a new matrix on each iteration!!
+    comp <- matrix(nrow = length(uniq), ncol=7)
+    colnames(comp)<-c("ID", "max_dep", "min_dep", "avg_dep", "ver_rel_m", "DRR", "C")
+
+
+  #for (p in 1:3){
+  for (p in 1:length(uniq)){
+    data <- subset(all_data, ID == uniq[p])
+  
+  ### Step 2a: Make new column to assign distances ### start with one, make sure function works, then add to for loop
+    # Creates new column called Distance that is the sequence of values from 0 to the number of total samples (which is the length)
+    # Subtract 1 because start at distance = 0. I DONT REALLY UNDERSTAND THIS
+    # Multiply by 10 so that values are in cm which corresponds to 10cm = 1 transect second.
+    data$dist_cm<-seq(0, length(data$Abs_Pres_m)-1)*10
+  ## Step 2b: Standardize transect to 30m distance
+    data$dist_m_scaled<-(data$dist_cm*(30/(nrow(data)-1))/10) ## m
+    head(data$dist_m_scaled)
+  
+  # Save results to comp matrix as column #1, in orirgonal matrix, make the first column the name of each transect
+    comp[p,1]<-as.character(uniq[p])
+
+#### Step 3: VARIOGRAM (this is within larger loop) Make empty matrix to populate with for loop values for semivariance and a column for mean semi var values###
+  
+  ## Step 3a: Create matrix to store values
+    c<-matrix(nrow=nrow(data), ncol=nrow(data))
+    ## Create vector named k for measurement increments (e.g. 10 cm through number of rows in rugosity (for 30 m trans would be 300 cm)
+    # k <- as.vector((1:nrow(data))*10)   # makes distance measurement values in cm (this one doesn't scale)
+    k <- as.vector((1:nrow(data))*300/nrow(data)) # makes distance measurements in cm for whole transect
+    m <- paste("semivar", k, sep="")  # combines semivar and distance measurement to make column names for the columns in the matrix that will then be put into dataframe with cbind
+    colnames(c)<-m  # make column names
+  
+  ## Step 3b: Create new matrix for semivar values that is one column
+    semivar<-matrix(nrow=nrow(data), ncol=1) # matrix of one column
+    colnames(semivar)<-"semivar"  # make column name
+  
+  
+  ## Step 3c: Create double for loop to generate squared differences in each column!! ### start with a column, within that column does something for each row
+  
+  j=1  # j is "outer loop" counter (columns); begin at 1
+  for (j in 1:nrow(data)) {
+    i=1  # i is "inner loop" counter (rows)
+    for (i in 1:nrow(data)) {
+      if (i<=j) {
+        c[i,j] <- "NA" # writes NA values to matrix c by row i and col j
+        i=i+1
+      }
+      else {
+        press_a <- data$Abs_Pres_m[i] 
+        press_b <- data$Abs_Pres_m[i-j]
+        c[i,j] <- (press_a - press_b)^2  # writes differences in pressures squared to matrix c by row i and col j     
+      }
+      i=i+1
+    }  
+    j=j+1
+  }
+  
+  ## Step 3d: Find semivarance values for each distance bin ##
+    # Calculate sum of semivar per column and divide by 2*W(d) to find semivariance of each distance bin, finding average, formula for semivariance
+  
+    q=1
+    for (q in 1:(ncol(c))) {
+      x<-sum(as.numeric(as.character(c[,q])), na.rm=TRUE) # sum up all of the semivariance values per column
+        for (k in 1:(nrow(c)-1)) {
+          y <- x / (2*(nrow(c)-k)) # calculate semivariance for each distance bin (d) by dividing by 2*W(d) where W(d) is the number of pairs
+        }
+        semivar[q,]<-y
+        q=q+1
+      }
+  
+  ### Step 3e: Combine original dataset, matrix semivar that has semivariance values for each distance bin, and matrix c that contains squared differences ###
+      data_final <- cbind(data, semivar, c)
+  
+  ### Step 3f: Export data from variogram
+    # Create file path to store exported data  
+      my.path <- file.path("/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Complexity/3_Clean_Data/Variogram", paste(uniq[p], "_variogram.csv", sep = ""))
+
+      #my.path<-file.path("/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Complexity/3_Clean_Data/Variogram", paste(uniq[p], "_variogram.csv", sep = ""))
+    # Export the data
+      write.csv(file = my.path, data_final, row.names = F)
+
+
+  ## Step 3g: Make plots with two panels for contour and variogram
+      # Plot distance vs depth and distance vs semivar in 1 x 2 configuration with central title###
+        # Set to save output
+          #jpeg(filename = paste(uniq[p], "_plot", ".jpg", sep = ""), width=900, height=400, bg = "white", res = NA)
+        # Set arrangement to 1 row by 2 columns  
+          #par(mfrow=c(1,2)) # plots as one row and two columns
+        # Plot distance vs. depth
+          #plot(data_final$dist_m_scaled, data_final$Abs_Pres_m, type = "l", ylim=c(32,5), xlab="Distance (m)", ylab="Depth (m)")
+        # Plot distance classes vs semi-variance ###
+          #plot(data_final$dist_m_scaled, data_final$semivar, type = "l", ylim=c(0, 3000), xlab="Distance (m)", ylab="Semivariance") 
+        # Add central title
+          #mtext(as.character(uniq[p]), side=3, outer=TRUE, line=-3) # adds overall title
+        # Close off to save the plot
+          #dev.off()
+        # General order here is that first comes file name with jpeg or whatever output file type command, then come things to plot, then dev.off() to actually save it!!
+  
+
+#### Step 4: Calculate simple complexity metrics
+  
+  ## Step 4a: Max depth, for each p
+  max_dep<-max(data_final$Abs_Pres_m)
+  comp[p,2]<-max_dep
+  
+  ## Step 4b: Min depth
+  min_dep<-min(data_final$Abs_Pres_m)
+  comp[p,3]<-min_dep
+  
+  ## Step 4c: Average depth
+  avg_dep<-mean(data_final$Abs_Pres_m)
+  comp[p,4]<-avg_dep
+  
+  ## Step 4d: Vertical relief, ADD TEMP DATA, min, max, ave (just kidding, keep them separate)
+  ver_rel_m<-max_dep-min_dep
+  comp[p,5]<-ver_rel_m
+  
+
+#### Step 5: Calculate rugosity metrics using methods in Dustan et al. 2013 ####
+  ## Characterize digital reef rugosity as the standard deviation of sensor output
+  # Calculate standard devation using sd function
+  DRR<-sd(data_final$Abs_Pres_m, na.rm = TRUE) 
+  # First argument: numeric vector for which standard deviation values are computed
+  # Second argument: na.rm = TRUE means that missing values are removed before computation proceeds
+  comp[p,6]<-DRR
+
+
+### Step 6: Calculate rugosity metrics using simple geometry in accordance with methods in Risk 1972, 
+  ## Calculate rugosity as the ratio of actual surface contour distance to linear distance
+  ## Equation: C = 1 - (D/L) or C = D/L *use latter here
+  # C = rugosity (we need to calculate this)
+  # L = distance of chain fully extended (in our case 30 m transect)
+  # D = distance of chain horizontally following natural contour (we need to calculate this from probe output)
+  
+  ## Step 6a: Set and calculate parameters
+  
+    L <- 30 # units of meters
+  
+    x<-matrix(nrow=nrow(data_final), ncol=1)
+    y<-matrix(nrow=nrow(data_final), ncol=1)
+    h<-matrix(nrow=nrow(data_final), ncol=1)
+  
+  ## Step 6b: Run for loop and calculate rugosity
+    r = 1 # this is counter for loop
+    for (r in 1:nrow(data_final)-1) {
+      # Calculate x part corresponding to distance
+      dist_1 <- data_final$dist_m_scaled[r] # transect distance at value
+      dist_2 <- data_final$dist_m_scaled[r+1] # transect distance at next value
+      x[r,] <- (dist_1 - dist_2)^2 
+    
+      # Calculate y part corresponding to depth
+      depth_1 <- data_final$Abs_Pres_m[r]
+      depth_2 <- data_final$Abs_Pres_m[r+1]
+      y[r,] <- (depth_1 - depth_2)^2
+    
+      # Calculate hypotenuse to be the distance on diagonal
+      h[r,] = sqrt (x[r,] + y[r,])
+    
+      r = r+1
+    } 
+  
+    D <- sum(h, na.rm=TRUE)
+  
+    #C <- 1 - (D / L) or D/L # this is rugosity according to Risk 1972 equation
+    C <- D / L
+    comp[p,7]<-C
+
+
+#### Step 7: Put all plots together
+# Set to save output
+  my.path <- file.path("/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Complexity/3_Clean_Data/Plots", paste(uniq[p], "_all_plots.pdf", sep = ""))
+  
+  #my.path<-file.path("/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Complexity/3_Clean_Data/Plots", paste(uniq[p], "_all_plots.pdf", sep = ""))
+# Export the data
+  #pdf(file = my.path, width=9, height=8, bg = "white")
+  pdf(file = my.path, width=9, height=5, bg = "white")
+
+
+# Set arrangement to 1 row by 2 columns  
+par(mfrow=c(1,2)) # plots as one row and two columns
+
+# Plot distance vs. depth
+plot(data_final$dist_m_scaled, data_final$Abs_Pres_m, type = "l", xlim=c(0,30), ylim=c(20,5), xlab="Distance (m)", ylab="Depth (m)")
+title("Contour")
+
+#plot(data_final$dist_m_scaled, data_final$Abs_Pres_m, type = "l", xlim=c(0,30), ylim=c(36,5), xlab="Distance (m)", ylab="Depth (m)")
+#title("Contour")
+
+# Plot variogram
+#plot(data_final$dist_m_scaled, data_final$semivar, type = "l", ylim=c(0, 500), xlim=c(0, 15), xlab="Distance (m)", ylab="Semivariance") 
+#title("Semi-variogram")
+
+#3000 seems like a huge limit, but for example, 500 is too small for the liberty ship, tried 2000 because maybe it's max(data_final$semivar *10????)
+plot(data_final$dist_m_scaled, data_final$semivar, type = "l", ylim=c(0, 3000), xlim=c(0, 15), xlab="Distance (m)", ylab="Semivariance") 
+title("Semi-variogram")
+
+# Add central title
+mtext(as.character(uniq[p]), side=3, outer=TRUE, line=-3) # adds overall title
+
+#can this be done in ggplot2??
+
+# Close off to save the plot
+dev.off() 
+
+# this one must be here to close the whole script loop  
+  }
+```
+
+
+Tidy up output metrics for each transect and export
+-----------------
+This cleans up the complexity metrics for each transect and generates an output file with simple complexity metrics, digital reef rugosity, standard rugosity (C), and transect identifying information. 
+```{r clean_up}
+#### Step 8: Tidy up complexity metrics output ####
+
+  # Step 8a: Break ID of transect into separate rows for site, date, sample_round, and transect 
+    library(reshape2)
+    vars <- colsplit(comp[,1], "_", c("Site", "Subsite", "Date", "Transect_Type", "Transect_Number"))
+    vars
+
+  # Step 8b: Put these transect ID components into separate columns
+    complexity<-cbind(vars,comp)
+
+   #Step 8c: Reorder columns so that more intuitive in where they are
+    complexity<-complexity[,c(6, 1:5, 7:11)]
+
+  # Step 8d: Export complexity master file
+    my.path <- file.path("/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Complexity/3_Clean_Data", paste("complexity", ".csv", sep = ""))
+    
+    #my.path<-file.path("/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Complexity/3_Clean_Data", paste("complexity", ".csv", sep = ""))
+    write.csv(complexity, file = my.path, row.names = F) ## this exports to a csv file!! 
+```

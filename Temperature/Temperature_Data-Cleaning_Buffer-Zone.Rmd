@@ -1,0 +1,100 @@
+Temperature Data Processing
+========================================================
+This reads in raw csv file that contains temperature data from HOBO water level logger. It then finds the average, maximum, and minimum temperature for each transect. TESTING FOR A CHANGE. 
+
+```{r read_all_transects}
+#### STEP 1: Read in all .csv files in working directoy and put in one big file ####  updated for gitttttt! again!
+
+  ## Step 1a: Set and check working directory
+    #setwd('/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Temperature/1_Raw_Data/')
+    #getwd()
+    
+setwd('/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Temperature/1_Raw_Data/')
+
+    
+  ## Step 1b: Read in all csv files in working directory
+    library(plyr) 
+    all_data = ldply(list.files(pattern = "*final.csv"), function(fname) {
+      dum = read.csv(fname, header = FALSE, skip = 1)
+      dum$fname = fname
+      return(dum)
+    })
+
+  ## Step 1c: Remove unwanted columns (columns after number 10) and rename
+  names(all_data) <- c("ID", "Sample_Number", "Date", "Time", "Abs_Pres_psi", "Temp_C", "Abs_Pres_m", "Trans_Dist_m")
+  
+  #why not head(all_data)?
+```
+
+Process temperature data!
+===========================
+
+This chunk loops over the rest of the script so that the steps for processing data are repeated for each .csv file that corresponds to each transect. This is a critical step and alleviates the tediousness of running the script for each file by hand! 
+-------
+
+```{r Loop_over_script}
+#### Step 2: RUN LOOP OVER NEXT STEPS TO REPEAT FOR EACH CSV FILE THAT CORRESPONDS TO EACH TRANSECT ####
+
+  p=1 # initialize counter
+  uniq <- unique(unlist(all_data$ID)) # generates all unique transect IDs that include site, date, sample season, transect number
+
+
+  ## Set up matrix to store all of the complexity metrics that are output as a result of the data processing that will take place below ####
+    # This must be outside the loop so that it doesn't create a new matrix on each iteration!!
+    temp <- matrix(nrow = length(uniq), ncol=4)
+    colnames(temp)<-c("ID", "Temp_avg", "Temp_max", "Temp_min")
+
+ #for (p in 1:3){
+  for (p in 1:length(uniq)){
+    data <- subset(all_data, ID == uniq[p])
+ 
+  ### ID column
+  temp[p,1]<-as.character(uniq[p])
+    
+  ## Average temp
+  Temp_avg<-mean(data$Temp)
+  temp[p,2]<-as.numeric(Temp_avg)
+  
+  ## Max temp
+  Temp_max<-max(data$Temp)
+  temp[p,3]<-Temp_max
+  
+  ## Min depth
+  Temp_min<-min(data$Temp)
+  temp[p,4]<-Temp_min
+  
+
+# this one must be here to close the whole script loop  
+  }
+```
+
+
+```{r clean_up}
+#### Step 3: Tidy up temperature output ####
+
+  # Step 3a: Break ID of transect into separate rows for site, date, sample_round, and transect 
+    library(reshape2)
+    #vars <- colsplit(temp[,1], "_", c("Site", "Date", "Sample", "Transect"))
+    vars <- colsplit(temp[,1], "_", c("Site", "Subsite", "Date", "Transect_Type", "Transect_Number"))
+    vars
+
+  # Step 3b: Put these transect ID components into separate columns
+    temperature<-cbind(vars,temp)
+    
+  #reorder
+    temperature<-temperature[,c(6, 1:5, 7:9)]
+
+    #complexity<-complexity[,c(6, 1:5, 7:11)]
+
+
+  # Step 3c: Export master temp file
+    my.path <- file.path("/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Temperature/3_Clean_Data", paste("temperature", ".csv", sep = ""))
+    
+    write.csv(temperature, file = my.path, row.names = F) ## this exports to a csv file!! 
+
+
+    #write.csv(temperature,'/Users/apaxton/Documents/Graduate School/NC Offshore Reefs/Hybrid_Offshore-Reefs_CRFL-BOEM_2013-2015/Analysis_Hybrid_CRFL-BOEM/Temperature/3_Clean_Data/temp_data-clean.csv')
+
+    #write.csv(temperature, '/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Temperature/3_Clean_Data/temp_data-clean.csv')
+
+```

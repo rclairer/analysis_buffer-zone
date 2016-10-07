@@ -1,0 +1,3256 @@
+---
+title: "Buffer_Zone_Analysis"
+author: "Claire_Rosemond"
+date: "May 23, 2016"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Data Analysis for Offshore Temperate Reefs of NC
+
+```{r working_dir}
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/analysis_buffer-zone")
+
+# set working directory
+```
+
+```{r setup, echo = FALSE, results='hide', message = FALSE, warning = FALSE}
+opts_chunk$set(echo = FALSE)
+invisible(sapply(list.files(path = "R", pattern = "R$", full.names = TRUE), source)) # find functions and other dependencies in .R files
+```
+
+
+Compile Data
+==============
+
+```{r get_data}
+
+### FISH DATA ### --------------------------------------------------------------
+detach("package:plyr", unload=TRUE)
+library(dplyr)
+library(lubridate)
+library(reshape2)
+#fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new.csv") #with structure on radiating
+#fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new2.csv")
+#fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new3.csv") #without 342 (version of new2)
+fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new4.csv") #without 342 (version of new2, size bins that hayley changed, date corrected for ar378nr1091416)
+#fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new5.csv") #without 342 (version of new2, size bins that hayley changed, date corrected for ar378nr1091416, date corrected for ar378rb1) doesn't work!!
+
+
+
+
+fish_meta <- combine_data_meta (data = fish_data, 
+                                file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
+                                merge_by = "Species_Code") 
+
+fish_biom<-make_fish_biomass_col(data = fish_meta)
+#fish_subset <- subset_data (data = fish_biom,
+                          #sub_cat = "Pelagic.Demersal", #sub_cat = "Snapper.Grouper",
+                          #sub_val = "Demersal") # YES for yes
+
+## make fish abundance matrix
+fish_biom -> data
+
+data$group <- data[,"Species_Code"] # change to family or function_group as needed
+#data$group <- data[,"Family"]
+#data$group <- data[,"Functional_Group"]
+
+#data$group <- data[,"Family"] #### FAMILY AND FUNCTIONAL GROUP DON"T WORK AS IS BECAUSE THERE ARE FISH WITHOUT FAMILIES AND FUNCTIONAL GROUPS MATCHING THEM...NEEDS FIXING"
+
+new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number) %>% summarise(data_abund = sum(Abundance))
+new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number ~ group) 
+
+#new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number, Structure_Present, Radiating_Structure) %>% summarise(data_abund = sum(Abundance))
+#new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number + Structure_Present + Radiating_Structure ~ group) 
+
+new3[is.na(new3)]<-0
+new4 = new3[rowSums(new3[,8:ncol(new3)]) !=0,] # remove rows where there were no fish on the transect - need this for species, family, and functional group levels
+fish_abund_matrix <- new4
+
+# fish_abund_matrix <- calc_fish_abund_matrix (data = fish_biom, 
+#                                       #tax_level = "Species_Code")
+#                                       #tax_level = "Family")
+# 
+# fish_biom_matrix <- calc_fish_biom_matrix (data = fish_biom, 
+#                                            #tax_level = "Species_Code")
+#                                            #tax_level = "Family")
+#                                           tax_level = "Functional_Group")
+# If at species level, bring meta data back in --> can't do if in wide format obviously!
+#library(plyr)
+#fish_abund <- rename(fish_abund, c("group"="Species_Code"))
+#fish_abund <- combine_data_meta(data = fish_abund, 
+                  #file_meta = "Metadata/Fish/Fish_Codes.csv",
+                  #merge_by = "Species_Code")
+
+fish <- fish_abund_matrix # select either abundance or biomass matrix
+
+#fish <- remove_rare_species (data = fish) # remove rare species if desired
+
+#rm(fish_data, fish_meta, fish_biom, fish_subset, fish_abund_matrix, fish_biom_matrix) # remove dataframes
+
+
+### COMPLEXITY DATA ### -------------------------------------------------------
+comp <-read.table("Complexity/3_Clean_Data/comp_site_change.csv", header=T, sep=',')
+
+
+### TEMPEATURE DATA ### -------------------------------------------------------
+temp <-read.table("Temperature/3_Clean_Data/temp_site_change.csv", header=T, sep=',')
+
+
+### SITES METADATA ### ------------------------------------------------------------
+sites <-read.table("Metadata/Sites/CRFL-AR_SITES_Master_2016-06-30.csv", header=T, sep=',')
+
+### MERGE DATA ### ------------------------------------------------------------
+# uses join from plyr
+library(plyr)
+#testing<- join(temp, comp, by = "ID")
+#testing2 <- join(testing, sites, by = c("Site", "Subsite"))
+#testing3 <- join(testing2, fish, by = c("Site", "Subsite", "Date", "Transect_Type", "Transect_Number"))
+#testing3 <- join(fish, testing2, by = c("Site", "Subsite", "Date", "Transect_Type", "Transect_Number"))
+#*******************************************************************
+join1 <- join(fish, temp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+join2 <- join(join1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+join3 <- join(join2, sites, by = c("Site", "Subsite")) 
+
+#join4 <- cbind(join3[,1:8], join3[,91:114], join3[,9:90]) #FOR SPECIES crude way of rearranging so that columns are in decent order; it duplicates ID and names it ID.1 for the duplicate so delete that column later on 
+#join4 <- cbind(join3[,1:9], join3[,37:60], join3[,10:36]) #FOR FAMILY 
+#join4 <- cbind(join3[,1:9], join3[,17:40], join3[,10:16]) #FOR FUNCTIONAL GROUP 
+
+# new ones
+join4 <- cbind(join3[,1:7], join3[,88:111], join3[,8:87]) # species
+#join4 <- cbind(join3[,1:7], join3[,40:ncol(join3)], join3[,8:39]) # family
+#join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
+
+join5 <- join4[,-c(8, 12)] # FOR SPECIES
+#join5 <- join4[,-c(8,12)] # FOR FAMILY 
+#join5 <- join4[,-c(8,12)] # FOR FUNCTIONAL GROUP
+
+data <- join5
+
+#join10 <- join(fish, sites, by = c("Site", "Subsite"))
+#join20 <- join(join10, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+#join30 <- join(join20, temp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number")) 
+#join40 <- cbind(join30[,1:6], join30[,89:112], join30[,7:88]) #crude way of rearranging so that columns are in decent order; it duplicates ID and names it ID.1 for the duplicate so delete that column later on 
+#join50 <- join40[,-11] # deletes column 11 that was ID.1, a duplicate
+#data <- join40
+#****************************************************************************8
+#test5 <- join(fish, sites, by = c("Site", "Subsite"))#, "Date", "Transect_Type","Transect_Number"))
+#test6 <- join(test1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+#test7 <- join(test2, temp, by = c(as.factor("Site"), as.factor("Subsite")))  
+
+
+
+#can't merge fish by sampling_period, because nothing else uses that column
+#sites$Site <-as.numeric(sites$Site)
+#merge.100 <- merge(temp, comp, by = c("ID", "Site", "Subsite", "Date", "Transect_Type", "Transect_Number"))
+#merge.101 <- merge(merge.100, sites, by = c("Site", "Subsite"))
+#merge.102 <- merge(merge.101, fish, by = c("Site", "Subsite", "Date", "Transect_Type", "Transect_Number"))
+#data <- merge.102
+
+#rm(list= ls()[!(ls() %in% c('data'))]) # removes everything except selected data frame(s) 
+
+
+## Filter data if necessary ## -------------------------------
+#data <- filter(data, Reef_type == "Natural")
+#data <- filter(data, Reef_type == "Artificial")
+ #data <- filter(data, Depth_general == "Shallow")
+# data <- filter(data, Depth_general == "Shallow")
+# data <- filter(data, Depth_general == "Deep")
+#data <- filter(data, Reef_type == "Natural", Depth_general == "Intermediate")
+
+env.end<- 29 #FOR SPECEIS
+sp.start<-30 #FOR SPECIES
+#env.end <- 29 #FOR FAMILY
+#sp.start <- 30 #FOR FAMILY
+#env.end <- 29 #FOR FUNCTIONAL GROUP
+#sp.start <-30 #FOR FUNCTIONAL GROUP
+
+# preserve biomass data for plotting
+#biom_data<-merge(merge.2, fish_biom_matrix)
+#biom_data <- filter(biom_data, Reef_type == "Artificial")
+### REMOVE OUTLIER 200LE on 2014-07-01
+#biom_data <- biom_data[-8,]
+
+#biom_data <- biom_data[,sp.start:ncol(biom_data)]
+
+env_data <- data[,1:env.end]
+ 
+species.data<-data[,sp.start:ncol(data)] # fish data
+species.orig<-species.data # fish data, no transform
+
+#species.data <- transform_data (data = species.data, transform_type = "square_root")
+species.data <- transform_data (data = species.data, transform_type = "cube_root")
+#species.data <- transform_data (data = species.data, transform_type = "pres_abs")
+#we need to look at this with Avery
+
+```
+
+
+Let's make some bar graphs:
+```{r ggplot2}
+library(ggplot2)
+fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
+
+#test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
+
+test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number"))
+
+
+ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+# fill for extra variable (in this case season)
+test1 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
+test1$Sampling_Period <- factor(test1$Sampling_Period, c("Fall", "Winter", "Spring"))
+#order levels of treatment to appear orderly in plots
+
+
+ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance, fill=Sampling_Period)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 700), 
+                     breaks=seq(0, 700,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+#order levels of treatment to appear orderly in plots, move this higher
+# facets
+#can do fill within facet
+ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance)) +
+  theme_classic()+
+  facet_wrap(~Sampling_Period, ncol=3)+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 700), 
+                     breaks=seq(0, 700,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+fishFall <- filter(fishabundance, Sampling_Period == "Fall")
+fishWinter <- filter(fishabundance, Sampling_Period == "Winter")
+fishSpring <- filter(fishabundance, Sampling_Period == "Spring")
+  
+test2 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Reef_Type"))
+
+ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
+  theme_classic()+
+  facet_wrap(~Reef_Type, ncol = 2) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+
+
+
+
+
+
+
+
+#fishabundance <- mutate(data, Abundance = sum[,sp.start:ncol(data)])
+
+
+#fishabundance <- mutate(data, Abundance = rowSums(data[,30:109]))
+#sum <- sum(fishabundance$Abundance)
+#aveabundance <- sum(fishabundance$Abundance)/nrow(fishabundance)
+#SEave <- sd(fishabundance$Abundance)/sqrt(length(fishabundance))
+
+  
+#fishFall <- filter(fishabundance, Sampling_Period == "Fall")
+#fishFall0 <- filter(fishFall, Transect_Number == "0")
+#fishFall1 <- filter(fishFall, Transect_Number == "1") 
+#fishFall2 <- filter(fishFall, Transect_Number == "2") 
+#fishFall3 <- filter(fishFall, Transect_Number == "3") 
+
+#sum0 <- sum(fishFall0$Abundance)
+#avefall0 <- sum(fishFall0$Abundance)/nrow(fishFall0)
+
+#sum1 <- sum(fishFall1$Abundance)
+#avefall1 <- sum(fishFall1$Abundance)/nrow(fishFall1)
+
+#sum2 <- sum(fishFall2$Abundance)
+#avefall2 <- sum(fishFall2$Abundance)/nrow(fishFall2)
+
+#sum3 <- sum(fishFall3$Abundance)
+#avefall3 <- sum(fishFall3$Abundance)/nrow(fishFall3)
+
+
+
+#fallabundance <- c(avefall0, avefall1, avefall2, avefall3)
+
+#SEfall0 <- sd(fishFall0$Abundance)/sqrt(length(fishFall0))
+#SEfall1 <- sd(fishFall1$Abundance)/sqrt(length(fishFall1))
+#SEfall2 <- sd(fishFall2$Abundance)/sqrt(length(fishFall2))
+#SEfall3 <- sd(fishFall3$Abundance)/sqrt(length(fishFall3))
+
+#fallSE <- c(SEfall0, SEfall1, SEfall2, SEfall3)
+
+
+#ffff <- ggplot(fishabundance, aes(Transect_Number, sum(fishabundance$Abundance)/nrow(fishabundance)))
+#ffff + geom_bar(stat = "identity") + ggtitle("I have no idea") + xlab("Transect Number") + ylab("Average Abundance") +ylim (0,1000)
+#b + ggsave("4_clean_data/Plots/totalabundanceWinter2015-2016.png", width = 5, height = 5)
+
+
+#pppp <- ggplot(fallabundance, aes(Transect_Number, Abundance))
+#pppp + geom_bar(stat = "identity") + ggtitle("I have no idea") + xlab("Transect Number") + ylab("Average Abundance") +ylim (0,1000)
+#b + ggsave("4_clean_data/Plots/totalabundanceWinter2015-2016.png", width = 5, height = 5)
+
+
+#function to calculate error:
+  
+  #SE <- function(x) {sd(x)/sqrt(length(x))}
+  #SE.cont <- sapply(Cont.Repro[columnnumber], FUN = SE)
+  #totoal number of fish, then average sum, and SE of sum
+
+
+  #fishWinter <- filter(fishabundance, Sampling_Period == "Winter")
+  #fishSpring <- filter(fishabundance, Sampling_Period == "Spring")
+  
+```
+
+
+
+
+
+```{r fish_size_data}
+
+library(dplyr)
+
+### SMALL
+fish_data_sm <- get_fish_data (file_data = "Fish/3_Clean_Data/fish_data-clean.csv",
+               size = "sm_1.10cm")
+fish_meta_sm <- combine_data_meta (data = fish_data_sm, 
+                                file_meta = "Metadata/Fish/Fish_Codes.csv", 
+                                merge_by = "Species_Code")
+fish_biom_sm<-make_fish_biomass_col_small(data = fish_meta_sm)
+#fish_subset <- subset_data (data = fish_biom,
+#                            sub_cat = "Snapper.Grouper",
+ #                           sub_val = "YES")
+fish_abund_matrix_sm <- calc_fish_abund_matrix (data = fish_biom_sm, 
+                                      tax_level = "Species_Code",
+                                      trans_level = "avgd")
+fish_biom_matrix_sm <- calc_fish_biom_matrix (data = fish_biom_sm, 
+                                           tax_level = "Species_Code",
+                                          trans_level = "avgd")
+fish_sm <- fish_abund_matrix_sm[,1:ncol(fish_abund_matrix_sm)]
+biom_sm <- fish_biom_matrix_sm[,1:ncol(fish_biom_matrix_sm)]
+
+#detach("package:plyr", unload=TRUE)
+merge.1_sm<-merge(sites, comp, by="Site")
+merge.2_sm<-merge(merge.1_sm, sed, by=c("Site", "Date", "Sample"))
+merge.3_sm<-merge(merge.2_sm, temp, by = c("Site", "Date", "Sample"))
+fish_sm<-merge(merge.3_sm, fish_sm, by = c("Site","Sample"))
+env.end<- 28
+sp.start<-29
+# preserve biomass data for plotting
+biom_sm<-merge(merge.3_sm, biom_sm, by = c("Site", "Sample"))
+biom_sm <- biom_sm[,sp.start:ncol(biom_sm)]
+env_sm <- fish_sm[,1:env.end]
+fish_sm<-fish_sm[,sp.start:ncol(fish_sm)] # fish data
+
+### MEDIUM 
+fish_data_md <- get_fish_data (file_data = "Fish/3_Clean_Data/fish_data-clean.csv",
+               size = "md_11.29cm")
+fish_meta_md <- combine_data_meta (data = fish_data_md, 
+                                file_meta = "Metadata/Fish/Fish_Codes.csv", 
+                                merge_by = "Species_Code")
+fish_biom_md<-make_fish_biomass_col_medium(data = fish_meta_md)
+#fish_subset <- subset_data (data = fish_biom,
+#                            sub_cat = "Snapper.Grouper",
+#                            sub_val = "YES")
+fish_abund_matrix_md <- calc_fish_abund_matrix (data = fish_biom_md, 
+                                      tax_level = "Species_Code",
+                                      trans_level = "avgd")
+fish_biom_matrix_md <- calc_fish_biom_matrix (data = fish_biom_md, 
+                                           tax_level = "Species_Code",
+                                           trans_level = "avgd")
+fish_md <- fish_abund_matrix_md[,1:ncol(fish_abund_matrix_md)]
+biom_md <- fish_biom_matrix_md[,1:ncol(fish_biom_matrix_md)]
+merge.1_md<-merge(sites, comp, by="Site")
+merge.2_md<-merge(merge.1_md, sed, by=c("Site", "Date", "Sample"))
+merge.3_md<-merge(merge.2_md, temp, by = c("Site", "Date", "Sample"))
+fish_md<-merge(merge.3_md, fish_md, by = c("Site","Sample"))
+env.end<- 28
+sp.start<-29
+# preserve biomass data for plotting
+biom_md<-merge(merge.3_md, biom_md, by = c("Site", "Sample"))
+biom_md <- biom_md[,sp.start:ncol(biom_md)]
+env_md <- fish_md[,1:env.end]
+fish_md<-fish_md[,sp.start:ncol(fish_md)] # fish data
+
+
+
+### LARGE
+fish_data_lg <- get_fish_data (file_data = "Fish/3_Clean_Data/fish_data-clean.csv",
+               size = "lg_30.49cm")
+fish_meta_lg <- combine_data_meta (data = fish_data_lg, 
+                                file_meta = "Metadata/Fish/Fish_Codes.csv", 
+                                merge_by = "Species_Code")
+fish_biom_lg<-make_fish_biomass_col_large(data = fish_meta_lg)
+#fish_subset <- subset_data (data = fish_biom,
+#                            sub_cat = "Snapper.Grouper",
+#                            sub_val = "YES")
+fish_abund_matrix_lg <- calc_fish_abund_matrix (data = fish_biom_lg, 
+                                      tax_level = "Species_Code",
+                                      trans_level = "avgd")
+biom_lg <- calc_fish_biom_matrix (data = fish_biom_lg, 
+                                           tax_level = "Species_Code",
+                                          trans_level = "avgd")
+fish_lg <- fish_abund_matrix_lg[,1:ncol(fish_abund_matrix_lg)]
+biom_lg <- fish_biom_matrix_lg[,1:ncol(fish_biom_matrix_lg)]
+merge.1_lg<-merge(sites, comp, by="Site")
+merge.2_lg<-merge(merge.1_lg, sed, by=c("Site", "Date", "Sample"))
+merge.3_lg<-merge(merge.2_lg, temp, by = c("Site", "Date", "Sample"))
+fish_lg<-merge(merge.3_lg, fish_lg, by = c("Site","Sample"))
+env.end<- 28
+sp.start<-29
+# preserve biomass data for plotting
+biom_lg<-merge(merge.3_lg, biom_lg, by = c("Site", "Sample"))
+biom_lg <- biom_lg[,sp.start:ncol(biom_lg)]
+env_lg <- fish_lg[,1:env.end]
+fish_lg<-fish_lg[,sp.start:ncol(fish_lg)] # fish data
+
+
+### APEX
+fish_data_ap <- get_fish_data (file_data = "Fish/3_Clean_Data/fish_data-clean.csv",
+               size = "ap_50.cm")
+fish_meta_ap <- combine_data_meta (data = fish_data_ap, 
+                                file_meta = "Metadata/Fish/Fish_Codes.csv", 
+                                merge_by = "Species_Code")
+fish_biom_ap<-make_fish_biomass_col_apex(data = fish_meta_ap)
+#fish_subset <- subset_data (data = fish_biom,
+#                            sub_cat = "Snapper.Grouper",
+#                            sub_val = "YES")
+fish_abund_matrix_ap <- calc_fish_abund_matrix (data = fish_biom_ap, 
+                                      tax_level = "Species_Code",
+                                      trans_level = "avgd")
+fish_biom_matrix_ap <- calc_fish_biom_matrix (data = fish_biom_ap, 
+                                           tax_level = "Species_Code",
+                                          trans_level = "avgd")
+fish_ap <- fish_abund_matrix_ap
+biom_ap <- fish_biom_matrix_ap
+merge.1_ap<-merge(sites, comp, by="Site")
+merge.2_ap<-merge(merge.1_ap, sed, by=c("Site", "Date", "Sample"))
+merge.3_ap<-merge(merge.2_ap, temp, by = c("Site", "Date", "Sample"))
+fish_ap<-merge(merge.3_ap, fish_ap, by = c("Site","Sample"))
+env.end<- 28
+sp.start<-29
+# preserve biomass data for plotting
+biom_ap<-merge(merge.3_ap, biom_ap, by = c("Site", "Sample"))
+biom_ap <- biom_ap[,sp.start:ncol(biom_ap)]
+env_ap <- fish_ap[,1:env.end]
+fish_ap<-fish_ap[,sp.start:ncol(fish_ap)] # fish data
+
+
+#extract just env data that meshes with sm, md, lg, and ap species data (stored in biom_sm, fish_sm, etc) 
+env_sizes <- env_ap
+
+
+```
+
+
+
+Environmental Factor Plots & Analyses
+==================
+
+```{r temp}
+
+plot_temp_time_series(temp)
+                
+make_pdf_ggplot (plot_temp_time_series(temp),
+          "Figures/Temperature/temp_time-series_plot.pdf", 
+          width = 8, height = 8, verbose = TRUE)
+```
+
+
+
+REEF COMPLEXITY ANALYSES
+------------------------
+
+Summary Complexity Plots 
+==================
+```{r kernel_density}
+
+plot_kernel_density_reef_complexity(env_data, text_size = 12)
+
+make_pdf_ggplot (plot_kernel_density_reef_complexity(env_data, text_size = 12),
+          "Figures/Complexity/comp_kernel-density.pdf", 
+          width = 6, height = 5, verbose = TRUE)
+
+
+### old code for kernel desnity plot wtih base graphics
+#plot_kern_dens_reefs_complex (env_data)
+
+#make_pdf_base(plot_kern_dens_reefs_complex (env_data), 
+#         "Figures/Complexity/drr_kernel-density_plot.pdf", 
+#         width = 10, height = 8, verbose = TRUE) 
+
+#plot_kern_dens_reefs_relief (env_data)
+
+#make_pdf_base(plot_kern_dens_reefs_relief (env_data), 
+#         "Figures/Complexity/relief_kernel-density_plot.pdf", 
+#         width = 10, height = 8, verbose = TRUE) 
+```
+
+```{r complexity_plots}
+
+## NATURAL REEFS 
+
+# Export the data
+pdf("Figures/Complexity/multipanel-sites_contour&variogram_horizontal.pdf", width=10, height=4, bg = "white")
+
+# Set arrangement to 2 row by 2 columns  
+par(mfrow=c(2,4)) # plots as five rows and two columns
+
+# Read in files
+rubble <-read.table("Complexity/3_Clean_Data/Variogram/STATR_2013-10-30_S2_T2_variogram.csv", header=T, sep=',')
+ledge  <-read.table("Complexity/3_Clean_Data/Variogram/10FAT_2013-10-29_S2_T2_variogram.csv", header=T, sep=',')
+pipes  <-read.table("Complexity/3_Clean_Data/Variogram/PIP07_2015-05-19_S6_T1_variogram.csv", header=T, sep=',')
+wreck  <-read.table("Complexity/3_Clean_Data/Variogram/OILYR_2013-09-05_S1_T1_variogram.csv", header=T, sep=',')
+
+# Row 1 -- Contours 
+plot(rubble$dist_m_scaled, rubble$Abs_Pres_m, type = "l", ylim=c(30,10), xlab="Distance (m)", ylab="Depth (m)")
+#title ("Pavement & Rubble", col.main="cornflowerblue")
+#mtext("e", side=3, adj=0, line=1)
+
+plot(ledge$dist_m_scaled, ledge$Abs_Pres_m, type = "l", ylim=c(30,10), xlab="Distance (m)", ylab="Depth (m)")
+#mtext("f", side=3, adj=0, line=1)
+#title ("Ledge", col.main="cornflowerblue")
+
+plot(pipes$dist_m_scaled, pipes$Abs_Pres_m, type = "l", ylim=c(30,10), xlab="Distance (m)", ylab="Depth (m)")
+#mtext("g", side=3, adj=0, line=1)
+#title ("Pipes", col.main="indianred")
+
+plot(wreck$dist_m_scaled, wreck$Abs_Pres_m, type = "l", ylim=c(30,10), xlab="Distance (m)", ylab="Depth (m)")
+#mtext("h", side=3, adj=0, line=1)
+#title("Ship", cex.sub=.8, col.main="indianred")
+
+# Row 2 -- Variograms
+plot(rubble$dist_m_scaled, rubble$semivar, type = "l", ylim=c(0, 120), xlim=c(0,15), xlab="Distance (m)", ylab="Semivariance") 
+#mtext("i", side=3, adj=0, line=1)
+
+plot(ledge$dist_m_scaled, ledge$semivar, type = "l", ylim=c(0, 120), xlim=c(0,15), xlab="Distance (m)", ylab="Semivariance") 
+#mtext("j", side=3, adj=0, line=1)
+
+plot(pipes$dist_m_scaled, pipes$semivar, type = "l", ylim=c(0, 120), xlim=c(0,15), xlab="Distance (m)", ylab="Semivariance") 
+#mtext("k", side=3, adj=0, line=1)
+
+plot(wreck$dist_m_scaled, wreck$semivar, type = "l", ylim=c(0, 1000), xlim=c(0,15), xlab="Distance (m)", ylab="Semivariance") 
+axis(2, col = 'seagreen', col.axis = 'seagreen', col.ticks = 'seagreen')
+#mtext("l", side=3, adj=0, line=1)
+legend("bottomright", "* Note scale", bty = 'n', text.col="seagreen")
+
+#mtext(as.character(uniq[p]), side=3, outer=TRUE, line=-3) # adds overall title
+
+# Close off to save the plot
+dev.off() 
+
+
+```
+
+
+Calculate Data for Plots of Fish Metrics vs. Heterogeneity
+====================
+
+```{r fish_niche_width}
+
+data <- cbind(env_data, species.orig)
+
+## Step 1: Rank species records with respect to habitat heterogeneity metric (DRR)
+
+library(dplyr)
+data.order <- arrange(data, desc(DRR)) # arrange dataset in order of decreasing rugosity
+
+# set up matrix to store species niche widths and species ID
+niche_width <- matrix(nrow = length(species.orig), ncol=2)
+colnames(niche_width)<-c("ID", "width")
+
+# for loop to remove outliers and find niche width!! 
+sp.start = 28
+for (j in sp.start:ncol(data.order)){
+  library(dplyr)
+  ## Remove outliers, which are the highest 5% and lowest 5% for each record
+    # remove rows where species count is 0
+    filtered <- filter(data.order, data.order[,j] >0)
+    # remove top 5% outliers for fish abundance for species
+    filtered <- filtered[!filtered[,j] > quantile(filtered[,j], prob = 1-5/100),]
+    # remove bottom 5% outliers for fish abundance for species
+    filtered <- filtered[!filtered[,j] < quantile(filtered[,j], prob = 1-95/100),]
+  ## Calculate difference between maximum and minimum heterogeneity metric (DRR)
+    niche_width[j-27,2] <- max(filtered$DRR) - min(filtered$DRR)
+    niche_width[j-27,1] <- colnames(filtered)[j]
+}
+
+
+niche_width <- data.frame(niche_width) # make object a dataframe
+
+# calculate and assign niche quartiles
+niche_width$quartile <- ntile(niche_width$width, 4) # requires dplyr
+ # quartile = 1 is 0-25%
+ # quartile = 2 is 25-50%
+ # quartile = 3 is 50-75%
+ # quartile = 4 is 75-100%
+
+
+
+niche1 <- filter(niche_width, quartile == 1 )
+NameList1 <- niche1$ID
+index1 <- match(NameList1, names(species.orig))
+data.niche1 <- species.orig[,index1]
+S.niche1 <- specnumber(data.niche1) # species richness (S)
+
+niche2 <- filter(niche_width, quartile == 2 )
+NameList2 <- niche2$ID
+index2 <- match(NameList2, names(species.orig))
+data.niche2 <- species.orig[,index2]
+S.niche2 <- specnumber(data.niche2) # species richness (S)
+
+niche3 <- filter(niche_width, quartile == 3 )
+NameList3 <- niche3$ID
+index3 <- match(NameList3, names(species.orig))
+data.niche3 <- species.orig[,index3]
+S.niche3 <- specnumber(data.niche3) # species richness (S)
+
+niche4 <- filter(niche_width, quartile == 4 )
+NameList4 <- niche4$ID
+index4 <- match(NameList4, names(species.orig))
+data.niche4 <- species.orig[,index4]
+S.niche4 <- specnumber(data.niche4) # species richness (S)
+
+```
+
+```{r fish_climate_zones}
+
+data <- species.orig
+climate <- read.table(file = "Metadata/Fish/Fish_Codes_climate.csv", header = T, sep=',')
+climate <- climate[,c(1, 17)]
+fish_noclimate <- read.table(file = "Metadata/Fish/Fish_Codes.csv", header = T, sep=',')
+climate<-merge(fish_noclimate, climate, by="Species_Code")
+
+tropical <- filter(climate, Climate == "Tropical")
+NameListTropical <- tropical$Species_Code
+indexTropical <- match(NameListTropical, names(species.orig))
+indexTropical <- indexTropical[-c(18)] # remove this one
+data.Tropical <- species.orig[,indexTropical]
+S.Tropical <- specnumber(data.Tropical)
+
+subtropical <- filter(climate, Climate == "Subtropical")
+NameListSubtropical <- subtropical$Species_Code
+indexSubtropical <- match(NameListSubtropical, names(species.orig))
+indexSubtropical <- indexSubtropical[-c(50,84)] # remove these guys
+data.Subtropical <- species.orig[,indexSubtropical]
+S.Subtropical <- specnumber(data.Subtropical)
+
+temperate <- filter(climate, Climate == "Temperate")
+NameListTemperate <- temperate$Species_Code
+indexTemperate <- match(NameListTemperate, names(species.orig))
+data.Temperate <- species.orig[,indexTemperate]
+S.Temperate <- specnumber(data.Temperate)
+
+```
+
+
+Plots for Fish Metrics vs. Heterogeneity
+==================
+
+```{r community_metrics_full}
+detach("package:plyr", unload=TRUE)
+library(dplyr)
+
+comm_mets <- calc_comm_metrics (data = species.orig, 
+                  env_data = env_data, 
+                  biom_data = biom_data)
+
+comm_mets = filter(comm_mets, Reef_type == "Natural")  
+  ggplot(comm_mets, aes( x = comm_mets$DRR, y = comm_mets$abund, shape = comm_mets$Reef_type, colour = comm_mets$Reef_type)) + 
+  geom_point(aes(shape=comm_mets$Reef_type, colour = comm_mets$Reef_type),size=4, position=position_jitter(width=0.0,height=0.0))+
+  #stat_smooth(method = "lm", formula = y ~ x, size = 1) # linear regression
+  #stat_smooth(method = "loess", formula = y ~ x, size = 1) # weighted regression
+  stat_smooth(method = "lm", formula = y ~ x + I(x^2), size = 1)  # DRR and squared DRR terms
+  #geom_text(aes(label=Site),hjust=-0.5, vjust=0)+
+  #geom_text(aes(label=Date),hjust=-0.5, vjust=1.5)
+
+
+
+## overall species, NOT with niche widths
+## All reef types
+
+## Plot hybrid figure with rugosity vs. richness and then rugosity vs. abundance for all reef types, still colored accordingingly
+plot_abund_rich_rugosity(comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 25000, brk_abund = 5000,
+                        ylim_rich = 50, brk_rich = 10,
+                        xlim = 3.5,
+                        text_size = 12)
+
+make_pdf_ggplot (plot_abund_rich_rugosity(comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 25000, brk_abund = 5000,
+                        ylim_rich = 50, brk_rich = 10,
+                        xlim = 3.5,
+                        text_size = 12),
+          "Figures/Complexity/comp_abund-rich_all-reefs.pdf", 
+          width = 4, height = 6, verbose = TRUE)
+
+
+# Reef type and complexity (DRR)
+plot_comm_mets_reefs_rugosity (comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 22000, brk_abund = 5000,
+                        ylim_biom = 12000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 1.5)
+
+plot_abund_rugosity(comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 22000, brk_abund = 5000,
+                        xlim = 3.5)
+
+make_pdf_ggplot (plot_abund_rugosity(comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 22000, brk_abund = 5000,
+                        xlim = 3.5),
+          "Figures/Complexity/comp_density_reefs.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+plot_rich_rugosity(comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_rich = 50, brk_rich = 10,
+                        xlim = 3.5)
+
+make_pdf_ggplot (plot_rich_rugosity(comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_rich = 50, brk_rich = 10,
+                        xlim = 3.5),
+          "Figures/Complexity/comp_richness_reefs.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+
+# Reef type and vertical relief
+plot_comm_mets_reefs_relief (comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 22000, brk_abund = 5000,
+                        ylim_biom = 12000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 6)
+
+# Reef type, depth, and rugosity
+plot_comm_mets_depth_rugosity (comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 22000, brk_abund = 5000,
+                        ylim_biom = 12000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+
+# Reef type, depth, and relief
+plot_comm_mets_depth_relief (comm_mets = comm_mets,
+                        env_data = env_data,
+                        ylim_abund = 30000, brk_abund = 5000,
+                        ylim_biom = 20000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 15)
+
+## Natural reefs
+library(dplyr)
+plot_comm_mets_reefs_rugosity (comm_mets = filter(comm_mets, Reef_type == "Natural"),
+                        env_data = filter(env_data, Reef_type == "Natural"),
+                        ylim_abund = 9000, brk_abund = 1000,
+                        ylim_biom = 1000, brk_biom = 500, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 1.5)
+plot_comm_mets_reefs_relief (comm_mets = filter(comm_mets, Reef_type == "Natural"),
+                        env_data = filter(env_data, Reef_type == "Natural"),
+                        ylim_abund = 9000, brk_abund = 1000,
+                        ylim_biom = 1000, brk_biom = 500, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 6)
+
+plot_comm_mets_depth_rugosity (comm_mets = filter(comm_mets, Reef_type == "Natural"),
+                        env_data = filter(env_data, Reef_type == "Natural"),
+                        ylim_abund = 22000, brk_abund = 5000,
+                        ylim_biom = 12000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 1.5)
+
+plot_comm_mets_depth_relief (comm_mets = filter(comm_mets, Reef_type == "Natural"),
+                        env_data = filter(env_data, Reef_type == "Natural"),
+                        ylim_abund = 9000, brk_abund = 1000,
+                        ylim_biom = 1000, brk_biom = 500, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 6)
+
+
+## Artificial reefs
+plot_comm_mets_reefs_rugosity (comm_mets = filter(comm_mets, Reef_type == "Artificial"),
+                        env_data = filter(env_data, Reef_type == "Artificial"),
+                        ylim_abund = 25000, brk_abund = 5000,
+                        ylim_biom = 3000, brk_biom = 500, # this one has an outlier around 12000
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5, 
+                        xlim = 3.5)
+plot_comm_mets_reefs_relief (comm_mets = filter(comm_mets, Reef_type == "Artificial"),
+                        env_data = filter(env_data, Reef_type == "Artificial"))
+
+plot_comm_mets_depth_rugosity (comm_mets = filter(comm_mets, Reef_type == "Artificial"),
+                        env_data = filter(env_data, Reef_type == "Artificial"),
+                        ylim_abund = 22000, brk_abund = 5000,
+                        ylim_biom = 12000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+
+plot_comm_mets_depth_relief (comm_mets = filter(comm_mets, Reef_type == "Artificial"),
+                        env_data = filter(env_data, Reef_type == "Artificial"),
+                        ylim_abund = 9000, brk_abund = 1000,
+                        ylim_biom = 1000, brk_biom = 500, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 15)
+
+make_pdf (plot_comm_mets_reefs_relief (comm_mets = comm_mets,
+                                 env_data = env_data), 
+           "Figures/comp-fish_fish-sngr_plot.pdf",
+           width = 10, height = 8, verbose = TRUE)
+
+
+make_pdf_ggplot (plot_comm_mets_climate (comm_mets = comm_mets, env_data = env_data, text_size = 18),
+          "Figures/Complexity/comp_rich_climates.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+
+```
+
+```{r comm_mets_climate_zone}
+
+comm_mets <- cbind(comm_mets, S.Tropical, S.Subtropical, S.Temperate) # this adds in the niche width components!! 
+
+### Climate zone
+# All reefs
+plot_comm_mets_climate (comm_mets = comm_mets, env_data = env_data, text_size = 18)
+
+make_pdf_ggplot (plot_comm_mets_climate (comm_mets = comm_mets, env_data = env_data, text_size = 18),
+          "Figures/Complexity/comp_rich_climates.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+# Natural reefs
+plot_comm_mets_climate (comm_mets = filter(comm_mets, Reef_type == "Natural"),
+                        env_data = filter(env_data, Reef_type == "Natural"),
+                        text_size = 12)
+
+# Artificial reefs
+plot_comm_mets_climate (comm_mets = filter(comm_mets, Reef_type == "Artificial"),
+                        env_data = filter(env_data, Reef_type == "Artificial"),
+                        text_size = 12)
+
+# seasonal avgds niche widths
+#plot_comm_mets_climate (comm_mets = comm_mets, env_data = comm_mets, text_size = 12)
+
+```
+
+```{r comm_mets_niche_widths}
+
+comm_mets <- cbind(comm_mets, S.niche1, S.niche2, S.niche3, S.niche4) # this adds in the niche width components!! 
+
+### Niche widths
+# All reefs
+plot_comm_mets_niche_widths (comm_mets = comm_mets, env_data = env_data, text_size = 18)
+
+make_pdf_ggplot (plot_comm_mets_niche_widths (comm_mets = comm_mets, env_data = env_data, text_size = 18),
+          "Figures/Complexity/comp_rich_niches.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+
+# Natural reefs
+plot_comm_mets_niche_widths (comm_mets = filter(comm_mets, Reef_type == "Natural"),
+                        env_data = filter(env_data, Reef_type == "Natural"),
+                        text_size = 12)
+
+# Artificial reefs
+plot_comm_mets_niche_widths (comm_mets = filter(comm_mets, Reef_type == "Artificial"),
+                        env_data = filter(env_data, Reef_type == "Artificial"),
+                        text_size = 12)
+
+# seasonal avgds niche widths
+plot_comm_mets_niche_widths (comm_mets = comm_mets, env_data = comm_mets, text_size = 12)
+
+```
+
+```{r avg_comm_mets_by_site}
+
+## average among seasons
+comm_mets_avgd<-comm_mets %>% group_by(Site) %>% summarise_each(funs(mean))
+comm_mets_avgd <- comm_mets_avgd[,-c(10:21)]
+comm_mets_avgd<- merge(comm_mets_avgd, sites, by = "Site")
+comm_mets <- comm_mets_avgd
+
+## wreck sizes!
+wreck_sizes <- read.table(file = "Metadata/Sites/AR_sizes.csv", header = T, sep=',')
+comm_mets <- merge(comm_mets, wreck_sizes, by = "Site")
+
+  ggplot()+
+    theme_classic()+
+    geom_smooth(data = comm_mets, 
+                aes(x=comm_mets$Length, y = comm_mets$DRR), 
+                method = loess, se=T, lwd = 1.5) 
+
+  ggplot()+
+    theme_classic()+
+    geom_smooth(data = comm_mets, 
+                aes(x=comm_mets$Length, y = comm_mets$S), 
+                method = loess, se=T, lwd = 1.5) 
+
+  ggplot()+
+    theme_classic()+
+    geom_smooth(data = comm_mets, 
+                aes(x=comm_mets$Length, y = comm_mets$abund), 
+                method = loess, se=T, lwd = 1.5)
+
+  ggplot()+
+    theme_classic()+
+    geom_smooth(data = comm_mets, 
+                aes(x=comm_mets$Length, y = comm_mets$biom), 
+                method = loess, se=T, lwd = 1.5)
+
+
+plot_comm_mets_niche_widths (comm_mets = comm_mets, env_data = comm_mets, text_size = 12)
+
+plot_comm_mets_reefs_rugosity (comm_mets = comm_mets,
+                        env_data = comm_mets,
+                        ylim_abund = 22000, brk_abund = 5000,
+                        ylim_biom = 12000, brk_biom = 2000, 
+                        ylim_rich = 50, brk_rich = 10,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+
+
+```
+
+```{r comm_mets_sizes}
+
+comm_sm <- calc_comm_metrics (data = fish_sm, 
+                  env_data = env_sizes, 
+                  biom_data = biom_sm)
+comm_md <- calc_comm_metrics (data = fish_md, 
+                  env_data = env_sizes, 
+                  biom_data = biom_md)
+comm_lg <- calc_comm_metrics (data = fish_lg, 
+                  env_data = env_sizes, 
+                  biom_data = biom_lg)
+comm_ap <- calc_comm_metrics (data = fish_ap, 
+                  env_data = env_sizes, 
+                  biom_data = biom_ap)
+
+## remove outlier 200LE on 2014-07-01
+comm_sm<-comm_sm[-9,]
+comm_md<-comm_md[-9,]
+comm_lg<-comm_lg[-9,]
+comm_ap<-comm_ap[-9,]
+env_sizes <- env_sizes[-9,]
+
+plot_comm_mets_fish_sizes_rich(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12)
+
+make_pdf_ggplot (plot_comm_mets_fish_sizes_rich(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12),
+          "Figures/Complexity/comp_richness_sizes.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+plot_comm_mets_fish_sizes_abund(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12)
+
+make_pdf_ggplot (plot_comm_mets_fish_sizes_abund(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12),
+          "Figures/Complexity/comp_abund_sizes.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+plot_comm_mets_fish_sizes_abund_lg_ap(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12)
+
+make_pdf_ggplot (plot_comm_mets_fish_sizes_abund_lg_ap(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12),
+          "Figures/Complexity/comp_abund-BIG_sizes.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+
+plot_comm_mets_fish_sizes_biom(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12)
+
+make_pdf_ggplot (plot_comm_mets_fish_sizes_biom(comm_sm, comm_md, comm_lg, comm_ap, env_sizes, text_size = 12),
+          "Figures/Complexity/comp_biomass_sizes.pdf", 
+          width = 9, height = 6, verbose = TRUE)
+
+
+## plot the community metrics vs. heterogeneity for size classes, separately
+
+plot_comm_mets_reefs_rugosity (comm_mets = comm_sm,
+                        env_data = env_sizes,
+                        ylim_abund = 15000, brk_abund = 5000,
+                        ylim_biom = 500, brk_biom = 100, 
+                        ylim_rich = 25, brk_rich = 5,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+
+plot_comm_mets_reefs_rugosity (comm_mets = comm_md,
+                        env_data = env_sizes,
+                        ylim_abund = 15000, brk_abund = 5000,
+                        ylim_biom = 500, brk_biom = 100,
+                        ylim_rich = 25, brk_rich = 5,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+
+plot_comm_mets_reefs_rugosity (comm_mets = comm_lg,
+                        env_data = env_sizes,
+                        ylim_abund = 600, brk_abund = 100,
+                        ylim_biom = 500, brk_biom = 100, 
+                        ylim_rich = 25, brk_rich = 5,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+
+plot_comm_mets_reefs_rugosity (comm_mets = comm_ap,
+                        env_data = env_sizes,
+                        ylim_abund = 200, brk_abund = 50,
+                        ylim_biom = 12000, brk_biom = 1000, 
+                        ylim_rich = 25, brk_rich = 5,
+                        ylim_shan = 3, brk_shan = .5,
+                        xlim = 3.5)
+```
+
+```{r comm_mets_ar-nr_all-sizes}
+
+## natural reef plot for abundance
+
+comm_mets.nat <- filter(comm_mets, Reef_type == "Natural")
+comm_sm.nat <- filter(comm_sm, Reef_type == "Natural")
+comm_md.nat <- filter(comm_md, Reef_type == "Natural")
+comm_lg.nat <- filter(comm_lg, Reef_type == "Natural")
+comm_ap.nat <- filter(comm_ap, Reef_type == "Natural")
+
+plot_rugosity_abund_sizes_nat(comm_mets.nat, comm_sm.nat, comm_md.nat, comm_lg.nat, comm_ap.nat, text_size=12)
+
+make_pdf_ggplot (plot_rugosity_abund_sizes_nat(comm_mets.nat, comm_sm.nat, comm_md.nat, comm_lg.nat, comm_ap.nat, text_size=12),
+          "Figures/Complexity/comp_abund_nat-reefs.pdf", 
+          width = 6, height = 5, verbose = TRUE)
+
+
+## artificial reef plot for abundance
+
+comm_mets.art <- filter(comm_mets, Reef_type == "Artificial")
+comm_sm.art <- filter(comm_sm, Reef_type == "Artificial")
+comm_md.art <- filter(comm_md, Reef_type == "Artificial")
+comm_lg.art <- filter(comm_lg, Reef_type == "Artificial")
+comm_ap.art <- filter(comm_ap, Reef_type == "Artificial")
+
+plot_rugosity_abund_sizes_art(comm_mets.art, comm_sm.art, comm_md.art, comm_lg.art, comm_ap.art, text_size=12)
+
+make_pdf_ggplot (plot_rugosity_abund_sizes_art(comm_mets.art, comm_sm.art, comm_md.art, comm_lg.art, comm_ap.art, text_size=12),
+          "Figures/Complexity/comp_abund_art-reefs.pdf", 
+          width = 6, height = 5, verbose = TRUE)
+
+
+
+```
+
+Statistics for Fish & Heterogeneity
+========================
+
+```{r complexity_models}
+
+# identify data
+data <- comm_mets # all sizes
+data <- comm_sm
+data <- comm_md
+data <- comm_lg
+data <- comm_ap
+
+
+art <- filter(data, Reef_type == "Artificial")
+nat <- filter(data, Reef_type == "Natural")
+
+
+## BIOMASS 
+mod.biom <- lm(biom ~ DRR + I(DRR^2), data = data)
+anova(mod.biom)
+summary(mod.biom)
+# neither significant
+
+mod.biom.art <- lm(biom ~ DRR + I(DRR^2), data = art)
+anova(mod.biom.art)
+summary(mod.biom.art)
+# neither significant
+
+mod.biom.nat <- lm(biom ~ DRR + I(DRR^2), data = nat)
+anova(mod.biom.nat)
+summary(mod.biom.nat)
+# neither significant
+
+
+# SPECIES RICHNESS
+mod.rich <- lm(S ~ DRR + I(DRR^2), data = data)
+anova(mod.rich)
+summary(mod.rich)
+# neither significant
+
+mod.rich.art <- lm(S ~ DRR + I(DRR^2), data = art)
+anova(mod.rich.art)
+# neither singificant
+
+mod.rich.nat <- lm(S ~ DRR + I(DRR^2), data = nat)
+anova(mod.rich.nat)
+# neighter significant
+
+
+## ABUNDANCE 
+mod.abund <- lm(abund ~ DRR + I(DRR^2), data = data)
+anova(mod.abund)
+summary(mod.abund)
+# quadratic signifcant and negative
+# linear significant and positive
+# UNIMODAL RESPONSE
+
+mod.abund.art <- lm(abund ~ DRR + I(DRR^2), data = art)
+anova(mod.abund.art)
+summary(mod.abund.art)
+# quadratic significant and negative
+# linear significant and positive
+# UNIMODAL RESPONSE
+
+mod.abund.nat <- lm(abund ~ DRR + I(DRR^2), data = nat)
+anova(mod.abund.nat)
+summary(mod.abund.nat)
+# neither significant
+
+
+```
+
+```{r complexity_models_climate_zone}
+
+# identify data
+data <- comm_mets # all sizes
+
+art <- filter(data, Reef_type == "Artificial")
+nat <- filter(data, Reef_type == "Natural")
+
+# temperate
+mod.rich <- lm(S.Temperate ~ DRR + I(DRR^2), data = data)
+anova(mod.rich)
+summary(mod.rich)
+
+mod.rich.art <- lm(S.Temperate ~ DRR + I(DRR^2), data = art)
+anova(mod.rich.art)
+summary(mod.rich.art)
+
+mod.rich.nat <- lm(S.Temperate ~ DRR + I(DRR^2), data = nat)
+anova(mod.rich.nat)
+summary(mod.rich.nat)
+
+
+# subtropical
+mod.rich <- lm(S.Subtropical ~ DRR + I(DRR^2), data = data)
+anova(mod.rich)
+summary(mod.rich)
+
+mod.rich.art <- lm(S.Subtropical ~ DRR + I(DRR^2), data = art)
+anova(mod.rich.art)
+summary(mod.rich.art)
+
+mod.rich.nat <- lm(S.Subtropical ~ DRR + I(DRR^2), data = nat)
+anova(mod.rich.nat)
+summary(mod.rich.nat)
+
+# tropical
+mod.rich <- lm(S.Tropical ~ DRR + I(DRR^2), data = data)
+anova(mod.rich)
+summary(mod.rich)
+
+mod.rich.art <- lm(S.Tropical ~ DRR + I(DRR^2), data = art)
+anova(mod.rich.art)
+summary(mod.rich.art)
+
+mod.rich.nat <- lm(S.Tropical ~ DRR + I(DRR^2), data = nat)
+anova(mod.rich.nat)
+summary(mod.rich.nat)
+
+
+
+## ABUNDANCE 
+mod.abund <- lm(abund ~ DRR + I(DRR^2), data = data)
+anova(mod.abund)
+summary(mod.abund)
+# quadratic signifcant and negative
+# linear significant and positive
+# UNIMODAL RESPONSE
+
+mod.abund.art <- lm(abund ~ DRR + I(DRR^2), data = art)
+anova(mod.abund.art)
+summary(mod.abund.art)
+# quadratic significant and negative
+# linear significant and positive
+# UNIMODAL RESPONSE
+
+mod.abund.nat <- lm(abund ~ DRR + I(DRR^2), data = nat)
+anova(mod.abund.nat)
+summary(mod.abund.nat)
+# neither significant
+
+
+```
+
+```{r complexity_models_climate_zone}
+
+# identify data
+data <- comm_mets # all sizes
+
+art <- filter(data, Reef_type == "Artificial")
+nat <- filter(data, Reef_type == "Natural")
+
+# niche, change to niche1 through niche4 for different ones
+mod.rich <- lm(S.niche4 ~ DRR + I(DRR^2), data = data)
+anova(mod.rich)
+summary(mod.rich)
+
+mod.rich.art <- lm(S.niche4 ~ DRR + I(DRR^2), data = art)
+anova(mod.rich.art)
+summary(mod.rich.art)
+
+mod.rich.nat <- lm(S.niche4 ~ DRR + I(DRR^2), data = nat)
+anova(mod.rich.nat)
+summary(mod.rich.nat)
+
+```
+
+Fish Plots & Analyses
+==================
+
+```{r ANOVA_post-hoc_size-classes_reef-type}
+mod <- lm()
+summary_sm[[2]]
+
+summary_sm[[2]]$size <- "small"
+summary_md[[2]]$size <- "medium"
+summary_lg[[2]]$size <- "large"
+summary_ap[[2]]$size <- "apex"
+
+summary_combo<-rbind(summary_sm[[2]], summary_md[[2]], summary_lg[[2]], summary_ap[[2]]) # combine data sets
+
+# anova 
+out <- lm(sums ~ size * Reef_type, data = summary_combo)
+anova(out)
+summary(out)
+
+# post hoc comparison HSD Tukey
+
+library(agricolae)
+test<- HSD.test(out, c("Reef_type", "size"))
+test
+
+# pairwise post hoc t test
+pairwise.t.test(summary_combo$sums, summary_combo$size * summary_combo$Reef_type, p.adj = "none")
+
+```
+
+```{r plot_size_classes_reef_type}
+detach("package:dplyr", unload=TRUE)
+
+
+summary_sm <- get_summary_data_reef_type (fish_sm, env_sizes)
+summary_md <- get_summary_data_reef_type (fish_md, env_sizes)
+summary_lg <- get_summary_data_reef_type (fish_lg, env_sizes)
+summary_ap <- get_summary_data_reef_type (fish_ap, env_sizes)
+
+summary_sm[[1]]$size <- "small"
+summary_md[[1]]$size <- "medium"
+summary_lg[[1]]$size <- "large"
+summary_ap[[1]]$size <- "apex"
+
+summary_combo<-rbind(summary_sm[[1]], summary_md[[1]], summary_lg[[1]], summary_ap[[1]]) # combine data sets
+summary_combo_short <- summary_combo[5:8,] # just apex and large fish lines
+
+b <- plot_bar_fish_sizes_reef_type (summary_combo) # main plot
+c <- plot_bar_fish_sizes_reef_type_inset(summary_combo_short) # inset plot
+
+pdf("Figures/fish_size-class_reef-type.pdf", width = 8, height = 8)
+subvp <- viewport(width = 0.4, height = 0.4, x = 0.33, y = 0.75) # viewport to position the inset plot
+b
+print(c, vp = subvp)
+dev.off()
+
+#a <- plot_line_fish_sizes (summary_combo) # main plot
+#d <- plot_line_fish_sizes_inset (summary_combo_short) # inset plot
+
+#pdf("testing_lines.pdf", width = 8, height = 8)
+#subvp <- viewport(width = 0.4, height = 0.4, x = 0.33, y = 0.75) # viewport to position the inset plot
+#a
+#print(d, vp = subvp)
+#dev.off()
+
+```
+
+```{r plot_size_classes_depth}
+detach("package:dplyr", unload=TRUE)
+
+summary_sm <- get_summary_data_depth (fish_sm, env_sizes)
+summary_md <- get_summary_data_depth (fish_md, env_sizes)
+summary_lg <- get_summary_data_depth (fish_lg, env_sizes)
+summary_ap <- get_summary_data_depth (fish_ap, env_sizes)
+
+summary_sm[[1]]$size <- "small"
+summary_md[[1]]$size <- "medium"
+summary_lg[[1]]$size <- "large"
+summary_ap[[1]]$size <- "apex"
+
+summary_combo<-rbind(summary_sm[[1]], summary_md[[1]], summary_lg[[1]], summary_ap[[1]]) # combine data sets
+summary_combo_short <- summary_combo[7:12,] # just apex and large fish lines
+
+
+library(grid)
+b <- plot_bar_fish_sizes_depth (summary_combo) # main plot
+c <- plot_bar_fish_sizes_depth_inset(summary_combo_short) # inset plot
+
+pdf("Figures/bar_fish-abund-sizes-sngr_depth_plot.pdf", width = 8, height = 8)
+subvp <- viewport(width = 0.4, height = 0.4, x = 0.33, y = 0.75) # viewport to position the inset plot
+b
+print(c, vp = subvp)
+dev.off()
+
+a <- plot_line_fish_sizes_depth (summary_combo) # main plot
+d <- plot_line_fish_sizes_depth_inset (summary_combo_short) # inset plot
+
+pdf("Figures/line_fish-abund-sizes-sngr_depth_plot.pdf", width = 8, height = 8)
+subvp <- viewport(width = 0.4, height = 0.4, x = 0.33, y = 0.75) # viewport to position the inset plot
+a
+print(d, vp = subvp)
+dev.off()
+
+```
+
+```{r SEM}
+data <- comm_mets
+
+# make model
+FishModel <- 'biom ~ sed_avg + DRR + temp_avg
+              sed_avg ~ DRR
+              temp_avg ~ avg_dep'
+
+FishModel <- 'biom ~ DRR + temp_avg
+              sed_avg ~ DRR + avg_dep
+              temp_avg ~ avg_dep'
+
+FishModel <- 'biom ~ DRR + avg_dep
+              DRR ~ sed_avg
+              '
+
+# fit model
+FishFit <- sem(FishModel, data=comm_mets)
+
+summary(FishFit, std=T, rsquare=T) # gives info BUT COEFS are wrong here...? likely so just use the R2 values and the variances from here
+  # USE THESE VALUES FOR THE R2 VALUES
+  # DON"T REALLY NEED THE ERROR TERMS (which would be the variances) so OK TO JUST DO R2 values
+standardizedSolution(FishFit)  # gives easy to interpret standardsized
+  # path coefs are in the est.std
+  # if pval >0.05 then NOT SIGNIFICANT PATH
+  # USE THESE VALUES FOR THE PATH COEFFICIENTS
+
+modificationIndices(FishFit, standardized=F)
+
+
+library(semPlot)
+semPaths(FishModel, "std")
+
+
+oneDistModel <- 'rich ~ distance + abiotic + 1*hetero
+              hetero ~ distance
+              abiotic ~ distance'
+oneFit<-sem(oneDistModel, data=keeley)
+summary(oneFit, std=T, rsquare=T)
+
+
+
+```
+
+```{r density_plots_by_factor}
+
+detach("package:dplyr", unload=TRUE)
+
+# Get summarized fish data for each sample by factor(s)
+summary_reef_type <- get_summary_data_reef_type (species.orig, env_data)
+summary_depth <- get_summary_data_depth (species.orig, env_data)
+summary_reef_type_depth <- get_summary_data_reef_type_depth (species.orig, env_data)
+
+# Plot the summarized fish data for each sample by factor(s)
+plot_bar_reef_type (summary_reef_type[[1]])
+plot_bar_depth (summary_depth[[1]])
+plot_bar_reef_type_depth (summary_reef_type_depth[[1]])
+
+# Run ANOVAs to find significance 
+out_reef_type<-lm(sums~Reef_type, data=summary_reef_type[[2]])
+anova(out_reef_type)
+out_depth<-lm(sums~Depth_general, data=summary_depth[[2]])
+anova(out_depth)
+out_reef_type_depth<-lm(sums~Depth_general*Reef_type, data=summary_reef_type_depth[[2]])
+anova(out_reef_type_depth)
+
+```
+
+```{r nMDS}
+library(ecodist)
+library(vegan)
+library(ggplot2)
+# nmds calculations
+out.nms <- calc_nms_ord(species.data = species.data)
+
+# if from function
+species.nms <- out.nms[[1]] # nmds scores
+r2.2 <- out.nms[[2]] # r^2 for NMS 2
+r2.1 <- out.nms[[3]] # r^2 for NMS 1
+stress <- out.nms[[4]] # stress value
+
+species.wa <- get_wght_avg_spec(species.nms, species.data) # species weighted average scores
+#vect.vf <- get_env_vectors (species.nms, env_data) # environmental vectors that have pval < 0.05
+hull.data.reefs  <-get_convex_hulls_reefs(species.nms) # convex hulls for reef type
+#hull.data.depths <- get_convex_hulls_depth(species.nms) # convex hulls for depth categories
+
+
+# Plots
+#plot_nmds_reef_type(species.nms, species.wa) 
+plot_nmds_transect_number(species.nms, species.wa)
+
+#plot_nmds_transect_number(species.nms)
+#plot_nmds_depth (species.nms)
+#plot_nmds_complexity_reef_type(species.nms)
+
+```
+
+``` {r, BCD}
+library(ecodist)
+library(vegan)
+library(ggplot2)
+
+structural.data <- filter(data, Transect_Type == "Structural")
+fall.structural.data <- filter(structural.data, Sampling_Period == "Fall")
+winter.structural.data <- filter(structural.data, Sampling_Period == "Winter")
+spring.structural.data <- filter(structural.data, Sampling_Period == "Spring")
+
+
+fall.MHC.data <- filter(fall.structural.data, Site == "330" | Site == "345")
+fall.wil.data <- filter(fall.structural.data, Site == "364"| Site == "370" | Site == "372" | Site == "378")
+winter.MHC.data <- filter(winter.structural.data, Site == "330" | Site == "345")
+winter.wil.data <- filter(winter.structural.data, Site == "364"| Site == "370" | Site == "372" | Site == "378")
+spring.MHC.data <- filter(spring.structural.data, Site == "330" | Site == "345")
+spring.wil.data <- filter(spring.structural.data, Site == "364"| Site == "370" | Site == "372" | Site == "378")
+
+
+
+env.end<- 29 #FOR SPECEIS
+sp.start<-30 #FOR SPECIES
+#env.end <- 29 #FOR FAMILY
+#sp.start <- 30 #FOR FAMILY
+#env.end <- 29 #FOR FUNCTIONAL GROUP
+#sp.start <-30 #FOR FUNCTIONAL GROUP
+
+# preserve biomass data for plotting
+#biom_data<-merge(merge.2, fish_biom_matrix)
+#biom_data <- filter(biom_data, Reef_type == "Artificial")
+### REMOVE OUTLIER 200LE on 2014-07-01
+#biom_data <- biom_data[-8,]
+
+#biom_data <- biom_data[,sp.start:ncol(biom_data)]
+
+env_data.structural <- structural.data[,1:env.end]
+env_data.structural.fall <- fall.structural.data [,1:env.end]
+env_data.structural.winter <- winter.structural.data [,1:env.end]
+env_data.structural.spring <- spring.structural.data [,1:env.end]
+
+ 
+species.data.structural <-structural.data[,sp.start:ncol(structural.data)] # fish data
+species.orig.structural <-species.data.structural # fish data, no transform
+species.data.structural.fall <-fall.structural.data[,sp.start:ncol(fall.structural.data)] # fish data
+species.orig.structural.fall <-species.data.structural.fall # fish data, no transform
+species.data.structural.winter <-winter.structural.data[,sp.start:ncol(winter.structural.data)] # fish data
+species.orig.structural.winter <-species.data.structural.winter # fish data, no transform
+species.data.structural.spring <-spring.structural.data[,sp.start:ncol(spring.structural.data)] # fish data
+species.orig.structural.spring <-species.data.structural.spring # fish data, no transform
+
+
+
+#species.data <- transform_data (data = species.data, transform_type = "square_root")
+species.data.structural <- transform_data (data = species.data.structural, transform_type = "cube_root")
+#species.data <- transform_data (data = species.data, transform_type = "pres_abs")
+#we need to look at this with Avery
+
+species.data.structural.fall <- transform_data (data = species.data.structural.fall, transform_type = "cube_root")
+species.data.structural.winter <- transform_data (data = species.data.structural.winter, transform_type = "cube_root")
+species.data.structural.spring <- transform_data (data = species.data.structural.spring, transform_type = "cube_root")
+
+
+#species.data.structural <- filter(species.data, Survey_Type == "Structural")
+set.seed(318) # for reproducibility
+species.bcd<-bcdist(species.data.structural, rmzero=FALSE) # build distance matrix based on bray curtis
+#############
+#species.veg <- vegdist(species.data.structural, method = "bray", binary = FALSE, diag = FALSE, upper = TRUE, na.rm = FALSE)
+#########
+species.bcd.fall <-bcdist(species.data.structural.fall, rmzero=FALSE) # build distance matrix based on bray curtis
+#test  <-bcdist(species.data.structural.fall, rmzero=FALSE, upper.tri())
+species.bcd.winter <-bcdist(species.data.structural.winter, rmzero=FALSE) # build distance matrix based on bray curtis
+species.bcd.spring <-bcdist(species.data.structural.spring, rmzero=FALSE) # build distance matrix based on bray curtis
+
+
+species.bcd_df <- as.matrix(species.bcd)
+###########
+#species.veg <- as.matrix(species.veg)
+#######
+#test <- as.matrix(species.bcd, upper.tri(species.bcd, diag = FALSE))
+species.bcd_df.fall <- as.matrix(species.bcd.fall)
+species.bcd_df.winter <- as.matrix(species.bcd.winter)
+species.bcd_df.spring <- as.matrix(species.bcd.spring)
+
+
+#species.env.bcd <- cbind(env_data.structural [,1:7], species.bcd_df) #IT WORKED
+#species.env.bcd.fall <- cbind(env_data.structural.fall [,1:7], species.bcd_df.fall) #IT WORKED
+#species.env.bcd.winter <- cbind(env_data.structural.winter [,1:7], species.bcd_df.winter) #IT WORKED
+#species.env.bcd.spring <- cbind(env_data.structural.spring [,1:7], species.bcd_df.spring) #IT WORKED
+
+
+#going to have to break down by season
+
+#fall.bcd <- filter(species.testing.combine2, Sampling_Period == "Fall")
+
+#to export to excel
+#write.csv(species.env.bcd.fall, file = "species.env.bcd.fall.csv", row.names = FALSE)
+#write.csv(species.env.bcd.winter, file = "species.env.bcd.winter.csv", row.names = FALSE)
+#write.csv(species.env.bcd.spring, file = "species.env.bcd.spring.csv", row.names = FALSE)
+
+
+#test_matrix <- unite(species.env.bcd.spring, "8", c(9,10), remove = TRUE)
+#test100000 <- upper.tri(species.env.bcd.spring)
+
+
+#testingdataframe <- practice on species veg
+#b<-matrix(nrow=nrow(species.veg), ncol=nrow(species.veg))
+  
+ #  j=1  # j is "outer loop" counter (columns); begin at 1
+#  for (j in 1:nrow(species.veg)) {
+ #   i=1  # i is "inner loop" counter (rows)
+  #  for (i in 1:nrow(species.veg)) {
+   #   if (i<=j) {
+    #    b[i,j] <- "NA" # writes NA values to matrix c by row i and col j
+     #   i=i+1
+      #}
+      #else {
+        #press_a <- data$Abs_Pres_m[i] 
+        #press_b <- data$Abs_Pres_m[i-j]
+        #c[i,j] <- (press_a - press_b)^2  # writes differences in pressures squared to matrix c by row i and col j   
+       # c[i,j] <- c[i,j]
+      ##}
+     # i=i+1
+    #}  
+    #j=j+1
+  #}
+   
+#d <- matrix(nrow=nrow(species.veg), ncol=nrow(species.veg))
+# j=1  # j is "outer loop" counter (columns); begin at 1
+ # for (j in 1:nrow(species.veg)) {
+  #  i=1  # i is "inner loop" counter (rows)
+   # for (i in 1:nrow(species.veg)) {
+    #  if (i<=j) {
+     #   d[i,j] <- "NA" # writes NA values to matrix c by row i and col j
+      #  i=i+1
+    #  }
+     # else {
+        #press_a <- data$Abs_Pres_m[i] 
+        #press_b <- data$Abs_Pres_m[i-j]
+      #  d[i,j] <- species.veg[i,j] #<- (press_a - press_b)^2  # writes differences in pressures squared to matrix c by row i and col j   
+       # c[i,j] <- c[i,j]
+    #  }
+     # i=i+1
+    #}  
+  #  j=j+1
+  #}
+ 
+ 
+####THIS WORKS.
+ 
+ #now to export those numbers with meta data
+ 
+# env.species.veg <- cbind(env_data.structural [,1:7], d) #IT WORKED
+#rename columns in dataframe
+# library (dplyr)
+ #env.species.veg <- as.data.frame (env.species.veg)
+ #env.species.veg <- rename(env.species.veg, '1', 'hi')
+ #write.csv(env.species.veg, file= "env.species.veg.csv", row.names = FALSE)
+ #speciesveginbmatrix <- cbind(species.veg, b)
+
+#copy column 9 and append values to end of column 8, 
+ 
+#distance <- read.csv ("Distance/dive_pts_distance_to_other_dive_pts_ft.csv") #
+#distance.matrix <- as.matrix(distance[,2:4])
+#distance.codes <-as.matrix(sites[,c(1,2,13)]) 
+
+
+#working on matrix 2 (columns 3 and 4)*******use this
+#env.species.veg$Site <- as.character(env.species.veg$Site)
+#k <- matrix(nrow=nrow(env.species.veg), ncol=1)
+ #j=1  # j is "outer loop" counter (columns); begin at 1
+  #for (j in 1:1) {
+  #  i=1  # i is "inner loop" counter (rows)
+   # for (i in 1:nrow(env.species.veg)) {
+    #  if (i<= nrow(env.species.veg)) {
+     #  k[i,j] <- env.species.veg [i,2]
+      #  i=i+1
+    #  }
+     # else {
+      #  break
+    #  }
+     # i=i+1
+  #  } 
+    
+#env.species.veg$Subsite <- as.character(env.species.veg$Subsite)    
+#z <- matrix(nrow=nrow(env.species.veg), ncol=2)
+#j=2
+#for (j in 2:2)
+ # i=1
+  #for (i in 1:nrow(env.species.veg)){
+  #  if (i <= nrow(env.species.veg)) {
+   #    z[i,j] <- env.species.veg [i,3]
+    #    i=i+1
+     # }
+      #else {
+       # break
+      #}
+      #i=i+1
+  #  } 
+      
+  
+   # j=j+1
+  #}
+#working on matrix 2 (columns 3 and 4)
+
+#env.species.veg$Site <- as.character(env.species.veg$Site)
+#env.species.veg$Subsite <- as.character(env.species.veg$Subsite)    
+
+#c <- matrix(nrow=nrow(env.species.veg), ncol=2)
+# j=1  # j is "outer loop" counter (columns); begin at 1
+ # for (j in 1:1) {
+  #  i=1  # i is "inner loop" counter (rows)
+   # for (i in 1:nrow(env.species.veg)) {
+    #  if (i<= nrow(env.species.veg)) {
+     #  c[i,j] <- env.species.veg [i,2]
+      #  i=i+1
+      #}
+    #  else {
+     #   break
+      #}
+    #  i=i+1
+  #  } 
+    
+#j=2
+#for (j in 2:2)
+ # i=1
+  #for (i in 1:nrow(env.species.veg)){
+   # if (i <= nrow(env.species.veg)) {
+    #   c[i,j] <- env.species.veg [i,3]
+     #   i=i+1
+      #}
+      #else {
+       # break
+    #  }
+    # # i=i+1
+    #} 
+  
+
+#env.species.veg$Site <- as.character(env.species.veg$Site)
+#env.species.veg$Subsite <- as.character(env.species.veg$Subsite)    
+
+#pos <- matrix(nrow=nrow(env.species.veg), ncol=2)
+# j=1  # j is "outer loop" counter (columns); begin at 1
+#for (j in 1:2) {
+ #   i=1  # i is "inner loop" counter (rows)
+  #  if (j == 1) {
+   # for (i in 1:nrow(env.species.veg)) {
+    #  if (i<= nrow(env.species.veg)) {
+     #  pos[i,j] <- env.species.veg [i,2]
+      #  i=i+1
+      }
+    #  else {
+     #   break
+    #  }
+     # i=i+1
+  #  }
+   # }
+    #if (j == 2){
+  #  for (i in 1:nrow(env.species.veg)){
+   #   if (i <= nrow(env.species.veg)) {
+    #   pos[i,j] <- env.species.veg [i,3]
+     #   i=i+1
+    #  }
+     # else {
+      #  break
+    #  }
+     # i=i+1
+#    } 
+ #   }
+#}
+ 
+ 
+
+
+ 
+    
+
+ 
+#working on matrix 2 (columns 3 and 4)
+
+
+#env.species.veg$Site <- as.character(env.species.veg$Site)
+#p <- matrix(nrow=nrow(env.species.veg), ncol=2)
+ #j=1  # j is "outer loop" counter (columns); begin at 1
+  #for (j in 1:2) {
+   # i=1  # i is "inner loop" counter (rows)
+    #for (i in 1:nrow(env.species.veg)) {
+     # if (i<= nrow(env.species.veg)) {
+      # p[i,j] <- env.species.veg [1,2]
+       # i=i+1
+    #  }
+     # else {
+      #  break
+      #}
+    #  i=i+1
+  #  }  
+   # j=j+1
+ # }
+#working on matrix 2 (columns 3 and 4)
+
+ 
+ #working on matrix 1 (columns 1 and 2) ***** use this
+# env.species.veg$Site <- as.character(env.species.veg$Site)
+#l <- matrix(nrow=nrow(env.species.veg), ncol=1)
+ #j=1  # j is "outer loop" counter (columns); begin at 1
+  #for (j in 1:1) {
+   # i=1  # i is "inner loop" counter (rows)
+  #  for (i in 1:nrow(env.species.veg)) {
+   #   if (i<= nrow(env.species.veg)) {
+    #   l[i,j] <- env.species.veg [1,2]
+     #   i=i+1
+      #}
+      #else {
+       # break
+    #  }
+     # i=i+1
+  #  } 
+#  }
+ 
+#turdle <- matrix(nrow=nrow(env.species.veg), ncol=2)
+ #j=1  # j is "outer loop" counter (columns); begin at 1
+#for (j in 1:2) {
+ #   i=1  # i is "inner loop" counter (rows)
+  #  if (j == 1) {
+   # for (i in 1:nrow(env.species.veg)) {
+    #  if (i<= nrow(env.species.veg)) {
+     #  turdle[i,j] <- env.species.veg [1,2]
+      #  i=i+1
+    #  }
+     # else {
+      #  break
+      #}
+    #  i=i+1
+    #}
+  #  }
+   # if (j == 2){
+    #for (i in 1:nrow(env.species.veg)){
+     # if (i <= nrow(env.species.veg)) {
+      # turdle[i,j] <- env.species.veg [1,3]
+       # i=i+1
+      #}
+      #else {
+       # break
+      #}
+      #i=i+1
+  #  } 
+   # }
+#}
+
+ 
+    
+
+    
+
+ 
+ 
+#matrix below is not working
+ 
+ 
+#m <- matrix(nrow=500, ncol=1)
+ #j=1  # j is "outer loop" counter (columns); begin at 1
+  #for (j in 1:1) {
+  #  i=1  # i is "inner loop" counter (rows)
+   # for (i in 1:nrow(env.species.veg)) {
+    #  if (i<= nrow(env.species.veg)) {
+     #  m[i,j] <- env.species.veg [1,2]
+      #  i=i+1
+    #  }
+     # else {
+      #   m[i,j] <- env.species.veg[2,2];
+       # break
+    #  }
+     # i=i+1
+#    } 
+    
+ # }
+  
+
+    
+                              
+```
+
+```{r classification_tree}
+library(rpart)
+#grow a tree
+#categorical (classification), continuous (regression)
+
+#env.species.data <- cbind(env_data, species.data)
+#could use data, but this is after transform
+#do I want it to be transformed???
+  
+
+class_fish_meata <- rpart(Transect_Number ~ Site+Sampling_Period, data = fish_meta, method = class)
+
+
+
+
+
+```
+
+```{r mega_matrix}
+ 
+distance <- read.csv ("Distance/dive_pts_distance_to_other_dive_pts_ft.csv") #
+distance.matrix <- as.matrix(distance[,2:4])
+distance.matrix <- as.data.frame(distance.matrix)
+distance.codes <-as.matrix(sites[,c(1,2,13)]) 
+distance.codes <- as.data.frame(distance.codes)
+
+library (dplyr)
+
+
+#For FALL
+
+half.species.bcd.fall <- matrix(nrow=nrow(species.bcd_df.fall), ncol=nrow(species.bcd_df.fall))
+ j=1  # j is "outer loop" counter (columns); begin at 1
+  for (j in 1:nrow(species.bcd_df.fall)) {
+    i=1  # i is "inner loop" counter (rows)
+    for (i in 1:nrow(species.bcd_df.fall)) {
+      if (i<=j) {
+        half.species.bcd.fall[i,j] <- "NA" # writes NA values to matrix c by row i and col j
+        i=i+1
+      }
+      else {
+        half.species.bcd.fall[i,j] <- species.bcd_df.fall[i,j] 
+      }
+      i=i+1
+    }  
+    j=j+1
+  }
+ 
+env.species.bcd.fall <- cbind(env_data.structural.fall [,1:7], half.species.bcd.fall)
+env.species.bcd.fall <- as.data.frame(env.species.bcd.fall)
+
+env.species.bcd.fall$Site <- as.character(env.species.bcd.fall$Site)
+env.species.bcd.fall$Subsite <- as.character(env.species.bcd.fall$Subsite)
+
+
+purplegreenbeans <- matrix(nrow=784, ncol=2)
+k=1
+for(k in 1:nrow(env.species.bcd.fall)){
+ j=1  # j is "outer loop" counter (columns); begin at 1
+ for (j in 1:2) {
+    i=1  # i is "inner loop" counter (rows)
+    if (j == 1) {
+    for (i in 1:nrow(env.species.bcd.fall)) {
+      if (i<= nrow(env.species.bcd.fall)) {
+       purplegreenbeans[i,j] <- env.species.bcd.fall [k,2]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    }
+    }
+    
+    if (j == 2){
+    for (i in 1:nrow(env.species.bcd.fall)){
+      if (i <= nrow(env.species.bcd.fall)) {
+       purplegreenbeans[i,j] <- env.species.bcd.fall [k,3]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    } 
+    }
+ }
+k = k+1
+}
+
+
+
+IN <- matrix(nrow=nrow(env.species.bcd.fall), ncol=2)
+ j=1  # j is "outer loop" counter (columns); begin at 1
+for (j in 1:2) {
+    i=1  # i is "inner loop" counter (rows)
+    if (j == 1) {
+    for (i in 1:nrow(env.species.bcd.fall)) {
+      if (i<= nrow(env.species.bcd.fall)) {
+       IN[i,j] <- env.species.bcd.fall [1,2]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    }
+    }
+    if (j == 2){
+    for (i in 1:nrow(env.species.bcd.fall)){
+      if (i <= nrow(env.species.bcd.fall)) {
+       IN[i,j] <- env.species.bcd.fall [1,3]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    } 
+    }
+}
+
+IN <- as.data.frame(IN)
+colnames(IN) <- c("Site", "Subsite")
+
+joining1 <- join(IN, distance.codes, by = c("Site", "Subsite"))
+
+colnames(joining1) <- c("IN_Site", "IN_Subsite", "IN_FID")
+
+
+ 
+NEAR <- matrix(nrow=nrow(env.species.bcd.fall), ncol=2)
+ j=1  # j is "outer loop" counter (columns); begin at 1
+for (j in 1:2) {
+    i=1  # i is "inner loop" counter (rows)
+    if (j == 1) {
+    for (i in 1:nrow(env.species.bcd.fall)) {
+      if (i<= nrow(env.species.bcd.fall)) {
+       NEAR [i,j] <- env.species.bcd.fall [i,2]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    }
+    }
+    if (j == 2){
+    for (i in 1:nrow(env.species.bcd.fall)){
+      if (i <= nrow(env.species.bcd.fall)) {
+       NEAR [i,j] <- env.species.bcd.fall [i,3]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    } 
+    }
+}
+ 
+ 
+NEAR <-as.data.frame(NEAR)
+colnames(NEAR) <- c("Site", "Subsite")
+
+joining2 <- join(NEAR, distance.codes, by = c("Site", "Subsite"))
+colnames(joining2)<- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
+
+env.species.bcd.fall$'1' <- as.character(env.species.bcd.fall$'1')
+
+
+diss <- matrix(nrow=nrow(env.species.bcd.fall), ncol=1)
+ j=1  # j is "outer loop" counter (columns); begin at 1
+for (j in 1:1) {
+    i=1  # i is "inner loop" counter (rows)
+    for (i in 1:nrow(env.species.bcd.fall)) {
+      if (i<= nrow(env.species.bcd.fall)) {
+       diss[i,j] <- env.species.bcd.fall [i,8]
+        i=i+1
+      }
+      else {
+        break
+      }
+      i=i+1
+    }
+}  
+
+diss <- as.data.frame(diss) 
+colnames(diss) <- "BCD"
+
+
+IN.NEAR.diss <- cbind(joining1, joining2, diss)
+dist.IN.NEAR.diss <- join(distance.matrix, IN.NEAR.diss, by = c("IN_FID", "NEAR_FID"))
+
+dist.IN.NEAR.diss <- dist.IN.NEAR.diss[,c(4,5,1,6,7,2,3,8)]
+
+dist.IN.NEAR.diss.sofar <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
+dist.IN.NEAR.diss.sofar$BCD <- as.character(dist.IN.NEAR.diss.sofar$BCD)
+dist.IN.NEAR.diss.sofar$BCD <- as.numeric(dist.IN.NEAR.diss.sofar$BCD)
+
+dist.IN.NEAR.diss.sofar$NEAR_DIST <- as.numeric(dist.IN.NEAR.diss.sofar$NEAR_DIST)
+
+dist.IN.NEAR.diss.sofar <- mutate(dist.IN.NEAR.diss.sofar, NEAR_DIST_nautical = NEAR_DIST / 6076.12)
+#I should make this into nautical miles
+
+
+library(ggplot2)
+
+
+help = ggplot(dist.IN.NEAR.diss.sofar, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+
+help + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 60), breaks=seq(0, 60,by=10))
+
+
+```
+
+need proofing
+---------------
+```{r anosim}
+
+# Goal to find differences between and among groups 
+
+library(ecodist)
+    species.bcd<-distance(as.matrix(species.data), method="bray")
+    head(species.bcd)
+
+library(vegan)
+set.seed(318)
+
+
+ano_reef<-anosim(species.data, env_data$Reef_Type, permutations = 1000, distance = "bray")  
+ano_reef
+  plot(ano_reef)
+  summary(ano_reef)
+  # result: community composition based on abundance is significantly different by reef type
+  
+  
+#env_data$Transect_Number <- as.numeric(env_data$Transect_Number)
+
+ano_transectnumber<-anosim(species.data, env_data$Transect_Number, permutations = 1000, distance = "bray")
+  ano_transectnumber
+  plot(ano_transectnumber)
+  summary(ano_transectnumber)
+  
+ano_transect_season <- anosim(species.data, env_data$Transect_Number :
+env_data$Sampling_Period, permutations = 1000, distance = "bray")
+ano_transect_season
+plot(ano_transect_season)
+summary(ano_transect_season)
+#what might make this work????
+  
+set.seed(318)
+ano_depth<-anosim(species.data, env_data$Depth_general, permutations = 1000, distance = "bray")
+  ano_depth
+  plot(ano_depth)
+  summary(ano_depth)
+
+ano_reef_depth <- anosim(species.data, env_data$Depth_general : env_data$Reef_type, permutations = 1000, distance = "bray")
+ano_reef_depth
+plot(ano_reef_depth)
+summary(ano_reef_depth)
+
+
+ano_site<-anosim(species.data, env_data$Site, permutations = 1000, distance = "bray")
+  ano_site
+  plot(ano_site)
+  summary(ano_site)
+
+ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = "bray")
+  ano_samp
+  plot(ano_samp)
+  summary(ano_samp)
+
+## Guidelines for interpretation. From Lauren Yeager's Community Analysis course in spring 2014.
+  # Null hypothesis is that no difference in community structure among groups
+  # ANOSIM is based on similarity matrix and is a non-parametric permutation procedure
+  # R ranges between -1 and 1
+    # R = 1 if all replicates w/i one group are more similar to each other than any replicate from a different group
+    # R approx 0 if null hypothesis true
+    # R <0 if there are more differences among samples within a group than between groups
+
+```
+
+```{r SIMPER}
+
+# Goal: Use similarity percentages to find out 'who' is responsible for the differences
+
+# Load library
+library(vegan)
+
+groups_reef_depth <- paste(as.character(env_data$Reef_type), as.character(env_data$Depth_general))
+groups <- as.factor(groups_reef_depth)
+# Run SIMPER analysis with factor of reef type
+simp_reef_depth<-simper(species.data,  # community data matrix
+            groups) # factor describing group structure (needs at least 2 levels)
+
+simp_reef_depth # gives contributions of most influential species
+summary(simp_reef_depth, ordered=TRUE) # provides summary output such that cumulative contributions are ordered by species contrib
+
+# Simper by depth zone
+simp_depth <- simper(species.data, env_data$Transect_Number)
+simp_depth
+summary(simp_depth, ordered = TRUE)
+
+# Simper by Transect Number
+simp_transect <- simper(species.data, env_data$Transect_Number)
+simp_transect
+summary(simp_transect, ordered = TRUE)
+
+# Run SIMPER analysis with factor of sampling season
+
+years<-cbind (species.data, env_data)
+yr1 <- filter(years, Sample == c("S1", "S2", "S3"))
+yr2 <- filter(years, Sample == c("S4", "S5", "S6"))
+summers <- filter(years, Sample == c("S1", "S4"))
+falls <- filter(years, Sample == c("S2", "S5"))
+springs <- filter(years, Sample == c("S3", "S6"))
+
+simp_yr1<-simper(yr1[,1:120],  # community data matrix
+            yr1$Sample) # factor describing group structure (needs at least 2 levels)
+simp_yr1 # gives contributions of most influential species
+#summary(simp_samp, ordered=TRUE) # provides summary output such that cumulative contributions are ordered by species contrib
+summary(simp_yr1, ordered = TRUE)
+
+ano_samp<-anosim(springs[,1:120], springs$Sample, permutations = 1000, distance = "bray")
+  ano_samp
+  plot(ano_samp)
+  summary(ano_samp)
+```
+
+```{r indicators}
+
+library(indicspecies)
+
+# Define classification groups as reef type
+groups_reef <- env_data$Transect_Number
+groups<-groups_reef
+
+# Define classification groups as sites
+groups_site <- env_data$Site
+groups_site
+
+# Define classification groups as season
+groups_samp <- env_data$Sample
+groups_samp
+
+# Define classification groups as season x reef type
+groups_int<-env.data$Sample:env.data$Reef_type
+groups_int
+
+# Define classification groups as relative depth
+groups_depth <- env_data$Depth_general
+groups <- groups_depth
+
+groups_reef_depth <- paste(as.character(env_data$Reef_type), as.character(env_data$Depth_general))
+groups <- as.factor(groups_reef_depth)
+
+# Run indicator species analysis using multipatt
+indval_reef <- multipatt(species.data, groups_reef, control=how(nperm=999))
+#indval_site <- multipatt(species.data, groups_site, control=how(nperm=999))
+indval_samp <- multipatt(species.data, groups_samp, control=how(nperm=999))
+#indval_int <- multipatt(species.data, groups_int, control=how(nperm=999))
+
+summary(indval_reef)
+#summary(indval_site)
+summary(indval_samp)
+#summary(indval_int)
+
+# obtain classification using multivariate CART model
+library(mvpart)
+fit <- mvpart(data.matrix(species.data)~avg_dep + DRR + ver_rel + sed_stdv + temp_avg, env_data)
+summary(fit) # fits multivariate tree with particular variables of interest
+groups <- fit$where # group composition based on terminal nodes
+
+## obtain classification using fuzzy clustering
+library(cluster)
+k<-3 # pick number of clusters
+spe.fuz <- fanny(species.data, k=k, memb.exp=1.5)
+summary(spe.fuz)
+spefuz.g <- spe.fuz$clustering
+# site membership
+spe.fuz$membership
+# nearest crisp clustering
+groups <- spe.fuz$clustering
+
+# run indicator species analysis with site group combinations
+indval = multipatt(species.data, groups, control=how(nperm=999))
+summary(indval) # obtain list of indicator for each site group
+summary(indval, indvalcomp=TRUE) # displays indicator components of A and B
+summary(indval, alpha = 1) # indicator species analysis for all species (alpha is 1 rather than 0.05); this still has some species missing that belong to all groups
+indval$sign #visualize missing species that belong to all groups (those with an NA)
+
+# exclude site group combinations because difficult to interpret ecologically
+indvalori = multipatt(species.data, groups, duleg = TRUE, control = how(nperm=999)) # just does single sites or groups rather than combinations
+summary(indvalori)
+
+# species combinations as indicators of site groups
+combos = combinespecies(species.data, max.order = 2)$XC
+indvalcombo = multipatt(combos, groups, duleg=TRUE, control=how(nperm=999))
+summary(indvalcombo, invalcomp=TRUE)
+
+# species combinations whose frequency in group 2 in larger than 20%
+B = strassoc(species.data, cluster = groups, func = "B")
+sel = which(B[,2]>0.2)
+sel
+sc = indicators(X=species.data[,sel], cluster = groups, group = "Artificial Deep", verbose = TRUE, At=0.5, Bt=0.2)
+print(sc, sqrtIVt = 0.6)
+
+# prune indicators to reduce 
+sc2 = pruneindicators(sc, At=0.8, Bt=0.2, verbose = TRUE)
+print(sc2) # so these are great indicators for the site group that was coded in; also shows their coverage --> the indicators together cover ___% of the sites belonging to the target group!! 
+```
+
+```{r CCA}
+library(vegan)
+mod.1<-cca ( species.data ~ avg_dep + DRR, env_data)
+#left hand side is commuunity data matrix
+#right hand side is the constraining variables
+plot(mod.1)
+
+# set up blank axes
+plot(mod.1, type="n")
+# plot vectors (env)
+text(mod.1, dis="sp", cex=0.8, col="turquoise") 
+text(mod.1, dis="cn")
+  # centroids = cn
+  # biplot arrows = bp
+  # site scores = wa
+  # linear constraints = lc
+  # species scores = sp
+# add points
+points(mod.1, dis="sites", col="black", bg=c("indianred", "cornflowerblue")[env_data$Reef_type], cex=1.0, pch = 21)
+legend(x="topleft", legend=c("Artificial", "Natural"), col="black", pt.bg=c("indianred", "cornflowerblue"), lwd=2, pch=21, lty=NA, cex=1.2)
+
+library(vegan)
+mod.2<-cca ( species.data ~ DRR + ver_rel + C + avg_dep + sed_stdv + temp_avg, env_data)
+#left hand side is commuunity data matrix
+#right hand side is the constraining variables
+plot(mod.2)
+
+# set up blank axes
+plot(mod.2, type="n")
+# plot vectors (env)
+text(mod.2, dis="sp", cex=0.8, col="turquoise") 
+text(mod.2, dis="cn")
+  # centroids = cn
+  # biplot arrows = bp
+  # site scores = wa
+  # linear constraints = lc
+  # species scores = sp
+# add points
+points(mod.2, dis="sites", col="black", bg=c("indianred", "cornflowerblue")[env_data$Reef_type], cex=1.0, pch = 21)
+legend(x="topleft", legend=c("Artificial", "Natural"), col="black", pt.bg=c("indianred", "cornflowerblue"), lwd=2, pch=21, lty=NA, cex=1.2)
+```
+
+```{r cluster}
+
+# cluster analysis that breaks samples up by similarity in a dendrogram
+species.bcd<-bcdist(species.data, rmzero=FALSE) # build distance matrix based on bray curtis
+cluster <- hclust(species.bcd, method = "complete", members = NULL)
+plot(cluster, labels = paste(env_data$Site, env_data$Date))
+# this doesn't do anything with the environmental variables, though
+
+# bioenv
+nums <- sapply(env_data, is.numeric)
+env_num <- env_data[, nums] # select only numeric values
+set.seed(318)
+test <- bioenv(species.bcd, env_num, method = "spearman", index = "bray")
+
+```
+
+```{r nMDS - in progress}
+
+
+## Overlay cluster analysis results
+# cluster analysis that breaks samples up by similarity in a dendrogram
+species.bcd<-bcdist(species.data, rmzero=FALSE) # build distance matrix based on bray curtis
+cluster <- hclust(species.bcd, method = "complete", members = NULL)
+grp <- cutree(cluster, 3)
+col <- c("red", "blue", "black", "green")
+col[grp]
+#plot(cluster, labels = paste(env_data$Site, env_data$Date))
+
+ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = col[grp], shape=species.nms$Reef_type), 
+               size=5)  # adds sample points
+
+## Ellipse generation --> doesn't work... like it's supposed to because ellipses are too smale for some reason 
+# NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2],group=species.nms$Reef_type)
+# NMDS.mean=aggregate(NMDS[,1:2],list(group=species.nms$Reef_type),mean)
+# ord <- ordiellipse(species.nms[,1:2], species.nms$Reef_type, display = "sites", kind = "se", conf = 0.95, label = T)
+# 
+# veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+#   {
+#     theta <- (0:npoints) * 2 * pi/npoints
+#     Circle <- cbind(cos(theta), sin(theta))
+#     t(center + scale * t(Circle %*% chol(cov)))
+#   }
+# 
+# df_ell <- data.frame()
+# for(g in levels(species.nms$Reef_type)){
+#   df_ell <- rbind(df_ell, cbind(as.data.frame(with(NMDS[NMDS$group==g,],
+#                   veganCovEllipse(ord[[g]]$cov,ord[[g]]$center,ord[[g]]$scale)))
+#                                 ,group=g))
+# }
+
+```
+
+```{r multivariate CART}
+library(mvpart)
+#fit <- mvpart(data.matrix(species.data)~avg_dep + DRR + ver_rel + sed_stdv + temp_avg, env_data)
+fit<-mvpart(data.matrix(species.data)~DRR, env_data)
+summary(fit) # fits multivariate tree with particular variables of interest
+gr <- fit$where # group composition based on terminal nodes
+
+# for natural reefs
+#col <- c("white", "grp 1: 0 - 0.13", "white", "white", "grp 2: 0.13-0.18", "white", "grp 3: 0.18-0.23", "grp 4: 0.23-0.25", "grp 5: >0.25")
+
+# for artificial reefs
+col <- c("white", "grp 1: <0.8307", "grp 2: >0.8307")
+
+
+col[gr]
+plot(fit)
+text(fit)
+printcp(fit) 
+plotcp(fit) # shows how to pick best tree. best tree is left-most for which mean error is below 1 SE threshold
+
+## must run nmds analysis in chunk above for these to work
+# ordination with tree colors by group for artificial reefs
+NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
+  yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
+  xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
+  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  library(colorspace)
+ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = col[gr]), size=5)+
+    scale_colour_manual(name = "Complexity", 
+                        values = c("grp 1: <0.8307" = "darkturquoise", "grp 2: >0.8307" = "indianred2"))+
+  scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl)  # names x axis
+
+# ordination with tree colors by group for natural reefs
+NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
+  yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
+  xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
+  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  library(colorspace)
+ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = col[gr]), size=5)+
+    scale_colour_manual(name = "Complexity", 
+                        values = c("grp 1: 0 - 0.13" = "darkblue", "grp 2: 0.13-0.18" = "blue", "grp 3: 0.18-0.23" = "slateblue3", "grp 4: 0.23-0.25"="pink", "grp 5: >0.25"="indianred2"))+
+  scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl)  # names x axis
+
+#colors are the tree nodes so they are the points given their thresholds for mvpart
+
+# plot tree in ggplot2
+library(ggdendro)
+fitr <- dendro_data(fit)
+ggplot() + 
+  geom_segment(data = fitr$segments, 
+               aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_text(data = fitr$labels, 
+            aes(x = x, y = y, label = label), size = 5, vjust = -0.5) +
+  geom_text(data = fitr$leaf_labels, 
+            aes(x = x, y = y, label = label), size = 6, vjust = 1) +
+  theme_dendro()
+
+## Retrieve residuals and examine each node's characteristics
+# residuals
+par(mfrow=c(1,2))
+hist(residuals(fit), col = "gray")
+plot(predict(fit), residuals(fit), main = "Residuals vs Predicted")
+abline(h=0, lty=3, col="gray")
+
+# group composition
+fit$where
+
+# group identity
+groups.mrt <-levels(as.factor(fit$where))
+
+# fish composition on leaves
+grp1<-species.data[which(fit$where == groups.mrt[1]),] ## group 2, corresponds to first leaf
+grp2<-species.data[which(fit$where == groups.mrt[2]),] ## group 5, corresponds to second leaf
+grp3<-species.data[which(fit$where == groups.mrt[3]),] ## group 7, "" third leaf
+grp4<-species.data[which(fit$where == groups.mrt[4]),] ## group 8, "" fourth leaf
+grp5<-species.data[which(fit$where == groups.mrt[5]),] ## group 9, "" fifth leaf
+
+
+# env variables of first leaf
+env_data[which(fit$where==groups.mrt[1]),]
+env_data[which(fit$where==groups.mrt[4]),]
+
+# table and pie charts of fish composition of leaves
+leaf.sum <- matrix(0, length(groups.mrt), ncol(species.data))
+colnames(leaf.sum) <- colnames(species.data)
+
+# for loop
+for (i in 1:length(groups.mrt)){
+  leaf.sum[i,] <- apply(species.data[which(fit$where == groups.mrt[i]),], 2,sum)
+}
+leaf.sum
+
+#par(mfrow=c(3,2))
+#for(i in 1:length(groups.mrt)){
+#  pie(which(leaf.sum[i,]>0), radius=1, main=c("leaf #", groups.mrt[i]))
+#}
+
+# for natural
+par(mfrow = c(3,2))
+ grp1<- pie(which(leaf.sum[1,]>0), radius=1, main=c("group 1"))
+ grp2<- pie(which(leaf.sum[2,]>0), radius=1, main=c("group 2"))
+ grp3<- pie(which(leaf.sum[3,]>0), radius=1, main=c("group 3"))
+ grp4<- pie(which(leaf.sum[4,]>0), radius=1, main=c("group 4"))
+ grp5<- pie(which(leaf.sum[5,]>0), radius=1, main=c("group 5"))
+
+# for artificial 
+par(mfrow = c(1,2))
+ grp1<- pie(which(leaf.sum[1,]>0), radius=1, main=c("group 1"))
+ grp2<- pie(which(leaf.sum[2,]>0), radius=1, main=c("group 2"))
+
+### in progress ------
+
+# ## Mvpart wrap to get more data
+# library(MVPARTwrap)
+# 
+# ## Indicator species
+# 
+# library(labdsv)
+# # indicator species search on the MRT result
+# fit.indval <- indval(species.data, fit$where)
+# fit.indval$pval # probability
+# 
+# # for each significant species, find leaf with highest indval
+# fit.indval$maxcls[which(fit.indval$pval<=0.05)]
+# 
+# # indval value in the best leaf for each significant species
+# fit.indval$indcls[which(fit.indval$pval<=0.05)]
+
+## Fuzzy clustering
+library(cluster)
+k<-3 # pick number of clusters
+spe.fuz <- fanny(species.data, k=k, memb.exp=1.5)
+summary(spe.fuz)
+spefuz.g <- spe.fuz$clustering
+
+# site membership
+spe.fuz$membership
+
+# nearest crisp clustering
+spe.fuz$clustering
+
+#silhouette plot
+plot(silhouette(spe.fuz), main="Silhouette plot - Fuzzy clustering", cex.names=0.8, col=spe.fuz$silinfo$widths+1)
+
+# ordination of fuzzy clusters
+dc.pcoa <- princomp(species.bcd)
+dc.scores <- scores(test)
+
+dc.pcoa <- cmdscale(species.bcd)
+dc.scores <- scores(dc.pcoa, choices = c(1,2))
+
+# ordination plot of fuzzy clustering result
+plot(scores(dc.pcoa), asp=1, type="n", main = "Ordination of fuzzy clusters (pcoa)")
+abline(h=0, lty="dotted")
+abline(v=0, lty="dotted")
+
+for (i in 1:k){
+  gg <- dc.scores[spefuz.g==i,]
+  hpts <- chull (gg)
+  hpts <- c(hpts, hpts[1])
+  lines(gg[hpts,], col=i+1)
+}
+
+stars(spe.fuz$membership, location = scores(dc.pcoa), draw.segments=TRUE, add=TRUE, scale=FALSE, len=0.1, col.segments=2:(k+1))
+legend("bottomleft", paste("Cluster", 1:k, sep=""), pch=15, pt.cex=2, col=2:(k+1), bty="n")
+text(scores(dc.pcoa), labels = data$Site)
+## heatmap
+
+#dend <- as.dendrogram(species.bcd)
+cluster <- hclust(species.bcd, method = "complete", members = NULL)
+dend <- as.dendrogram(cluster)
+heatmap(as.matrix(species.bcd), Rowv=dend, symm=TRUE, margin=c(3,3))
+# the color intensity represents the similarity among the sites (or samples in this case)
+```
+
+```{r permanova}
+
+# permanova to test for effect of relief and complexity
+
+library(ecodist)
+    species.bcd<-distance(as.matrix(species.data), method="bray")
+    head(species.bcd)
+
+set.seed(318)
+library(vegan)
+permanova<-adonis(species.bcd ~ Reef_type*Depth_general*temp_avg, env_data, permutations = 1000, method = "bray")
+permanova
+# Depth and reef type are significant
+
+library(vegan)
+permanova<-adonis(species.bcd ~ temp_avg, env_data, permutations = 1000, method = "bray")
+permanova
+
+library(vegan)
+permanova<-adonis(species.bcd ~ Reef_type*avg_dep*DRR*ver_rel*temp_avg, env_data, permutations = 1000, method = "bray")
+permanova
+# reef type, drr, temp are all significant!
+
+permanova<-adonis(species.data ~ver_rel, env_data, permutations = 1000, method = "bray")
+# vertical relief and drr are significant for community according to permanova, but doesn't account for any variability
+
+permanova<-adonis(species.bcd ~ Reef_type * ver_rel, env_data, permutations = 1000, method = "bray")
+# vertical relief and drr are significant for community according to permanova, but doesn't account for any variability
+
+permanova<-adonis(species.bcd~drr*temp_avg*Site, env.data, permutations =1000, method="bray")
+permanova
+
+permanova<-adonis(species.data ~ Reef_type*drr, env.data, permutations = 10000, method = "bray")
+permanova
+# reef type and drr are significant
+
+permanova<-adonis(species.bcd ~ Reef_type * drr * avg_dep * sed_avg, env.data, permutations = 1000, method = "bray")
+permanova
+# See that interactions aren't significant, so build as additive model instead
+
+permanova<-adonis(species.bcd ~ Reef_type + drr + avg_dep + sed_avg, env.data, permutations = 1000, method = "bray")
+permanova
+# See that all are significant!
+
+permanova<-adonis(species.data ~ sed_stdv, env_data, permutations = 1000, method = "bray")
+
+permanova<-adonis(species.bcd ~ Reef_type*ver_rel*drr*avg_dep*Samp*Location*sed_avg, env.data, permutations = 1000, method = "bray")
+permanova
+# full model --> doesn't seem to indicate much.... 
+
+# This is the permanova output table
+permanova$aov.tab
+
+# Other output
+summary(permanova)
+permanova$coefficients
+permanova$coef.sites
+permanova$f.perms
+permanova$model.matrix
+permanova$terms
+
+densityplot(permanova)
+
+```
+
+```{r top_species}
+
+# find most abundant species on reefs
+p<-colSums(species.orig, na.rm=FALSE, dims=1)
+ptest<-rbind()
+summary(species.orig)
+# find the sum and mean for each column
+sum<-apply(species.orig, 2, sum)
+mean<-apply(species.orig, 2, mean)
+stats<-cbind(sum, mean)
+stats<-stats[order(-mean),]
+stats<-data.frame(stats)
+rownames(stats) -> stats$Species_Code
+plank_table <- combine_data_meta (stats, 
+                   file_meta = "Metadata/Fish/Fish_Codes.csv", 
+                   merge_by = "Species_Code")
+plank_table<-plank_table[,c(1, 2, 3, 4, 5, 6, 10, 22)]
+plank_table<-plank_table[order(-mean),]
+plank_table <- plank_table[1:10,]
+rownames(plank_table)<-NULL
+write.csv(plank_table,'Figures/planktivore_table.csv')
+
+
+library(xtable)
+test<- xtable(stats)
+print.xtable(test, type="html", file="Figures/planktivore_table.html")
+print(test, floating = FALSE)
+
+rownames(stats) -> stats$Species_Code
+
+
+
+```
+
+Benthos Plots & Analyses
+===================
+
+```{r species_list_benthos}
+species<-unique(ben_meta$species)
+species <- data.frame(species)
+ben_list <- combine_data_meta (data = species_list, 
+                               file_meta = "Metadata/Benthos/Benthic_Codes.csv", 
+                               merge_by = "species")
+meta <- read.table("Metadata/Benthos/Benthic_Codes.csv", header = T, sep=',')
+list<-left_join(species, meta, by = "species")
+write.csv(list, file = "Tables/Benthic_Species_List.csv")
+
+```
+
+```{r compile_data}
+### MERGE DATA ### ------------------------------------------------------------
+join.1<-inner_join(sites, comp, by = "Site")
+join.2<-inner_join(join.1, sed, by = c("Site", "Date", "Sample"))
+join.3<-inner_join(join.2, temp, by = c("Site", "Date", "Sample"))
+join.4<-inner_join(join.3, fish, by = c("Site", "Date", "Sample"))
+data  <-inner_join(join.4, ben, by = c("Site", "Date", "Sample"))
+
+#merge.1<-merge(sites, comp, by="Site")
+#merge.2<-merge(merge.1, sed, by=c("Site", "Date", "Sample"))
+#merge.3<-merge(merge.2, temp, by = c("Site", "Date", "Sample"))
+#data<-merge(merge.3, fish, by = c("Site", "Date", "Sample"))
+  #rm(list= ls()[!(ls() %in% c('data'))]) # removes everything except selected data frame(s) 
+
+## Filter data if necessary ## -------------------------------
+#data <- filter(data, Reef_type == "Natural")
+#data <- filter(data, Reef_type == "Artificial")
+ #data <- filter(data, Depth_general == "Shallow")
+# data <- filter(data, Depth_general == "Shallow")
+# data <- filter(data, Depth_general == "Deep")
+#data <- filter(data, Reef_type == "Natural", Depth_general == "Intermediate")
+
+env.end<- 26
+sp.start<-147 #for NO FISH and simple maj cat
+#sp.start<-27 # for species codes, all fish and inverts
+
+env_data <- data[,1:env.end]
+ 
+species.data<-data[,sp.start:ncol(data)] # fish data
+species.orig<-species.data # fish data, no transform
+
+species.data <- transform_data (data = species.data, transform_type = "square_root")
+
+```
+
+```{r ANOSIM_benthos}
+
+library(vegan)
+set.seed(318)
+ano_reef<-anosim(species.data, env_data$Reef_type, permutations = 1000, distance = "bray")
+  ano_reef
+  plot(ano_reef)
+  summary(ano_reef)
+  # result: community composition based on abundance is significantly different by reef type
+
+set.seed(318)
+ano_depth<-anosim(species.data, env_data$Depth_general, permutations = 1000, distance = "bray")
+  ano_depth
+  plot(ano_depth)
+  summary(ano_depth)
+
+ano_reef_depth <- anosim(species.data, env_data$Depth_general : env_data$Reef_type, permutations = 1000, distance = "bray")
+ano_reef_depth
+plot(ano_reef_depth)
+summary(ano_reef_depth)
+
+```
+
+```{r SIMPER_benthos}
+
+# Goal: Use similarity percentages to find out 'who' is responsible for the differences
+
+# Load library
+library(vegan)
+
+groups_reef_depth <- paste(as.character(env_data$Reef_type), as.character(env_data$Depth_general))
+groups <- as.factor(groups_reef_depth)
+# Run SIMPER analysis with factor of reef type
+simp_reef_depth<-simper(species.data,  # community data matrix
+            groups) # factor describing group structure (needs at least 2 levels)
+simp_reef_depth # gives contributions of most influential species
+summary(simp_reef_depth, ordered=TRUE) # provides summary output such that cumulative contributions are ordered by species contrib
+
+# Simper by reef type
+simp_reef <- simper(species.data, env_data$Reef_type)
+simp_reef
+summary(simp_reef, ordered = TRUE)
+
+# Simper by depth zone
+simp_depth <- simper(species.data, env_data$Depth_general)
+simp_depth
+summary(simp_depth, ordered = TRUE)
+
+# Run SIMPER analysis with factor of sampling season
+simp_samp<-simper(species.data,  # community data matrix
+            env_data$Sample) # factor describing group structure (needs at least 2 levels)
+simp_samp # gives contributions of most influential species
+#summary(simp_samp, ordered=TRUE) # provides summary output such that cumulative contributions are ordered by species contrib
+
+```
+
+```{r permanova_benthos}
+
+# permanova to test for effect of env variables on community composition
+library(ecodist)
+    species.bcd<-distance(as.matrix(species.data), method="bray")
+    head(species.bcd)
+
+# for all reefs
+set.seed(318)
+library(vegan)
+permanova<-adonis(species.bcd ~ Reef_type*avg_dep*DRR*temp_avg*sed_stdv, env_data, permutations = 1000, method = "bray")
+permanova
+
+# for natural reefs
+permanova<-adonis(species.bcd ~ DRR*sed_stdv*avg_dep*temp_avg, env_data, permutations = 1000, method = "bray")
+permanova
+
+# for artificial reefs
+permanova<-adonis(species.bcd ~ DRR*avg_dep*temp_avg, env_data, permutations = 1000, method = "bray")
+permanova
+
+```
+
+```{r PCA}
+
+### Exploratory data analysis
+library(dplyr)
+summary(env_data)
+names(env_data)
+
+# remove rows where no water level logger data (NA values for temp, depth, and drr)
+
+env_data <- filter(env_data, env_data$DRR != 'N/A')
+
+nat <- filter(env_data, env_data$Reef_Type == 'Natural')
+art <- filter(env_data, env_data$Reef_Type == 'Artificial')
+art_no_na<- filter(art, art$DMF_Area_sqft != 'N/A')
+
+env_data <-rbind(nat, art_no_na) # for all reefs
+#env_data <- art_no_na # for ARTIFICIAL reefs
+
+# pick env variables to do PCA with 
+#env.data.pca<-env_data[,c(23, 9, 16, 14)] # select variables of interest for ARTIFICIAL
+env.data.pca<-env_data[,c(8, 15, 13)] # select variables of interest for NATURAL or ALL
+
+env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+env.data.pca$DRR <- as.numeric(env.data.pca$DRR)
+env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
+# convert the ENV data to z-scores
+# this relavitizes the environemtnal data
+# default is to center (subtract column means) and scale (divide by st dev)
+env.z <- scale(as.matrix(env.data.pca))  
+
+# Recall cor, cor.test, and pairs from previously ...
+# you should already have env17 from the Mantel lab
+env.cor <- cor(env.data.pca) # check for correlated variables
+cor.test(env.data.pca$avg_dep,env.data.pca$DRR)
+cor.test(env.data.pca$avg_dep,env.data.pca$Temp_avg)
+
+pairs(env.data.pca) # look for nonlinear relationships, eg xDepth sDepth
+  # see that ver_rel and drr are correlated so can exclude one of them
+
+# test normality
+apply(env.data.pca,2,shapiro.test) 
+
+# check for normal distribution
+hist(env.data.pca$DRR)
+#hist(env.data.pca$sed_stdv)
+hist(env.data.pca$avg_dep)
+hist(env.data.pca$DMF_Area_sqft)
+#env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+hist(env.data.pca$Temp_avg)
+
+# transform to correct skewed distributions
+env.data.pca$DRR<-sqrt(env.data.pca$DRR)
+hist(env.data.pca$DRR) #still not normal
+#env.data.pca$sed_stdv<-sqrt(env.data.pca$sed_stdv)
+env.data.pca$avg_dep<-sqrt(env.data.pca$avg_dep)
+hist(env.data.pca$avg_dep)
+env.data.pca$DMF_Area_sqft<-sqrt(env.data.pca$DMF_Area_sqft)
+hist(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_avg<-sqrt(env.data.pca$Temp_avg)
+hist(env.data.pca$Temp_avg)
+
+### PCA ----------
+
+#make sure violations of assumptions aren't egregious before you begin PCA (which we did before)
+set.seed(318)
+# Do the PCA ...
+# Here we have to use a correlation matrix because the variables
+# are in different units:
+env.pca <- princomp(env.data.pca, cor=T, scores=T)
+#env.pca <- princomp(env.z, cor=T, scores=T)
+  #cor=T to use correlation matrix (z-scores)
+  #cor=F to use covariance matrix
+  #scores = T means to calculate sample scores on new principal components for ordination
+
+# Summary shows you the eigenvalues; print does the same:
+summary(env.pca) 
+#these are square roots of eigenvalues
+#first pca has 76% of variance, next has 24% of variance
+print(env.pca)
+
+#eigenvalues
+env.pca$sdev->env.pca.sdev
+#write.csv(env.pca.sdev, "Inverts_Algae/2_Post-R_Data/env_pca_sdev.csv")
+
+# Plot produces a scree plot of the eigenvalues per PC:
+plot(env.pca)
+
+# Print the loadings, to see which variables go with each PC:
+print(env.pca$loadings) 
+#these are regression coefficients 
+# Print just the first 4, to 3 decimal places, and suppressing
+# any loadings less than ABS(0.2) (this might not work):
+#print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+print(env.pca$loadings,digits=3,cutoff=0.2)
+# for lab report, can export this as a .csv file
+# here we want to scan the loadings
+#env17_pca_loadings<-print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+env_pca_loadings<-print(env.pca$loadings,digits=3,cutoff=0.2)
+#write.csv(env_pca_loadings, "Inverts_Algae/2_Post-R_Data/env_pca_loadings.csv")
+
+attributes(env.pca)  # shows objects in pca
+
+# Biplot shows correlation vectors
+# between the PCs and the original variables:
+biplot(env.pca) 
+# a bi plot plots two axes. It is a plot that puts two things on it in ordination world. One is a plot of sample scores. Second is the correlation vectors that it adds to the sample scores. Correlation vectors are red arrows, one for each environemntal variable. Length of arrow is scaled to magnitude of correlation. Can also look at raw numbers instead of plot if need to. These help you figure out what PCs refer to so you can know what to call your axes (e.g. soil chemistry, elevation, etc)
+# The same, but plot asterisks for the plots (easier to see);
+# here 99 is the number of samples:
+
+# Plot the samples in the new PC space (defaults to PC 1 & 2):
+plot(env.pca$scores) 
+# An alternative, if you want to see different axes:
+env.pca.scores <- as.data.frame(env.pca$scores)
+names(env.pca.scores) # shows you that they are labelled Comp.1 etc
+
+## Rename environmental variables
+detach("package:dplyr", unload=TRUE)
+library(plyr)
+env.data.pca<-rename(env.data.pca, c("DMF_Area_sqft"="Area", "avg_dep"="Depth", "DRR"="Complexity", "Temp_avg"="Temperature"))
+
+# a table of correlations between PCs and the original variables: #HELP NOT WORKING
+library(ecodist)
+#env.data.pca <- na.omit(env.data.pca)
+cor2m(env.pca.scores,env.data.pca)
+# even tidier:
+env.pca.cor2m <- cor2m(env.pca.scores,env.data.pca)
+print(env.pca.cor2m, digits=3)
+
+## Plot it!
+plot_pca_reef_type() 
+env_data$Transect_Number <- as.character(env_data$Transect_Number) #don't forget to add as.character if using numeric
+plot_pca_transect_number()
+env_data$Site <- as.numeric(env_data$Site)
+env_data$Site <- filter(env_data, env_data$Site != "342")
+env_data$Site <- as.factor(env_data$Site)
+plot_pca_site()
+#plot_pca_reef_type_depth()
+#plot_pca_depth()
+#plot_pca_depth_sed()
+#plot_pca_depth_comp()
+
+#AR number
+#unique site
+#season
+
+```
+
+```{r CCA}
+
+# Get just fish, env, and benthic separately
+#fish.data<-data[,28:52] # for snapper grouper
+benthic.data<-data[,34:ncol(data)] # for benthic phyla
+env.fish.data<-data[,c(1:26, 27:33)] # rugosity, depths, and sediment FOR SIMPLE MAJ CAT
+#env.fish.data<-species.all[,c(1:26, 34:ncol(species.all))] # rugosity, depths, and sediment FOR BROAD CAT
+
+# Remove other
+detach("package:dplyr", unload=TRUE)
+library(plyr)
+env.fish.data<-rename(env.fish.data, c("DRR"="Complexity", "sed_stdv"="Sediment", "avg_dep"="Depth"))
+
+library(vegan)
+#mod.1<-cca ( benthic.data ~ Complexity + Depth + Sediment + Herbivore + Invertivore + Omnivore + Piscivore + Planktivore + Carnivore, env.fish.data)
+mod.1<-cca ( benthic.data ~ Complexity + Depth + Herbivore + Invertivore + Omnivore + Piscivore + Planktivore + Carnivore, env.fish.data)
+#left hand side is commuunity data matrix
+#right hand side is the constraining variables
+plot(mod.1)
+
+
+plot(mod.1, type="n")
+# plot vectors (env)
+text(mod.1, dis="sp", cex=0.8, col="purple") 
+text(mod.1, dis="cn", col=c("blue", "blue", "blue", "black", "black", "black", "black", "black", "black"), cex=1)
+#text(mod.1, dis="sites", labels=env.fish.data$site, cex=0.8)
+  # centroids = cn
+  # biplot arrows = bp
+  # site scores = wa
+  # linear constraints = lc
+  # species scores = sp
+# add points
+#points(mod.1, dis="sites", col="black", bg=c("indianred", "cornflowerblue")[env.fish.data$Reef_type], cex=1.0, pch = 21)
+#legend(x="topleft", legend=c("Artificial", "Natural"), col="black", pt.bg=c("indianred", "cornflowerblue"), lwd=2, pch=21, lty=NA, cex=1.2)
+points(mod.1, dis="sites", col="black", bg=c("indianred2","turquoise")[env.fish.data$Reef_type], cex=1.4, pch=c(21,24)[env.fish.data$Reef_type], cex.lab=1.4)
+legend(x="topleft", legend=c("Artificial", "Natural"), col="black", pt.bg=c("indianred2","turquoise"), lwd=2, pch=c(21,24), lty=NA, cex=1.2)
+
+
+```
+
+```{r multivariate CART}
+library(mvpart)
+#fit <- mvpart(data.matrix(species.data)~avg_dep + DRR + ver_rel + sed_stdv + temp_avg, env_data)
+fit<-mvpart(data.matrix(species.data)~DRR, env_data) # artificail 
+#fit<-mvpart(data.matrix(species.data)~DRR + sed_stdv, env_data) # natural
+summary(fit) # fits multivariate tree with particular variables of interest
+gr <- fit$where # group composition based on terminal nodes
+
+# for natural reefs
+#col <- c("white", "white", "low sed, low comp: sed <10.73 cm stdv & comp <0.3856 DRR", "low sed, high comp: sed <10.73 cm stdv & comp >0.3856 DRR", "high sed: sed > 10.73 cm stdv")
+
+# for artificial reefs
+col <- c("white", "high comp: >0.346 DRR", "low comp: <0.346 DRR")
+
+
+col[gr]
+plot(fit)
+text(fit)
+printcp(fit) 
+plotcp(fit) # shows how to pick best tree. best tree is left-most for which mean error is below 1 SE threshold
+
+## must run nmds analysis in chunk above for these to work
+# ordination with tree colors by group for artificial reefs
+PCA = data.frame(PCA1 = env.pca.scores$Comp.1, PCA2 = env.pca.scores$Comp.2)
+library(ggplot2)
+library(gridExtra)
+library(colorspace)
+ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = PCA, 
+               aes(x = PCA1, y = PCA2, color = col[gr]), size=5)+
+    scale_colour_manual(name = "Complexity", 
+                        values = c("low comp: <0.346 DRR" = "darkturquoise", "high comp: >0.346 DRR" = "indianred2"))+
+  theme(axis.text=element_text(size=12), 
+          axis.title=element_text(size=12), 
+          legend.text=element_text(color="black", size=12), 
+          legend.position="bottom")+
+  guides(colour = guide_legend(nrow = 2)) # legend in three rows 
+    #scale_y_continuous(name=yl) + # names y axis
+    #scale_x_continuous(name=xl)  # names x axis
+
+  # ordination with tree colors by group for natural reefs
+PCA = data.frame(PCA1 = env.pca.scores$Comp.1, PCA2 = env.pca.scores$Comp.2)
+library(ggplot2)
+library(gridExtra)
+library(colorspace)
+ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = PCA, 
+               aes(x = PCA1, y = PCA2, color = col[gr]), size=5)+
+    scale_colour_manual(name = "Sediment & Complexity", 
+                        values = c("low sed, low comp: sed <10.73 cm stdv & comp <0.3856 DRR" = "darkturquoise", "low sed, high comp: sed <10.73 cm stdv & comp >0.3856 DRR" = "slateblue3", "high sed: sed > 10.73 cm stdv" = "indianred2"))+
+  theme(axis.text=element_text(size=12), 
+          axis.title=element_text(size=12), 
+          legend.text=element_text(color="black", size=12), 
+          legend.position="bottom")+
+  guides(colour = guide_legend(nrow = 3)) # legend in three rows 
+    #scale_y_continuous(name=yl) + # names y axis
+    #scale_x_continuous(name=xl)  # names x axis
+
+# group composition
+fit$where
+
+# group identity
+groups.mrt <-levels(as.factor(fit$where))
+
+# benthos composition on leaves
+grp1<-species.data[which(fit$where == groups.mrt[1]),] ## group 3, corresponds to first leaf
+grp2<-species.data[which(fit$where == groups.mrt[2]),] ## group 4, corresponds to second leaf
+grp3<-species.data[which(fit$where == groups.mrt[3]),] ## group 5, corresponds to second leaf
+
+# env variables of first leaf
+env_data[which(fit$where==groups.mrt[1]),]
+env_data[which(fit$where==groups.mrt[2]),]
+env_data[which(fit$where==groups.mrt[3]),]
+
+
+# table and pie charts of fish composition of leaves
+leaf.sum <- matrix(0, length(groups.mrt), ncol(species.data))
+colnames(leaf.sum) <- colnames(species.data)
+
+# for loop
+for (i in 1:length(groups.mrt)){
+  leaf.sum[i,] <- apply(species.data[which(fit$where == groups.mrt[i]),], 2,sum)
+}
+leaf.sum
+
+vec.col <- c("red", "orange", "yellow", "green", "blue", "purple", "black", "gray", "indianred2", "slateblue3", "white")
+# for natural
+par(mfrow = c(3,1)) 
+ grp1<- pie((leaf.sum[1,]), radius=1, main=c("low sed, low comp"), col = vec.col)
+ grp2<- pie((leaf.sum[2,]), radius=1, main=c("low sed, high comp"), col = vec.col)
+ grp3<- pie((leaf.sum[3,]), radius=1, main=c("high sed"), col = vec.col)
+
+
+# for artificial 
+par(mfrow = c(2,1))
+ grp1<- pie(which(leaf.sum[1,]>0), radius=1, main=c("low comp"), col = vec.col)
+ grp2<- pie(which(leaf.sum[2,]>0), radius=1, main=c("high comp"), col = vec.col)
+
+## in development for bar plot
+leafs<-data.frame(leaf.sum)
+colnames(leafs) <- colnames(species.data)
+#leafs$grp <- c(1,2,3)
+leafs$grp <- c("high complexity", "low complexity") # ARTIFICIAL
+#leafs$grp <- c("low sediment, low complexity", "low sediment, high complexity", "high sediment") # NATURAL
+library(tidyr)
+leafs<-gather(leafs, "grp")
+names(leafs)[2] <- "benthos"
+
+library(dplyr)
+leafs <- leafs %>% group_by(grp) %>% mutate(sum(value))
+names(leafs)[4] <- "sum"
+contrib <- matrix(nrow = nrow(leafs), ncol=1) # set up matrix to store row sums
+colnames(contrib)<-c("sum") # name the matrix's only column as pts_sum
+
+i=1
+for (i in 1:nrow(leafs)){
+  a <- leafs[i,3] 
+  b <- leafs[i,4]
+  contrib[i] <- a / b *100
+}
+contrib<-data.frame(contrib)
+contrib<-gather(contrib)
+leafs<-cbind(leafs, contrib[,2])
+names(leafs)[5] <- "contrib"
+
+# bar plot for artificial reefs
+ggplot(leafs, aes(x=benthos, y = contrib, fill = as.factor(grp)))+
+  theme_bw()+
+  geom_bar(position = position_dodge(), stat="identity", colour = "black")+
+  scale_y_continuous(name="Cover", limits = c(0, 45), breaks = seq(0, 45, by =5))+
+  scale_fill_manual(name="Group", values = c("low complexity" = "darkturquoise", "high complexity" = "indianred2"))+
+  scale_x_discrete (name = "Benthic Category")+
+  theme(axis.text=element_text(size=10, colour="black"), 
+        axis.title.x=element_text(size=10, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=10, colour="black", vjust=1.3), 
+        legend.position="bottom") 
+  guides(fill = guide_legend(nrow = 1)) # legend in three rows 
+
+# bar plot for natural reefs 
+ggplot(leafs, aes(x=benthos, y = contrib, fill = as.factor(grp)))+
+  theme_bw()+
+  geom_bar(position = position_dodge(), stat="identity", colour = "black")+
+  scale_y_continuous(name="Cover", limits = c(0, 45), breaks = seq(0, 45, by =5))+
+  scale_x_discrete (name = "Benthic Category")+
+  scale_fill_manual(name="Group", values = c("low sediment, low complexity" = "darkturquoise", "low sediment, high complexity" = "indianred2","high sediment" = "slateblue3"))+
+  theme(axis.text=element_text(size=10, colour="black"), 
+        axis.title.x=element_text(size=10, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=10, colour="black", vjust=1.3), 
+        legend.position="bottom") +
+  guides(fill = guide_legend(nrow = 1)) # legend in three rows 
+
+
+
+```
+
+```{r nMDS_benthos}
+
+# nmds calculations
+out.nms <- calc_nms_ord(species.data = species.data)
+species.nms <- out.nms[[1]] # nmds scores
+r2.2 <- out.nms[[2]] # r^2 for NMS 2
+r2.1 <- out.nms[[3]] # r^2 for NMS 1
+stress <- out.nms[[4]] # stress value
+species.wa <- get_wght_avg_spec(species.nms, species.data) # species weighted average scores
+vect.vf <- get_env_vectors (species.nms, env_data) # environmental vectors that have pval < 0.05
+hull.data.reefs  <-get_convex_hulls_reefs(species.nms) # convex hulls for reef type
+hull.data.depths <- get_convex_hulls_depth(species.nms) # convex hulls for depth categories
+
+
+# Plots
+plot_nmds_reef_type(species.nms, species.wa)
+plot_nmds_depth (species.nms)
+plot_nmds_complexity_reef_type(species.nms)
+
+
+
+plot_nmds_reef_type <- function(species.nms, species.wa){
+  NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
+  yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
+  xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
+  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  library(colorspace)
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Reef_type, shape=species.nms$Reef_type), 
+               size=5) + # adds sample points
+    #geom_text(data=species.wa,
+              #aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+              #alpha=0.9, # adds weighted averages for species
+              #position=position_jitter(width=0.1,height=0.2))+
+    stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=env_data$Reef_type),
+                 level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+    scale_colour_manual(name = "Reef Type", 
+                        values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
+    scale_shape_manual (name="Reef Type", 
+                        values = c("Artificial" = 17, "Natural" = 16))+
+    ggtitle(title)
+  
+}
+
+```
+
+
+Focal Species
+================
+
+```{r CART_focal_species}
+
+
+
+# identify focal species, just one run of these lines
+sp <- transform_data(species.orig$MYMI, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$MYPH, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$SEDU, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$DEPU, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$RHAU, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$HAPL, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$HAAU, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$STCH, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+sp <- transform_data(species.orig$STCA, transform_type = "pres_abs") #this gets the focal species and transforms to pres / abs data
+
+# build env_data of interest
+#env.data <- env_data[,c(15, 18, 24, 25)] # Natural reefs
+env.data <- env_data[,c(9, 15, 18, 24)] # Natural reefs
+habitat.data <- env.data
+habitat.data$sed_stdv <- NULL # for ARTIFICIAL REEFS ONLY, remove sediment stdv b/c didn't measure it....
+#detach("package:dplyr", unload=TRUE)
+#library(plyr)
+#habitat.data <- rename(habitat.data, c("OTHER INVERT"="OTHER_INVERT"))
+
+
+
+# build a convenient data frame with just what we need:
+sp.data <- cbind(sp, habitat.data)
+names(sp.data)
+sp.data$sp<-revalue(factor(sp.data$sp), c("0"="not habitat", "1"="habitat"))
+data <- filter(sp.data, Reef_type == "Artificial") # ARs
+#data <- filter(sp.data, Reef_type == "Natural") # NRs
+data$Reef_type <- NULL
+
+
+# CART using RPART ...
+library(rpart)
+sp.rpart <- rpart(as.factor(sp)~., data=data, method="class")
+# print the corss-validation table (already computed):
+printcp(sp.rpart)
+# or plot it:
+plotcp(sp.rpart)
+# the tree itself:
+plot(sp.rpart)
+# add labels, including sample sizes per node:
+text(sp.rpart, cex=0.6, use.n=TRUE)
+# try a postscript output file (probably won't work):
+#post(sp.rpart,"piwa_rpart.ps")
+
+library(rpart.plot)
+prp(sp.rpart)
+
+
+sp.rpart <- rpart(as.factor(sp)~., data=data,method="class", control=rpart.control(minsplit=20))
+prp(sp.rpart, 
+    type = 1,  # set tree type 
+    extra = 100, # display percent of observations
+    box.col=c("indianred2", "turquoise")[sp.rpart$frame$yval], 
+    tweak=1.0, # makes smaller so less cluttered
+    faclen=0, # do not abbreviate factor levels
+    varlen = 0, # do not abbreviate variable levels
+    under = TRUE, # percentage text under the boxes
+    fallen.leaves = TRUE, # puts fallen leaves at the bottom of plot
+    split.prefix = "is ",
+    split.suffix = "?")
+
+# predict with an RPART tree:
+sp.rpart.pred <- predict(sp.rpart, type="class")
+table(sp.rpart.pred,sp)
+
+# end of RPART
+# end of CART
+
+qplot(env_data$DRR, species.orig$SEDU)
+
+
+```

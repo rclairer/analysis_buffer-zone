@@ -1,0 +1,102 @@
+---
+title: "Fish_Cleaning"
+author: "Claire_Rosemond"
+date: "May 23, 2016"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Set working directory
+```{r working_directory}
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/Analysis_Buffer-Zone/Fish")
+```
+
+Import packages
+
+```{r library}
+library(plyr)
+library(dplyr)
+```
+
+
+```{r, read_file}
+
+  fish <- read.csv("1_Raw_Data/CRFL_AR_Fish_Master_2016-07-01.csv")
+```
+
+Fitler and clean file
+```{r, clean_data}
+
+#fish$Size_cm <- revalue(factor(fish$Size_cm), c("big" = "N/A", "little" = "N/A", "?" = "N/A"))
+fish$Size_cm <- as.numeric(as.character(fish$Size_cm))
+fish$Size_cm [is.na(fish$Size_cm)] <- 0 
+
+
+fish$Abundance <- revalue(fish$Abundance, c("NO_FISH" = 0))
+#fish <- filter(fish, Abundance !="", Abundance !="N/A")
+fish$Abundance <- as.numeric(as.character(fish$Abundance))
+fish  <- filter (fish, Abundance != "N/A") 
+
+#fish$Transect_Number <- as.numeric(as.character(fish$Transect_Number))
+#fish <- filter (fish, Transect_Number != "N/A")
+#fish$Transect_Number [is.na(fish$Transect_Number)] <- 0
+
+fish <- filter(fish, Sampling_Period != "Summer")
+
+#*********************************************************************************************
+
+# separate out transects without problems to merge back in eventually 
+structural <- filter(fish, Transect_Type == "Structural") # all seasons for structural 
+structural$Transect_Number_Old <- structural$Transect_Number
+
+fall <- filter(fish, Sampling_Period == "Fall", Transect_Type == "Radiating") # just fall for radiating
+fall$Transect_Number_Old <- fall$Transect_Number
+
+IDS <- filter(fish, ID == "AR-364_TUGBOAT_2015-12-10_R_T1" | ID == "AR-364_TUGBOAT_2015-12-10_R_T2" | ID == "AR-364_TUGBOAT_2015-12-10_R_T3")
+IDS$Transect_Number_Old <- IDS$Transect_Number
+
+# now keep the spring and winter, as well as radiating 
+test <- filter(fish, Sampling_Period != "Fall")
+test <- filter(test, Transect_Type != "Structural")
+test <- filter(test, ID != "AR-364_TUGBOAT_2015-12-10_R_T1", ID != "AR-364_TUGBOAT_2015-12-10_R_T2", ID != "AR-364_TUGBOAT_2015-12-10_R_T3")
+
+test$Transect_Number <- as.factor(test$Transect_Number)
+test$Transect_Number_Old <- test$Transect_Number
+test$Transect_Number <- revalue(test$Transect_Number, c("2" = "1", "1_2" = "1","3" = "2", "4" = "2", "5"= "3", "6" = "3"))
+
+test2 <- rbind(structural, fall, IDS, test)
+
+fish <- test2
+
+#****************************************************************************************
+
+#fish$Transect_Number <- as.character((fish$Transect_Number))
+#winter <- subset(fish, Sampling_Period == "Winter")
+#winter$Transect_Number <- revalue(winter$Transect_Number, c(2 = 1))#, "3" = 2, 4 = 2, 5 = 3, 6 = 3))
+
+#fish$Visibility_Min_ft <- as.numeric(as.character(fish$Visibility_Min_ft))
+#fish <- filter(fish, Visibility_Min_ft != "1")
+
+fish <- filter(fish, Subsite != "HOUSTON")
+fish <- filter(fish, Subsite != "5-MILE-C")
+fish <- filter(fish, Site != "342")
+
+```
+
+test <- filter(fish, Sampling_Period != "Fall")
+test <- filter(test, Transect_Type != "Structural")
+
+test <- filter(test, c(ID != "slkdjflskj", ID != "lskjdflkjsdl"))
+
+test$Transect_Number <- as.factor(test$Transect_Number)
+test$Transect_Number <- revalue(test$Transect_Number, c("2" = "1", "3" = "2", "4" = "2", "5"= "3", "6" = "3"))
+
+
+```{r}
+
+# Export information in a csv file
+  write.csv(fish, file = "4_clean_data/fish_clean_data_output_new10.csv", row.names = FALSE)
+```
