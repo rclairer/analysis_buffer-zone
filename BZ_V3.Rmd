@@ -1050,7 +1050,10 @@ plot.372.winter = ggplot(site372.winter, aes(x=as.numeric(NEAR_DIST_nautical), y
 
 plot.372.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.5), breaks=seq(0, 0.5,by=0.1)) + ggtitle("372 Winter") + geom_smooth(method = "loess")
 
-ggplot(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD))+stat_smooth(span=1.5)
+#372 spring
+plot.372.spring = ggplot(site372.spring, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+
+plot.372.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.5), breaks=seq(0, 0.5,by=0.1)) + ggtitle("372 Winter") + geom_smooth(method = "loess")
 
 #378 fall
 plot.378.fall = ggplot(site378.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
@@ -1072,15 +1075,72 @@ stat_smooth(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purp
 stat_smooth(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral", span = 2, se = FALSE)+
 stat_smooth(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange", span = 2, se = FALSE)+
 stat_smooth(data = site370.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "yellow", span = 2, se = FALSE)+
-stat_smooth(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick", span = 2, se = FALSE)+
+#stat_smooth(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick", span = 2, se = FALSE)+
 stat_smooth(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet", span = 2, se = FALSE)+
 #stat_smooth(data = site372.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "springgreen", span = 2, se = FALSE)+
-stat_smooth(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue", span = 2, se = FALSE)+
+stat_smooth(data = site372.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue", span = 2, se = FALSE)+
 stat_smooth(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff", span = 2, se = FALSE)+
 #stat_smooth(data = site378.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "black", span = 2, se = FALSE)+
 #stat_smooth(data = site378.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "grey", span = 2, se = FALSE)+
 
 theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
+
+ggplot() +
+  
+geom_point(data = site330.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "red")+
+geom_point(data = site330.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "magenta")+
+#geom_point(data = site345.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "blue")+
+geom_point(data = site345.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "green")+
+geom_point(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purple")+
+geom_point(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral")+
+geom_point(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange")+
+#geom_point(data = site370.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "yellow")+
+#geom_point(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick")+
+geom_point(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet")+
+#geom_point(data = site372.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "springgreen")+
+#geom_point(data = site372.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue")+
+geom_point(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff")+
+#geom_point(data = site378.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "black")+
+#geom_point(data = site378.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "grey")+
+
+theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
+
+ggplot() +
+  
+geom_point(data = site330.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "red")+
+geom_point(data = site330.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "magenta")+
+geom_point(data = site345.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "blue")+
+geom_point(data = site345.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "green")+
+geom_point(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purple")+
+geom_point(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral")+
+geom_point(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange")+
+geom_point(data = site370.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "yellow")+
+geom_point(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick")+
+geom_point(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet")+
+geom_point(data = site372.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "springgreen")+
+geom_point(data = site372.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue")+
+geom_point(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff")+
+geom_point(data = site378.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "black")+
+geom_point(data = site378.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "grey")+
+
+theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
+
+#all ones that were used to make curves
+all.points.test <- rbind(site330.fall, site330.winter, site345.fall, site345.spring, site364.fall, site364.spring, site364.winter, site370.fall, site370.spring, site370.winter, site372.fall, site372.winter, site372.spring, site378.fall, site378.winter)
+
+#all, including ones with one one comparison
+all.points.test <- rbind(site330.fall, site330.spring, site330.winter, site345.fall, site345.spring, site345.winter, site364.fall, site364.spring, site364.winter, site370.fall, site370.spring, site370.winter, site372.fall, site372.winter, site372.spring, site378.fall, site378.winter)
+
+#carefully selected
+all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.winter, site372.winter)
+#carefuly selected with 370.spring
+all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.fall, site370.winter, site372.winter)
+
+
+all.points.test.plot = ggplot(all.points.test, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+
+all.points.test.plot + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("all points") +
+  stat_smooth()
 ```
 
 ```{r max}
