@@ -39,19 +39,20 @@ fish_meta_structure <- combine_data_meta (data = fish_data_structure,
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
                                 merge_by = "Species_Code") 
 fish_meta_structure <- filter(fish_meta_structure, Pelagic.Demersal == "Demersal")
-fish_meta_structure <- filter(fish_meta_structure, Water_Col_Position == "R")
+fish_meta_structure <- filter(fish_meta_structure, Water_Col_Position != "R_S_W", Water_Col_Position != "S_W", Water_Col_Position != "W")
 
 
 fish_meta_no <- combine_data_meta (data = fish_data_no, 
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
                                 merge_by = "Species_Code") 
 fish_meta_no <- filter(fish_meta_no, Pelagic.Demersal == "Demersal")
-fish_meta_no <- filter(fish_meta_no, Water_Col_Position == "R")
+#fish_meta_no <- filter(fish_meta_no, Water_Col_Position == "R")
+fish_meta_no<-filter(fish_meta_no, Water_Col_Position != "R_S_W", Water_Col_Position != "S_W", Water_Col_Position != "W")
 
-####################################################################
 
 fish_biom_structure<-make_fish_biomass_col(data = fish_meta_structure)
 fish_biom_no<-make_fish_biomass_col(data = fish_meta_no)
+####################################################################
 
 #fish_subset <- subset_data (data = fish_biom,
                           #sub_cat = "Pelagic.Demersal", #sub_cat = "Snapper.Grouper",
@@ -103,13 +104,13 @@ fish_biom_matrix_no <- calc_fish_biom_matrix (data = fish_biom_no,
 
 #fish_biom_matrix <- rbind(fish_biom_matrix_structure, fish_biom_matrix_no)
 # If at species level, bring meta data back in --> can't do if in wide format obviously!
-library(plyr)
+#library(plyr)
 #fish_abund <- rename(fish_abund, c("group"="Species_Code"))
 #fish_abund <- combine_data_meta(data = fish_abund, 
                   #file_meta = "Metadata/Fish/Fish_Codes.csv",
                   #merge_by = "Species_Code")
 
-fish <- fish_abund_matrix # select either abundance or biomass matrix
+#fish <- fish_abund_matrix # select either abundance or biomass matrix
 
 #fish <- remove_rare_species (data = fish) # remove rare species if desired
 
@@ -117,38 +118,38 @@ fish <- fish_abund_matrix # select either abundance or biomass matrix
 
 
 ### COMPLEXITY DATA ### -------------------------------------------------------
-comp <-read.table("Complexity/3_Clean_Data/comp_site_change.csv", header=T, sep=',')
+#comp <-read.table("Complexity/3_Clean_Data/comp_site_change.csv", header=T, sep=',')
 
 
 ### TEMPEATURE DATA ### -------------------------------------------------------
-temp <-read.table("Temperature/3_Clean_Data/temp_site_change.csv", header=T, sep=',')
+#temp <-read.table("Temperature/3_Clean_Data/temp_site_change.csv", header=T, sep=',')
 
 
 ### SITES METADATA ### ------------------------------------------------------------
-sites <-read.table("Metadata/Sites/CRFL-AR_SITES_Master_2016-06-30_new.csv", header=T, sep=',')
+#sites <-read.table("Metadata/Sites/CRFL-AR_SITES_Master_2016-06-30_new.csv", header=T, sep=',')
 
 ### MERGE DATA ### ------------------------------------------------------------
 
-library(plyr)
+#library(plyr)
 
-join1 <- join(fish, temp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
-join2 <- join(join1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
-join3 <- join(join2, sites, by = c("Site", "Subsite")) 
+#join1 <- join(fish, temp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+#join2 <- join(join1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+#join3 <- join(join2, sites, by = c("Site", "Subsite")) 
 
 #join4 <- cbind(join3[,1:8], join3[,91:114], join3[,9:90]) #FOR SPECIES crude way of rearranging so that columns are in decent order; it duplicates ID and names it ID.1 for the duplicate so delete that column later on 
 #join4 <- cbind(join3[,1:9], join3[,37:60], join3[,10:36]) #FOR FAMILY 
 #join4 <- cbind(join3[,1:9], join3[,17:40], join3[,10:16]) #FOR FUNCTIONAL GROUP 
 
 # new ones
-join4 <- cbind(join3[,1:7], join3[,88:111], join3[,8:87]) # species
+#join4 <- cbind(join3[,1:7], join3[,88:111], join3[,8:87]) # species
 #join4 <- cbind(join3[,1:7], join3[,40:ncol(join3)], join3[,8:39]) # family
 #join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
 
-join5 <- join4[,-c(8, 12)] # FOR SPECIES
+#join5 <- join4[,-c(8, 12)] # FOR SPECIES
 #join5 <- join4[,-c(8,12)] # FOR FAMILY 
 #join5 <- join4[,-c(8,12)] # FOR FUNCTIONAL GROUP
 
-data <- join5
+#data <- join5
 
 
 #rm(list= ls()[!(ls() %in% c('data'))]) # removes everything except selected data frame(s) 
@@ -162,8 +163,8 @@ data <- join5
 # data <- filter(data, Depth_general == "Deep")
 #data <- filter(data, Reef_type == "Natural", Depth_general == "Intermediate")
 
-env.end<- 29 #FOR SPECEIS
-sp.start<-30 #FOR SPECIES
+#env.end<- 29 #FOR SPECEIS
+#sp.start<-30 #FOR SPECIES
 #env.end <- 29 #FOR FAMILY
 #sp.start <- 30 #FOR FAMILY
 #env.end <- 29 #FOR FUNCTIONAL GROUP
@@ -177,13 +178,13 @@ sp.start<-30 #FOR SPECIES
 
 #biom_data <- biom_data[,sp.start:ncol(biom_data)]
 
-env_data <- data[,1:env.end]
+#env_data <- data[,1:env.end]
  
-species.data<-data[,sp.start:ncol(data)] # fish data
-species.orig<-species.data # fish data, no transform
+#species.data<-data[,sp.start:ncol(data)] # fish data
+#species.orig<-species.data # fish data, no transform
 
 #species.data <- transform_data (data = species.data, transform_type = "square_root")
-species.data <- transform_data (data = species.data, transform_type = "cube_root")
+#species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 #we need to look at this with Avery
 
@@ -194,19 +195,125 @@ species.data <- transform_data (data = species.data, transform_type = "cube_root
 library(ggplot2)
 library(plyr)
 library(dplyr)
-fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
+#fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
 
 
 fishabundstruc <- mutate(fish_abund_matrix_structure, Abundance = rowSums(fish_abund_matrix_structure[,11:ncol(fish_abund_matrix_structure)]))
 
+fishabundno <- mutate(fish_abund_matrix_no, Abundance = rowSums(fish_abund_matrix_no[,11:ncol(fish_abund_matrix_no)]))
 #test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
 
-test <- summarySE(fishabundstruc, measurevar = "Abundance", groupvars = c("Transect_Number"))
+struc <- summarySE(fishabundstruc, measurevar = "Abundance", groupvars = c("Transect_Number"))
+
+no <- summarySE(fishabundno, measurevar = "Abundance", groupvars = c("Transect_Number"))
+
+################################################################################
+
+#ggplot(struc, aes(x=as.factor(Transect_Number), y=Abundance))+
+#  theme_classic()+
+#  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+#  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+#  scale_y_continuous(name="Average Fish Abundance", 
+ #                    limits=c(0, 500), 
+#                     breaks=seq(0, 500,by=100)) + 
+#  theme(axis.text=element_text(size=16, colour="black"), 
+#        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+#        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+#        legend.position="none") + 
+#  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+#ggplot(no, aes(x=as.factor(Transect_Number), y=Abundance))+
+ # theme_classic()+
+  #geom_bar(position=position_dodge(), stat="identity", colour="black")+
+#  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+#  scale_y_continuous(name="Average Fish Abundance", 
+ #                    limits=c(0, 500), 
+  #                   breaks=seq(0, 500,by=100)) + 
+#  theme(axis.text=element_text(size=16, colour="black"), 
+ #       axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+  #      axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+   #     legend.position="none") + 
+  #scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+##################################################################################
+struc$name <- "struc"
+no$name <- "no"
+allstrucno <- rbind(no, struc)
+allstrucno [1,7] <- "struc"
+
+allstrucno.plot = ggplot(allstrucno, aes(x=as.factor(Transect_Number), y=Abundance), fill = name)
+
+allstrucno.plot + geom_bar (stat = "identity", position = "dodge") +theme_classic () +
+ #geom_bar(position=position_dodge(), stat="identity", colour="black")+
+geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 700), 
+                     breaks=seq(0, 700,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+#######################################################################################
+hiii <- ggplot(NULL, aes(as.factor(Transect_Number), Abundance)) + 
+  geom_bar(aes(fill = "struc"), data = struc, stat = "identity", alpha = 0.5) +
+  geom_bar(aes(fill = "no"), data = no, stat = "identity", alpha = 0.5)
+hiii + theme_classic()
+#####################################################################################
+
+halla <- ggplot(allstrucno, aes(as.factor(Transect_Number), Abundance, fill = name)) + geom_bar(stat = "identity", position = "dodge")
+
+halla + theme_classic()
+#####################################################################################
+allstrucno_test <- rbind(allstrucno[1,], allstrucno[5:7,], allstrucno[2:4,])
+#allstrucno$name <- factor(allstrucno$name, c("no", "struc"))
+#order levels of treatment to appear orderly in plots
+allstrucno_test$abund <- c(allstrucno_test[1,3], allstrucno_test[2,3], allstrucno_test[3,3], allstrucno_test[4,3], (allstrucno_test[5,3]+ allstrucno_test[2,3]), (allstrucno_test[6,3]+allstrucno_test[3,3]), (allstrucno_test[7,3]+allstrucno_test[4,3]))
 
 
-ggplot(fish_meta, aes(x=as.factor(Transect_Number), y=Abundance)) +
-  theme_classic()+ stat = "identity"
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+stack <- ggplot(allstrucno_test, aes(as.factor(Transect_Number), Abundance, fill = name)) + geom_bar(stat = "identity", position = "stack")
+
+stack + theme_classic()+ ggtitle("Fish Abundance- presence/absence of structure")
+#geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2)+#, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 250), 
+                     breaks=seq(0, 250,by=50)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ # geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = "identity", width=.2)
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = position_dodge(0.5), width=.2)
+
+
+################################################################################
+helpme <- ggplot(NULL, aes(as.factor(Transect_Number), Abundance), fill = name) +
+  geom_bar(aes(fill = "struc"), data = struc, stat = "identity", alpha = 0.5, position = "dodge") +
+  geom_bar(aes(fill = "no"), data = no, stat = "identity", alpha = 0.5, position = "dodge")
+helpme + theme_classic()
+
+
+struc.plot = ggplot(struc, aes(x=as.factor(Transect_Number), y=Abundance), fill = name) +   geom_bar (stat = "identity", position = "dodge") +theme_classic ()
+
+no.plot = ggplot(no, aes(x=as.factor(Transect_Number), y=Abundance), fill = name) +   geom_bar (stat = "identity", position = "dodge") +theme_classic ()
+
+
+no.plot
+struc.plot
+
++  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 10), breaks=seq(0, 10,by=1))
+
+
+ggplot() +
+  geom_bar(data = allstrucno, aes(no, struc), position = "dodge")
+
+allstrucno.plot <- ggplot(allstrucno, aes(no, struc, fill = name)) + geom_bar(position = "dodge")
+allstrucno.plot
+
+
+ggplot()+
+  theme_classic()+
+  geom_bar(aes(x=as.factor(Transect_Number), y=Abundance), data = struc, position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
                      limits=c(0, 500), 
@@ -216,6 +323,22 @@ ggplot(fish_meta, aes(x=as.factor(Transect_Number), y=Abundance)) +
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
         legend.position="none") + 
   scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+
+ggplot(struc, aes(x=as.factor(Transect_Number), y=Abundance)) +
+  theme_classic()+ stat = "identity"
+  +
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+  
+
 
 # fill for extra variable (in this case season)
 test1 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
@@ -289,15 +412,3 @@ ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
 
 ```
 
-
-```{r}
-
-```
-
-You can also embed plots, for example:
-
-```{r}
-
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
