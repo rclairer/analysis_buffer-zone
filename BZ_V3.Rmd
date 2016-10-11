@@ -155,277 +155,7 @@ species.data <- transform_data (data = species.data, transform_type = "cube_root
 
 ```
 
-```{r ggplot2}
-library(ggplot2)
-fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
-
-#test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
-
-test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number"))
-
-
-ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
-  theme_classic()+
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
-  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 500), 
-                     breaks=seq(0, 500,by=100)) + 
-  theme(axis.text=element_text(size=16, colour="black"), 
-        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
-        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="none") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
-
-# fill for extra variable (in this case season)
-test1 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
-test1$Sampling_Period <- factor(test1$Sampling_Period, c("Fall", "Winter", "Spring"))
-#order levels of treatment to appear orderly in plots
-
-
-ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance, fill=Sampling_Period)) +
-  theme_classic()+
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
-  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 700), 
-                     breaks=seq(0, 700,by=100)) + 
-  theme(axis.text=element_text(size=16, colour="black"), 
-        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
-        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
-
-#order levels of treatment to appear orderly in plots, move this higher
-# facets
-#can do fill within facet
-ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance)) +
-  theme_classic()+
-  facet_wrap(~Sampling_Period, ncol=3)+
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
-  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 700), 
-                     breaks=seq(0, 700,by=100)) + 
-  theme(axis.text=element_text(size=16, colour="black"), 
-        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
-        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
-
-fishFall <- filter(fishabundance, Sampling_Period == "Fall")
-fishWinter <- filter(fishabundance, Sampling_Period == "Winter")
-fishSpring <- filter(fishabundance, Sampling_Period == "Spring")
-  
-test2 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Reef_Type"))
-
-ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
-  theme_classic()+
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
-  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 500), 
-                     breaks=seq(0, 500,by=100)) + 
-  theme(axis.text=element_text(size=16, colour="black"), 
-        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
-        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
-
-ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
-  theme_classic()+
-  facet_wrap(~Reef_Type, ncol = 2) +
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
-  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 500), 
-                     breaks=seq(0, 500,by=100)) + 
-  theme(axis.text=element_text(size=16, colour="black"), 
-        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
-        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
-
-
-```
-
-```{r nMDS}
-library(ecodist)
-library(vegan)
-library(ggplot2)
-# nmds calculations
-out.nms <- calc_nms_ord(species.data = species.data)
-
-# if from function
-species.nms <- out.nms[[1]] # nmds scores
-r2.2 <- out.nms[[2]] # r^2 for NMS 2
-r2.1 <- out.nms[[3]] # r^2 for NMS 1
-stress <- out.nms[[4]] # stress value
-
-species.wa <- get_wght_avg_spec(species.nms, species.data) # species weighted average scores
-#vect.vf <- get_env_vectors (species.nms, env_data) # environmental vectors that have pval < 0.05
-hull.data.reefs  <-get_convex_hulls_reefs(species.nms) # convex hulls for reef type
-#hull.data.depths <- get_convex_hulls_depth(species.nms) # convex hulls for depth categories
-
-
-# Plots
-#plot_nmds_reef_type(species.nms, species.wa) 
-plot_nmds_transect_number(species.nms, species.wa)
-
-#plot_nmds_transect_number(species.nms)
-#plot_nmds_depth (species.nms)
-#plot_nmds_complexity_reef_type(species.nms)
-
-```
-
-```{r PCA}
-
-### Exploratory data analysis
-library(dplyr)
-summary(env_data)
-names(env_data)
-
-# remove rows where no water level logger data (NA values for temp, depth, and drr)
-
-env_data <- filter(env_data, env_data$DRR != 'N/A')
-
-nat <- filter(env_data, env_data$Reef_Type == 'Natural')
-art <- filter(env_data, env_data$Reef_Type == 'Artificial')
-art_no_na<- filter(art, art$DMF_Area_sqft != 'N/A')
-
-env_data <-rbind(nat, art_no_na) # for all reefs
-#env_data <- art_no_na # for ARTIFICIAL reefs
-
-# pick env variables to do PCA with 
-#env.data.pca<-env_data[,c(23, 9, 16, 14)] # select variables of interest for ARTIFICIAL
-env.data.pca<-env_data[,c(8, 15, 13)] # select variables of interest for NATURAL or ALL
-
-env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
-env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
-env.data.pca$DRR <- as.numeric(env.data.pca$DRR)
-env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
-# convert the ENV data to z-scores
-# this relavitizes the environemtnal data
-# default is to center (subtract column means) and scale (divide by st dev)
-env.z <- scale(as.matrix(env.data.pca))  
-
-# Recall cor, cor.test, and pairs from previously ...
-# you should already have env17 from the Mantel lab
-env.cor <- cor(env.data.pca) # check for correlated variables
-cor.test(env.data.pca$avg_dep,env.data.pca$DRR)
-cor.test(env.data.pca$avg_dep,env.data.pca$Temp_avg)
-
-pairs(env.data.pca) # look for nonlinear relationships, eg xDepth sDepth
-  # see that ver_rel and drr are correlated so can exclude one of them
-
-# test normality
-apply(env.data.pca,2,shapiro.test) 
-
-# check for normal distribution
-hist(env.data.pca$DRR)
-#hist(env.data.pca$sed_stdv)
-hist(env.data.pca$avg_dep)
-hist(env.data.pca$DMF_Area_sqft)
-#env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
-hist(env.data.pca$Temp_avg)
-
-# transform to correct skewed distributions
-env.data.pca$DRR<-sqrt(env.data.pca$DRR)
-hist(env.data.pca$DRR) #still not normal
-#env.data.pca$sed_stdv<-sqrt(env.data.pca$sed_stdv)
-env.data.pca$avg_dep<-sqrt(env.data.pca$avg_dep)
-hist(env.data.pca$avg_dep)
-env.data.pca$DMF_Area_sqft<-sqrt(env.data.pca$DMF_Area_sqft)
-hist(env.data.pca$DMF_Area_sqft)
-env.data.pca$Temp_avg<-sqrt(env.data.pca$Temp_avg)
-hist(env.data.pca$Temp_avg)
-
-### PCA ----------
-
-#make sure violations of assumptions aren't egregious before you begin PCA (which we did before)
-set.seed(318)
-# Do the PCA ...
-# Here we have to use a correlation matrix because the variables
-# are in different units:
-env.pca <- princomp(env.data.pca, cor=T, scores=T)
-#env.pca <- princomp(env.z, cor=T, scores=T)
-  #cor=T to use correlation matrix (z-scores)
-  #cor=F to use covariance matrix
-  #scores = T means to calculate sample scores on new principal components for ordination
-
-# Summary shows you the eigenvalues; print does the same:
-summary(env.pca) 
-#these are square roots of eigenvalues
-#first pca has 76% of variance, next has 24% of variance
-print(env.pca)
-
-#eigenvalues
-env.pca$sdev->env.pca.sdev
-#write.csv(env.pca.sdev, "Inverts_Algae/2_Post-R_Data/env_pca_sdev.csv")
-
-# Plot produces a scree plot of the eigenvalues per PC:
-plot(env.pca)
-
-# Print the loadings, to see which variables go with each PC:
-print(env.pca$loadings) 
-#these are regression coefficients 
-# Print just the first 4, to 3 decimal places, and suppressing
-# any loadings less than ABS(0.2) (this might not work):
-#print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
-print(env.pca$loadings,digits=3,cutoff=0.2)
-# for lab report, can export this as a .csv file
-# here we want to scan the loadings
-#env17_pca_loadings<-print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
-env_pca_loadings<-print(env.pca$loadings,digits=3,cutoff=0.2)
-#write.csv(env_pca_loadings, "Inverts_Algae/2_Post-R_Data/env_pca_loadings.csv")
-
-attributes(env.pca)  # shows objects in pca
-
-# Biplot shows correlation vectors
-# between the PCs and the original variables:
-biplot(env.pca) 
-# a bi plot plots two axes. It is a plot that puts two things on it in ordination world. One is a plot of sample scores. Second is the correlation vectors that it adds to the sample scores. Correlation vectors are red arrows, one for each environemntal variable. Length of arrow is scaled to magnitude of correlation. Can also look at raw numbers instead of plot if need to. These help you figure out what PCs refer to so you can know what to call your axes (e.g. soil chemistry, elevation, etc)
-# The same, but plot asterisks for the plots (easier to see);
-# here 99 is the number of samples:
-
-# Plot the samples in the new PC space (defaults to PC 1 & 2):
-plot(env.pca$scores) 
-# An alternative, if you want to see different axes:
-env.pca.scores <- as.data.frame(env.pca$scores)
-names(env.pca.scores) # shows you that they are labelled Comp.1 etc
-
-## Rename environmental variables
-detach("package:dplyr", unload=TRUE)
-library(plyr)
-env.data.pca<-rename(env.data.pca, c("DMF_Area_sqft"="Area", "avg_dep"="Depth", "DRR"="Complexity", "Temp_avg"="Temperature"))
-
-# a table of correlations between PCs and the original variables: #HELP NOT WORKING
-library(ecodist)
-#env.data.pca <- na.omit(env.data.pca)
-cor2m(env.pca.scores,env.data.pca)
-# even tidier:
-env.pca.cor2m <- cor2m(env.pca.scores,env.data.pca)
-print(env.pca.cor2m, digits=3)
-
-## Plot it!
-plot_pca_reef_type() 
-env_data$Transect_Number <- as.character(env_data$Transect_Number) #don't forget to add as.character if using numeric
-plot_pca_transect_number()
-env_data$Site <- as.numeric(env_data$Site)
-env_data$Site <- filter(env_data, env_data$Site != "342")
-env_data$Site <- as.factor(env_data$Site)
-plot_pca_site()
-#plot_pca_reef_type_depth()
-#plot_pca_depth()
-#plot_pca_depth_sed()
-#plot_pca_depth_comp()
-
-#AR number
-#unique site
-#season
-
-```
-
+#BCD and distance
 ``` {r BCD_function_prep}
 library(ecodist)
 library(vegan)
@@ -1143,7 +873,7 @@ all.points.test.plot + geom_point () +theme_classic () +  scale_y_continuous(nam
   stat_smooth()
 ```
 
-```{r max}
+```{r BCD_max}
 a <- filter(site330.fall, BCD == max(site330.fall$BCD))
 b <-filter(site330.winter, BCD == max(site330.winter$BCD))
 c <-filter(site364.fall, BCD == max(site364.fall$BCD))
@@ -1162,752 +892,7 @@ ave(findmaxbcd$NEAR_DIST_nautical)
 
 ```
 
-
-```{r combine_seasons}
-```
-
-```{r one_site}
-distance <- read.csv ("Distance/dive_pts_distance_to_other_dive_pts_ft.csv") #
-distance.matrix <- as.matrix(distance[,2:4])
-distance.matrix <- as.data.frame(distance.matrix)
-distance.codes <-as.matrix(sites[,c(1,2,13)]) 
-distance.codes <- as.data.frame(distance.codes)
-
-library (dplyr)
-
-
-
-#For FALL
-
-half.species.bcd.fall <- matrix(nrow=nrow(species.bcd_df.fall), ncol=nrow(species.bcd_df.fall))
- j=1  # j is "outer loop" counter (columns); begin at 1
-  for (j in 1:nrow(species.bcd_df.fall)) {
-    i=1  # i is "inner loop" counter (rows)
-    for (i in 1:nrow(species.bcd_df.fall)) {
-      if (i<=j) {
-        half.species.bcd.fall[i,j] <- "NA" # writes NA values to matrix c by row i and col j
-        i=i+1
-      }
-      else {
-        half.species.bcd.fall[i,j] <- species.bcd_df.fall[i,j] 
-      }
-      i=i+1
-    }  
-    j=j+1
-  }
- 
-env.species.bcd.fall <- cbind(env_data.structural.fall [,1:7], half.species.bcd.fall)
-env.species.bcd.fall <- as.data.frame(env.species.bcd.fall)
-
-env.species.bcd.fall$Site <- as.character(env.species.bcd.fall$Site)
-env.species.bcd.fall$Subsite <- as.character(env.species.bcd.fall$Subsite)
-
-
-data <- env.species.bcd.fall # name data simply
-out<-calc_bcd_dist_matrix(data=env.species.bcd.fall) # where you use the function 
-
-
-# this is the function called calc_bcd_dist_matrix that puts sites and their dissimilarities and distances in a pretty matrix
-calc_bcd_dist_matrix <- function(data){
-site_subsite <- paste(data$Site, data$Subsite, sep = "_") # identify unique site and subsite combinations
-uniq <- unique(unlist(site_subsite))  # saves unique site and subsite combinations as object called 'uniq' so that can use them in the loop below for counting purposes
-
-# Make data frame to store results of outlier detection
-results <- data.frame(site_in = character(), subsite_in = character(), id_in = character(), site_far = character(), subsite_far = character(), id_far = character(), dist = integer(), dissim = integer())
-
-p=1 # p is the counter, initialize it at 1, represents number of uniq site and subsite combinations
-  for (p in 1:length(uniq)){
-    ## In site
-      a <- rep(data[p,2], nrow(data)) # in site
-      b <- rep(data[p,3], nrow(data)) # in subsite
-      IN <- cbind(a,b)
-    ## Far site
-      NEAR <- data[,2:3] # always the second (site) and thrid (subsite) columns of data, just repeated, for the far
-    ## Dissimilarity
-      DISS <- data[,p+7] # dissimilarity value is always in the column of p + 7
-    ## Combine results    
-      combo <- cbind(IN, NEAR, DISS)
-      results <- rbind(results, combo)
-    p=p+1
-    }
-
-# if need to reset, use these two lines of code
-# p <- NULL
-# results <- NULL
-
-IN <- results[,1:2]
-
-IN <- as.data.frame(IN)
-colnames(IN) <- c("Site", "Subsite")
-
-joining1 <- join(IN, distance.codes, by = c("Site", "Subsite"))
-
-colnames(joining1) <- c("IN_Site", "IN_Subsite", "IN_FID")
-joining1$IN_FID <- as.character (joining1$IN_FID)
-
-NEAR <- results[,3:4] 
-NEAR <-as.data.frame(NEAR)
-colnames(NEAR) <- c("Site", "Subsite")
-
-joining2 <- join(NEAR, distance.codes, by = c("Site", "Subsite"))
-colnames(joining2)<- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
-joining2$NEAR_FID <- as.character(joining2$NEAR_FID)
-
-diss <- results[,5]
-diss <- as.data.frame(diss) 
-colnames(diss) <- "BCD"
-
-#INhelp <- joining1[,3]
-#INhelp <- as.data.frame(INhelp)
-#colnames(INhelp) <- c("IN_FID")
-
-
-#NEARhelp <- joining2[,3]
-#NEARhelp <- as.data.frame(NEARhelp)
-#colnames(NEARhelp) <- c("NEAR_FID")
-
-#omg$IN_FID <- as.numeric(omg$IN_FID)
-#omg$NEAR_FID <- as.numeric(omg$NEAR_FID)
-#distance.matrix$IN_FID <- as.numeric(distance.matrix$IN_FID)
-#distance.matrix$NEAR_FID <- as.numeric(distance.matrix$NEAR_FID)
-#distance.matrix$NEAR_DIST <- as.character(distance.matrix$NEAR_DIST)
-
-#omg <- cbind(INhelp, NEARhelp)
-#cookie <- join(distance.matrix, omg, by = c("IN_FID", "NEAR_FID"))
-#poop <- join(omg, distance.matrix, by = c("IN_FID", "NEAR_FID"))
-
-#IN.NEAR.diss$IN_FID <- as.numeric(IN.NEAR.diss$IN_FID)
-#IN.NEAR.diss$NEAR_FID <- as.numeric(IN.NEAR.diss$NEAR_FID)
-distance.matrix$IN_FID <- as.numeric(distance.matrix$IN_FID)
-distance.matrix$NEAR_FID <- as.numeric(distance.matrix$NEAR_FID)
-distance.matrix$NEAR_DIST <- as.character(distance.matrix$NEAR_DIST)
-
-
-IN.NEAR.diss <- cbind(joining1, joining2, diss)
-IN.NEAR.diss$IN_FID <- as.numeric(IN.NEAR.diss$IN_FID)
-IN.NEAR.diss$NEAR_FID <- as.numeric(IN.NEAR.diss$NEAR_FID)
-
-dist.IN.NEAR.diss <- join(IN.NEAR.diss, distance.matrix, by = c ("IN_FID", "NEAR_FID"))
-#dist.IN.NEAR.diss <- join(distance.matrix, IN.NEAR.diss, by = c("IN_FID", "NEAR_FID"))
-#heeeelp <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
-dist.IN.NEAR.diss
-}
-
-#dist.IN.NEAR.diss <- dist.IN.NEAR.diss[,c(4,5,1,6,7,2,3,8)]
-
-
-#IN_dist <- join(IN, distance.codes, by =c("Site", "Subsite"))
-#NEAR_dist <- join(NEAR, distance.codes, by =c("Site", "Subsite"))
-
-#colnames(IN_dist) <- c("IN_Site", "IN_Subsite", "IN_FID")
-#colnames(NEAR_dist) <- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
-
-#distance <- cbind(IN_dist, NEAR_dist)
-#distance <- as.data.frame(distance)
-#distance$IN_FID <- as.character(distance$IN_FID)
-#distance$NEAR_FID <- as.character(distance$NEAR_FID)
-
-#dist <- join(distance.matrix, distance, by = c("IN_FID", "NEAR_FID"))
-
-#disttest <- join(distance, distance.matrix, by = c("IN_FID", "NEAR_FID"))
-#final <- cbind(dist, DISS)
-#colnames(final)<-c("IN_Site", "IN_Subsite", "IN_FID", "NEAR_Site", "NEAR_Subsite", "NEAR_FID", "BCD")
-
-#final_join <- join(distance.matrix, final, by = c("IN_FID", "NEAR_FID"))
-
-
-## begin outermost for loop... 
- # uniq <- unique(unlist(all_data$ID)) # generates all unique transect IDs that include site, date, sample season, transect number, unlist produces vector, unlisted to be taken into unique format, this can stay the same
-
-#uniq <- unique(unlist(env.species.bcd.fall$ID))
-#bcd.matrix <- matrix(nrow=(nrow(env.species.bcd.fall))^2, ncol=8)
-
-
-
-bcd <- matrix(nrow=(nrow(env.species.bcd.fall))^2, ncol=8)
-i=1
-k = 1
-#p = 1
-#for (p in 1:nrow(bcd)){
-for (k in 1:nrow(env.species.bcd.fall)){
-  for (i in 1:nrow(bcd)){
-    bcd[i,1] <- env.species.bcd.fall[k,2]
-   i=i+1
-  }
-}
-##  i=i+nrow(env.species.bcd.fall)
-  k =k+1
-#}  
-  
-#################################################################################  
-bcd <- matrix(nrow=(nrow(env.species.bcd.fall))^2, ncol=8)
-i = 1
-k = 1
-for (k in 1:(nrow(env.species.bcd.fall)-1)){
-for (i in i:(i+nrow(env.species.bcd.fall))){
-  bcd[i,1] <- env.species.bcd.fall[k,2]
-  bcd[i,2] <- env.species.bcd.fall[k,3]
-  i=i+1
-}
-k = k +1
-}  
-#####################################################
-
-  
-bcdtest <-  matrix(nrow=(nrow(env.species.bcd.fall))^2, ncol=8)
-
-
- 
-bcd <- matrix(nrow=(nrow(env.species.bcd.fall))^2, ncol=8)
-i=1
-k = 1
-p = 1
-for (p in 1:nrow(bcd)){
-for (k in 1:nrow(env.species.bcd.fall)){
-  for (i in 1:nrow(bcd)){
-    bcd[p,1] <- env.species.bcd.fall[k,2]
-   i=i+1
-  }
-}
-  i=i+nrow(env.species.bcd.fall)
-  k =k+1
-}  
-  
-  
-  
-  
-  
-  
-  
-
-k=1
-i=1
-for (k in 1:28){
-  for (i in 1:nrow(bcd)){
-  bcd[i,1] <- env.species.bcd.fall[k,2]  # in site
-  i=i+1
-  }
-k=k+1
-}
-
-  bcd[i,2] <- env.species.bcd.fall[k,3]  # in subsite
-
-  bcd[i,3] <- env.species.bcd.fall [i,2] # near site
-  bcd[i,4] <- env.species.bcd.fall [i,3] # near subsite
-  joining1 <- join(bcd[,1:2], distance.codes, by = c("Site", "Subsite"))
-
- for (j in 1:2) {
-    if (j == 1) {
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       IN[i,j] <- env.species.bcd.fall [k,2]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-    }
-    if (j == 2){
-    for (i in 1:nrow(env.species.bcd.fall)){
-      if (i <= nrow(env.species.bcd.fall)) {
-       IN[i,j] <- env.species.bcd.fall [k,3]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-
-    } 
-    }
-    
-}
-k = k+1
-
-
-
-IN <- as.data.frame(IN)
-colnames(IN) <- c("Site", "Subsite")
-
-joining1 <- join(IN, distance.codes, by = c("Site", "Subsite"))
-
-colnames(joining1) <- c("IN_Site", "IN_Subsite", "IN_FID")
-
-
- 
-NEAR <- matrix(nrow=nrow(env.species.bcd.fall), ncol=2)
- j=1  # j is "outer loop" counter (columns); begin at 1
-for (j in 1:2) {
-    i=1  # i is "inner loop" counter (rows)
-    if (j == 1) {
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       NEAR [i,j] <- env.species.bcd.fall [i,2]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-    }
-    if (j == 2){
-    for (i in 1:nrow(env.species.bcd.fall)){
-      if (i <= nrow(env.species.bcd.fall)) {
-       NEAR [i,j] <- env.species.bcd.fall [i,3]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    } 
-    }
-}
- 
- 
-NEAR <-as.data.frame(NEAR)
-colnames(NEAR) <- c("Site", "Subsite")
-
-joining2 <- join(NEAR, distance.codes, by = c("Site", "Subsite"))
-colnames(joining2)<- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
-
-env.species.bcd.fall$'1' <- as.character(env.species.bcd.fall$'1')
-
-
-diss <- matrix(nrow=nrow(env.species.bcd.fall), ncol=1)
- j=1  # j is "outer loop" counter (columns); begin at 1
-for (j in 1:1) {
-    i=1  # i is "inner loop" counter (rows)
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       diss[i,j] <- env.species.bcd.fall [i,8]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-}  
-
-diss <- as.data.frame(diss) 
-colnames(diss) <- "BCD"
-
-
-IN.NEAR.diss <- cbind(joining1, joining2, diss)
-dist.IN.NEAR.diss <- join(distance.matrix, IN.NEAR.diss, by = c("IN_FID", "NEAR_FID"))
-
-dist.IN.NEAR.diss <- dist.IN.NEAR.diss[,c(4,5,1,6,7,2,3,8)]
-
-dist.IN.NEAR.diss.sofar <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
-dist.IN.NEAR.diss.sofar <- filter(dist.IN.NEAR.diss, BCD != 'NA')
-dist.IN.NEAR.diss.sofar$BCD <- as.character(dist.IN.NEAR.diss.sofar$BCD)
-#dist.IN.NEAR.diss.sofar$BCD <- as.numeric(dist.IN.NEAR.diss.sofar$BCD)
-
-dist.IN.NEAR.diss.sofar$NEAR_DIST <- as.numeric(dist.IN.NEAR.diss.sofar$NEAR_DIST)
-
-dist.IN.NEAR.diss.sofar <- mutate(dist.IN.NEAR.diss.sofar, NEAR_DIST_nautical = NEAR_DIST / 6076.12)
-#I should make this into nautical miles
-
-
-library(ggplot2)
-
-
-help = ggplot(dist.IN.NEAR.diss.sofar, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
-
-help + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 60), breaks=seq(0, 60,by=10))
-
-```
-
-```{r plotting_BCD}
-dist.IN.NEAR.diss.sofar <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
-dist.IN.NEAR.diss.sofar$BCD <- as.character(dist.IN.NEAR.diss.sofar$BCD)
-dist.IN.NEAR.diss.sofar$BCD <- as.numeric(dist.IN.NEAR.diss.sofar$BCD)
-
-dist.IN.NEAR.diss.sofar$NEAR_DIST <- as.numeric(dist.IN.NEAR.diss.sofar$NEAR_DIST)
-
-dist.IN.NEAR.diss.sofar <- mutate(dist.IN.NEAR.diss.sofar, NEAR_DIST_nautical = NEAR_DIST / 6076.12)
-#I should make this into nautical miles
-
-
-library(ggplot2)
-
-
-help = ggplot(dist.IN.NEAR.diss.sofar, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
-
-help + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 60), breaks=seq(0, 60,by=10))
-
-
-```
-
-```{r prep_for_BCD_function}
-
-library(ecodist)
-library(vegan)
-library(ggplot2)
-
-structural.data <- filter(data, Transect_Type == "Structural")
-fall.structural.data <- filter(structural.data, Sampling_Period == "Fall")
-
-
-fall.MHC.data <- filter(fall.structural.data, Site == "330" | Site == "345")
-
-
-env.end<- 29 #FOR SPECEIS
-sp.start<-30 #FOR SPECIES
-
-env_data.fall.MHC <- fall.MHC.data [,1:env.end]
-
- 
-species.data.fall.MHC <-fall.MHC.data [,sp.start:ncol(fall.MHC.data)] # fish data
-
-species.transform.fall.MHC <- transform_data (data = species.data.fall.MHC, transform_type = "cube_root")
-
-set.seed(318) # for reproducibility
-species.bcd.fall.MHC<-bcdist(species.transform.fall.MHC, rmzero=FALSE) # build distance matrix based on bray curtis
-
-species.bcd.fall.MHC <- as.matrix(species.bcd.fall.MHC)
-                   
-
-fall.MHC <- matrix(nrow=nrow(species.bcd.fall.MHC), ncol=nrow(species.bcd.fall.MHC))
- j=1  # j is "outer loop" counter (columns); begin at 1
-  for (j in 1:nrow(species.bcd.fall.MHC)) {
-    i=1  # i is "inner loop" counter (rows)
-    for (i in 1:nrow(species.bcd.fall.MHC)) {
-      if (i<=j) {
-        fall.MHC[i,j] <- "NA" # writes NA values to matrix c by row i and col j
-        i=i+1
-      }
-      else {
-        fall.MHC[i,j] <- species.bcd.fall.MHC[i,j] 
-      }
-      i=i+1
-    }  
-    j=j+1
-  }
- 
-env.fall.MHC <- cbind(env_data.fall.MHC [,1:7], fall.MHC)
-env.fall.MHC <- as.data.frame(env.fall.MHC)
-
-env.fall.MHC$Site <- as.character(env.fall.MHC$Site)
-env.fall.MHC$Subsite <- as.character(env.fall.MHC$Subsite)
-
-
-data <- fall.MHC.data # name data simply
-site_subsite <- paste(data$Site, data$Subsite, sep = "_") # identify unique site and subsite combinations
-uniq <- unique(unlist(site_subsite))  # saves unique site and subsite combinations as object called 'uniq' so that can use them in the loop below for counting purposes
-
-# Make data frame to store results of outlier detection
-results <- data.frame(site_in = character(), subsite_in = character(), id_in = character(), site_far = character(), subsite_far = character(), id_far = character(), dist = integer(), dissim = integer())
-
-p=1 # p is the counter, initialize it at 1, represents number of uniq site and subsite combinations
-  for (p in 1:length(uniq)){
-    ## In site
-      a <- rep(data[p,2], nrow(data)) # in site
-      b <- rep(data[p,3], nrow(data)) # in subsite
-      IN <- cbind(a,b)
-    ## Far site
-      NEAR <- data[,2:3] # always the second (site) and thrid (subsite) columns of data, just repeated, for the far
-    ## Dissimilarity
-      DISS <- data[,p+7] # dissimilarity value is always in the column of p + 7
-    ## Combine results    
-      combo <- cbind(IN, NEAR, DISS)
-      results <- rbind(results, combo)
-    p=p+1
-    }
-
-# if need to reset, use these two lines of code
-# p <- NULL
-# results <- NULL
-
-IN <- results[,1:2]
-
-IN <- as.data.frame(IN)
-colnames(IN) <- c("Site", "Subsite")
-
-joining1 <- join(IN, distance.codes, by = c("Site", "Subsite"))
-
-colnames(joining1) <- c("IN_Site", "IN_Subsite", "IN_FID")
-joining1$IN_FID <- as.character (joining1$IN_FID)
-
-NEAR <- results[,3:4] 
-NEAR <-as.data.frame(NEAR)
-colnames(NEAR) <- c("Site", "Subsite")
-
-joining2 <- join(NEAR, distance.codes, by = c("Site", "Subsite"))
-colnames(joining2)<- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
-joining2$NEAR_FID <- as.character(joining2$NEAR_FID)
-
-diss <- results[,5]
-diss <- as.data.frame(diss) 
-colnames(diss) <- "BCD"
-
-#INhelp <- joining1[,3]
-#INhelp <- as.data.frame(INhelp)
-#colnames(INhelp) <- c("IN_FID")
-
-
-#NEARhelp <- joining2[,3]
-#NEARhelp <- as.data.frame(NEARhelp)
-#colnames(NEARhelp) <- c("NEAR_FID")
-
-#omg$IN_FID <- as.numeric(omg$IN_FID)
-#omg$NEAR_FID <- as.numeric(omg$NEAR_FID)
-#distance.matrix$IN_FID <- as.numeric(distance.matrix$IN_FID)
-#distance.matrix$NEAR_FID <- as.numeric(distance.matrix$NEAR_FID)
-#distance.matrix$NEAR_DIST <- as.character(distance.matrix$NEAR_DIST)
-
-#omg <- cbind(INhelp, NEARhelp)
-#cookie <- join(distance.matrix, omg, by = c("IN_FID", "NEAR_FID"))
-#poop <- join(omg, distance.matrix, by = c("IN_FID", "NEAR_FID"))
-
-IN.NEAR.diss$IN_FID <- as.numeric(IN.NEAR.diss$IN_FID)
-IN.NEAR.diss$NEAR_FID <- as.numeric(IN.NEAR.diss$NEAR_FID)
-distance.matrix$IN_FID <- as.numeric(distance.matrix$IN_FID)
-distance.matrix$NEAR_FID <- as.numeric(distance.matrix$NEAR_FID)
-distance.matrix$NEAR_DIST <- as.character(distance.matrix$NEAR_DIST)
-
-
-IN.NEAR.diss <- cbind(joining1, joining2, diss)
-dist.IN.NEAR.diss <- join(IN.NEAR.diss, distance.matrix, by = c ("IN_FID", "NEAR_FID"))
-#dist.IN.NEAR.diss <- join(distance.matrix, IN.NEAR.diss, by = c("IN_FID", "NEAR_FID"))
-#heeeelp <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
-
-#dist.IN.NEAR.diss <- dist.IN.NEAR.diss[,c(4,5,1,6,7,2,3,8)]
-
-
-#IN_dist <- join(IN, distance.codes, by =c("Site", "Subsite"))
-#NEAR_dist <- join(NEAR, distance.codes, by =c("Site", "Subsite"))
-
-#colnames(IN_dist) <- c("IN_Site", "IN_Subsite", "IN_FID")
-#colnames(NEAR_dist) <- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
-
-#distance <- cbind(IN_dist, NEAR_dist)
-#distance <- as.data.frame(distance)
-#distance$IN_FID <- as.character(distance$IN_FID)
-#distance$NEAR_FID <- as.character(distance$NEAR_FID)
-
-dist.IN.NEAR.diss.sofar <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
-dist.IN.NEAR.diss.sofar$BCD <- as.character(dist.IN.NEAR.diss.sofar$BCD)
-dist.IN.NEAR.diss.sofar$BCD <- as.numeric(dist.IN.NEAR.diss.sofar$BCD)
-
-dist.IN.NEAR.diss.sofar$NEAR_DIST <- as.numeric(dist.IN.NEAR.diss.sofar$NEAR_DIST)
-
-dist.IN.NEAR.diss.sofar <- mutate(dist.IN.NEAR.diss.sofar, NEAR_DIST_nautical = NEAR_DIST / 6076.12)
-#I should make this into nautical miles
-
-
-library(ggplot2)
-
-
-help = ggplot(dist.IN.NEAR.diss.sofar, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
-
-help + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 10), breaks=seq(0, 60,by=1))
-
-
-```
-
-```{r mega_matrix}
- 
-distance <- read.csv ("Distance/dive_pts_distance_to_other_dive_pts_ft.csv") #
-distance.matrix <- as.matrix(distance[,2:4])
-distance.matrix <- as.data.frame(distance.matrix)
-distance.codes <-as.matrix(sites[,c(1,2,13)]) 
-distance.codes <- as.data.frame(distance.codes)
-
-library (dplyr)
-
-
-#For FALL
-
-half.species.bcd.fall <- matrix(nrow=nrow(species.bcd_df.fall), ncol=nrow(species.bcd_df.fall))
- j=1  # j is "outer loop" counter (columns); begin at 1
-  for (j in 1:nrow(species.bcd_df.fall)) {
-    i=1  # i is "inner loop" counter (rows)
-    for (i in 1:nrow(species.bcd_df.fall)) {
-      if (i<=j) {
-        half.species.bcd.fall[i,j] <- "NA" # writes NA values to matrix c by row i and col j
-        i=i+1
-      }
-      else {
-        half.species.bcd.fall[i,j] <- species.bcd_df.fall[i,j] 
-      }
-      i=i+1
-    }  
-    j=j+1
-  }
- 
-env.species.bcd.fall <- cbind(env_data.structural.fall [,1:7], half.species.bcd.fall)
-env.species.bcd.fall <- as.data.frame(env.species.bcd.fall)
-
-env.species.bcd.fall$Site <- as.character(env.species.bcd.fall$Site)
-env.species.bcd.fall$Subsite <- as.character(env.species.bcd.fall$Subsite)
-
-
-purplegreenbeans <- matrix(nrow=784, ncol=2)
-k=1
-for(k in 1:nrow(env.species.bcd.fall)){
- j=1  # j is "outer loop" counter (columns); begin at 1
- for (j in 1:2) {
-    i=1  # i is "inner loop" counter (rows)
-    if (j == 1) {
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       purplegreenbeans[i,j] <- env.species.bcd.fall [k,2]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-    }
-    
-    if (j == 2){
-    for (i in 1:nrow(env.species.bcd.fall)){
-      if (i <= nrow(env.species.bcd.fall)) {
-       purplegreenbeans[i,j] <- env.species.bcd.fall [k,3]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    } 
-    }
- }
-k = k+1
-}
-
-
-
-IN <- matrix(nrow=nrow(env.species.bcd.fall), ncol=2)
- j=1  # j is "outer loop" counter (columns); begin at 1
-for (j in 1:2) {
-    i=1  # i is "inner loop" counter (rows)
-    if (j == 1) {
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       IN[i,j] <- env.species.bcd.fall [1,2]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-    }
-    if (j == 2){
-    for (i in 1:nrow(env.species.bcd.fall)){
-      if (i <= nrow(env.species.bcd.fall)) {
-       IN[i,j] <- env.species.bcd.fall [1,3]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    } 
-    }
-}
-
-IN <- as.data.frame(IN)
-colnames(IN) <- c("Site", "Subsite")
-
-joining1 <- join(IN, distance.codes, by = c("Site", "Subsite"))
-
-colnames(joining1) <- c("IN_Site", "IN_Subsite", "IN_FID")
-
-
- 
-NEAR <- matrix(nrow=nrow(env.species.bcd.fall), ncol=2)
- j=1  # j is "outer loop" counter (columns); begin at 1
-for (j in 1:2) {
-    i=1  # i is "inner loop" counter (rows)
-    if (j == 1) {
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       NEAR [i,j] <- env.species.bcd.fall [i,2]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-    }
-    if (j == 2){
-    for (i in 1:nrow(env.species.bcd.fall)){
-      if (i <= nrow(env.species.bcd.fall)) {
-       NEAR [i,j] <- env.species.bcd.fall [i,3]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    } 
-    }
-}
- 
- 
-NEAR <-as.data.frame(NEAR)
-colnames(NEAR) <- c("Site", "Subsite")
-
-joining2 <- join(NEAR, distance.codes, by = c("Site", "Subsite"))
-colnames(joining2)<- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
-
-env.species.bcd.fall$'1' <- as.character(env.species.bcd.fall$'1')
-
-
-diss <- matrix(nrow=nrow(env.species.bcd.fall), ncol=1)
- j=1  # j is "outer loop" counter (columns); begin at 1
-for (j in 1:1) {
-    i=1  # i is "inner loop" counter (rows)
-    for (i in 1:nrow(env.species.bcd.fall)) {
-      if (i<= nrow(env.species.bcd.fall)) {
-       diss[i,j] <- env.species.bcd.fall [i,8]
-        i=i+1
-      }
-      else {
-        break
-      }
-      i=i+1
-    }
-}  
-
-diss <- as.data.frame(diss) 
-colnames(diss) <- "BCD"
-
-
-IN.NEAR.diss <- cbind(joining1, joining2, diss)
-dist.IN.NEAR.diss <- join(distance.matrix, IN.NEAR.diss, by = c("IN_FID", "NEAR_FID"))
-
-dist.IN.NEAR.diss <- dist.IN.NEAR.diss[,c(4,5,1,6,7,2,3,8)]
-
-dist.IN.NEAR.diss.sofar <- filter(dist.IN.NEAR.diss, IN_Site != 'NA')
-dist.IN.NEAR.diss.sofar$BCD <- as.character(dist.IN.NEAR.diss.sofar$BCD)
-dist.IN.NEAR.diss.sofar$BCD <- as.numeric(dist.IN.NEAR.diss.sofar$BCD)
-
-dist.IN.NEAR.diss.sofar$NEAR_DIST <- as.numeric(dist.IN.NEAR.diss.sofar$NEAR_DIST)
-
-dist.IN.NEAR.diss.sofar <- mutate(dist.IN.NEAR.diss.sofar, NEAR_DIST_nautical = NEAR_DIST / 6076.12)
-#I should make this into nautical miles
-
-
-library(ggplot2)
-
-
-help = ggplot(dist.IN.NEAR.diss.sofar, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
-
-help + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 60), breaks=seq(0, 60,by=10))
-
-
-```
-
+#exploring environmenatal variables
 ```{r classification_trees}
 library(rpart)
 #grow a tree
@@ -2005,7 +990,111 @@ text(help2, use.n=TRUE, all=TRUE, cex=.8)
 
 ```
 
-```{r permanova}
+#univariate statistics/visulizations
+```{r ggplot2}
+library(ggplot2)
+fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
+
+#test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
+
+test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number"))
+
+
+ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+# fill for extra variable (in this case season)
+test1 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
+test1$Sampling_Period <- factor(test1$Sampling_Period, c("Fall", "Winter", "Spring"))
+#order levels of treatment to appear orderly in plots
+
+
+ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance, fill=Sampling_Period)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 700), 
+                     breaks=seq(0, 700,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+#order levels of treatment to appear orderly in plots, move this higher
+# facets
+#can do fill within facet
+ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance)) +
+  theme_classic()+
+  facet_wrap(~Sampling_Period, ncol=3)+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 700), 
+                     breaks=seq(0, 700,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+fishFall <- filter(fishabundance, Sampling_Period == "Fall")
+fishWinter <- filter(fishabundance, Sampling_Period == "Winter")
+fishSpring <- filter(fishabundance, Sampling_Period == "Spring")
+  
+test2 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Reef_Type"))
+
+ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
+  theme_classic()+
+  facet_wrap(~Reef_Type, ncol = 2) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+
+```
+
+```{r ANOVA}
+
+```
+
+```{r Post_hoc_comparisons}
+
+```
+
+#multivariate statistics/visualizations
+```{r PERMANOVA}
 
 # permanova to test for effect of relief and complexity
 
@@ -2122,7 +1211,7 @@ densityplot(permanova)
 
 ```
 
-```{r anosim}
+```{r ANOSIM}
 
 # Goal to find differences between and among groups 
 
@@ -2187,9 +1276,189 @@ ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = 
 
 ```
 
-```{r pairwise.t.test}
-
+```{r SIMPER}
   
+```  
+
+```{r indicator_species}
+  
+```
+
+```{r nMDS}
+library(ecodist)
+library(vegan)
+library(ggplot2)
+# nmds calculations
+out.nms <- calc_nms_ord(species.data = species.data)
+
+# if from function
+species.nms <- out.nms[[1]] # nmds scores
+r2.2 <- out.nms[[2]] # r^2 for NMS 2
+r2.1 <- out.nms[[3]] # r^2 for NMS 1
+stress <- out.nms[[4]] # stress value
+
+species.wa <- get_wght_avg_spec(species.nms, species.data) # species weighted average scores
+#vect.vf <- get_env_vectors (species.nms, env_data) # environmental vectors that have pval < 0.05
+hull.data.reefs  <-get_convex_hulls_reefs(species.nms) # convex hulls for reef type
+#hull.data.depths <- get_convex_hulls_depth(species.nms) # convex hulls for depth categories
+
+
+# Plots
+#plot_nmds_reef_type(species.nms, species.wa) 
+plot_nmds_transect_number(species.nms, species.wa)
+
+#plot_nmds_transect_number(species.nms)
+#plot_nmds_depth (species.nms)
+#plot_nmds_complexity_reef_type(species.nms)
 
 ```
+
+```{r PCA}
+
+### Exploratory data analysis
+library(dplyr)
+summary(env_data)
+names(env_data)
+
+# remove rows where no water level logger data (NA values for temp, depth, and drr)
+
+env_data <- filter(env_data, env_data$DRR != 'N/A')
+
+nat <- filter(env_data, env_data$Reef_Type == 'Natural')
+art <- filter(env_data, env_data$Reef_Type == 'Artificial')
+art_no_na<- filter(art, art$DMF_Area_sqft != 'N/A')
+
+env_data <-rbind(nat, art_no_na) # for all reefs
+#env_data <- art_no_na # for ARTIFICIAL reefs
+
+# pick env variables to do PCA with 
+#env.data.pca<-env_data[,c(23, 9, 16, 14)] # select variables of interest for ARTIFICIAL
+env.data.pca<-env_data[,c(8, 15, 13)] # select variables of interest for NATURAL or ALL
+
+env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+env.data.pca$DRR <- as.numeric(env.data.pca$DRR)
+env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
+# convert the ENV data to z-scores
+# this relavitizes the environemtnal data
+# default is to center (subtract column means) and scale (divide by st dev)
+env.z <- scale(as.matrix(env.data.pca))  
+
+# Recall cor, cor.test, and pairs from previously ...
+# you should already have env17 from the Mantel lab
+env.cor <- cor(env.data.pca) # check for correlated variables
+cor.test(env.data.pca$avg_dep,env.data.pca$DRR)
+cor.test(env.data.pca$avg_dep,env.data.pca$Temp_avg)
+
+pairs(env.data.pca) # look for nonlinear relationships, eg xDepth sDepth
+  # see that ver_rel and drr are correlated so can exclude one of them
+
+# test normality
+apply(env.data.pca,2,shapiro.test) 
+
+# check for normal distribution
+hist(env.data.pca$DRR)
+#hist(env.data.pca$sed_stdv)
+hist(env.data.pca$avg_dep)
+hist(env.data.pca$DMF_Area_sqft)
+#env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+hist(env.data.pca$Temp_avg)
+
+# transform to correct skewed distributions
+env.data.pca$DRR<-sqrt(env.data.pca$DRR)
+hist(env.data.pca$DRR) #still not normal
+#env.data.pca$sed_stdv<-sqrt(env.data.pca$sed_stdv)
+env.data.pca$avg_dep<-sqrt(env.data.pca$avg_dep)
+hist(env.data.pca$avg_dep)
+env.data.pca$DMF_Area_sqft<-sqrt(env.data.pca$DMF_Area_sqft)
+hist(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_avg<-sqrt(env.data.pca$Temp_avg)
+hist(env.data.pca$Temp_avg)
+
+### PCA ----------
+
+#make sure violations of assumptions aren't egregious before you begin PCA (which we did before)
+set.seed(318)
+# Do the PCA ...
+# Here we have to use a correlation matrix because the variables
+# are in different units:
+env.pca <- princomp(env.data.pca, cor=T, scores=T)
+#env.pca <- princomp(env.z, cor=T, scores=T)
+  #cor=T to use correlation matrix (z-scores)
+  #cor=F to use covariance matrix
+  #scores = T means to calculate sample scores on new principal components for ordination
+
+# Summary shows you the eigenvalues; print does the same:
+summary(env.pca) 
+#these are square roots of eigenvalues
+#first pca has 76% of variance, next has 24% of variance
+print(env.pca)
+
+#eigenvalues
+env.pca$sdev->env.pca.sdev
+#write.csv(env.pca.sdev, "Inverts_Algae/2_Post-R_Data/env_pca_sdev.csv")
+
+# Plot produces a scree plot of the eigenvalues per PC:
+plot(env.pca)
+
+# Print the loadings, to see which variables go with each PC:
+print(env.pca$loadings) 
+#these are regression coefficients 
+# Print just the first 4, to 3 decimal places, and suppressing
+# any loadings less than ABS(0.2) (this might not work):
+#print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+print(env.pca$loadings,digits=3,cutoff=0.2)
+# for lab report, can export this as a .csv file
+# here we want to scan the loadings
+#env17_pca_loadings<-print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+env_pca_loadings<-print(env.pca$loadings,digits=3,cutoff=0.2)
+#write.csv(env_pca_loadings, "Inverts_Algae/2_Post-R_Data/env_pca_loadings.csv")
+
+attributes(env.pca)  # shows objects in pca
+
+# Biplot shows correlation vectors
+# between the PCs and the original variables:
+biplot(env.pca) 
+# a bi plot plots two axes. It is a plot that puts two things on it in ordination world. One is a plot of sample scores. Second is the correlation vectors that it adds to the sample scores. Correlation vectors are red arrows, one for each environemntal variable. Length of arrow is scaled to magnitude of correlation. Can also look at raw numbers instead of plot if need to. These help you figure out what PCs refer to so you can know what to call your axes (e.g. soil chemistry, elevation, etc)
+# The same, but plot asterisks for the plots (easier to see);
+# here 99 is the number of samples:
+
+# Plot the samples in the new PC space (defaults to PC 1 & 2):
+plot(env.pca$scores) 
+# An alternative, if you want to see different axes:
+env.pca.scores <- as.data.frame(env.pca$scores)
+names(env.pca.scores) # shows you that they are labelled Comp.1 etc
+
+## Rename environmental variables
+detach("package:dplyr", unload=TRUE)
+library(plyr)
+env.data.pca<-rename(env.data.pca, c("DMF_Area_sqft"="Area", "avg_dep"="Depth", "DRR"="Complexity", "Temp_avg"="Temperature"))
+
+# a table of correlations between PCs and the original variables: #HELP NOT WORKING
+library(ecodist)
+#env.data.pca <- na.omit(env.data.pca)
+cor2m(env.pca.scores,env.data.pca)
+# even tidier:
+env.pca.cor2m <- cor2m(env.pca.scores,env.data.pca)
+print(env.pca.cor2m, digits=3)
+
+## Plot it!
+plot_pca_reef_type() 
+env_data$Transect_Number <- as.character(env_data$Transect_Number) #don't forget to add as.character if using numeric
+plot_pca_transect_number()
+env_data$Site <- as.numeric(env_data$Site)
+env_data$Site <- filter(env_data, env_data$Site != "342")
+env_data$Site <- as.factor(env_data$Site)
+plot_pca_site()
+#plot_pca_reef_type_depth()
+#plot_pca_depth()
+#plot_pca_depth_sed()
+#plot_pca_depth_comp()
+
+#AR number
+#unique site
+#season
+
+```
+
   
