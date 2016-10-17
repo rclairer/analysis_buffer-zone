@@ -33,7 +33,17 @@ fish_data_structure <- filter(fish_data, Structure_Present == "Yes")
 fish_data_no <- filter(fish_data, Structure_Present != "Yes")
 fish_data_no$Structure_Present <- "No"
 
-#fish_data <- rbind(fish_data_structure, fish_data_no)
+fish_data_both <- rbind(fish_data_structure, fish_data_no)
+
+fish_meta_both <- combine_data_meta (data = fish_data_both, 
+                                file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
+                                merge_by = "Species_Code") 
+fish_meta_both <- filter(fish_meta_both, Pelagic.Demersal == "Demersal")
+fish_meta_both <- filter(fish_meta_both, Water_Col_Position != "R_S_W", Water_Col_Position != "S_W", Water_Col_Position != "W")
+
+fish_biom_both<-make_fish_biomass_col(data = fish_meta_both)
+
+
 
 fish_meta_structure <- combine_data_meta (data = fish_data_structure, 
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
@@ -77,6 +87,12 @@ fish_biom_no<-make_fish_biomass_col(data = fish_meta_no)
 #new4 = new3[rowSums(new3[,8:ncol(new3)]) !=0,] # remove rows where there were no fish on the transect - need this for species, family, and functional group levels
 #fish_abund_matrix <- new4
 
+fish_abund_matrix_both <- calc_fish_abund_matrix (data = fish_biom_both, 
+                                     tax_level = "Species_Code")
+#                                       #tax_level = "Family")
+
+
+
 fish_abund_matrix_structure <- calc_fish_abund_matrix (data = fish_biom_structure, 
                                      tax_level = "Species_Code")
 #                                       #tax_level = "Family")
@@ -86,8 +102,13 @@ fish_abund_matrix_no <- calc_fish_abund_matrix (data = fish_biom_no,
                                      tax_level = "Species_Code")
 #                                       #tax_level = "Family")
 
+fish_biom_matrix_both <- calc_fish_biom_matrix (data = fish_biom_both, 
+                                         tax_level = "Species_Code")
+#                                            #tax_level = "Family")
+#                                           tax_level = "Functional_Group")
 
-# 
+
+
 fish_biom_matrix_structure <- calc_fish_biom_matrix (data = fish_biom_structure, 
                                          tax_level = "Species_Code")
 #                                            #tax_level = "Family")
@@ -163,8 +184,9 @@ fish_biom_matrix_no <- calc_fish_biom_matrix (data = fish_biom_no,
 # data <- filter(data, Depth_general == "Deep")
 #data <- filter(data, Reef_type == "Natural", Depth_general == "Intermediate")
 
-#env.end<- 29 #FOR SPECEIS
-#sp.start<-30 #FOR SPECIES
+data <- fish_abund_matrix_both
+env.end<- 10 #FOR SPECEIS
+sp.start<-11 #FOR SPECIES
 #env.end <- 29 #FOR FAMILY
 #sp.start <- 30 #FOR FAMILY
 #env.end <- 29 #FOR FUNCTIONAL GROUP
@@ -178,15 +200,15 @@ fish_biom_matrix_no <- calc_fish_biom_matrix (data = fish_biom_no,
 
 #biom_data <- biom_data[,sp.start:ncol(biom_data)]
 
-#env_data <- data[,1:env.end]
+env_data <- data[,1:env.end]
  
-#species.data<-data[,sp.start:ncol(data)] # fish data
-#species.orig<-species.data # fish data, no transform
+species.data<-data[,sp.start:ncol(data)] # fish data
+species.orig<-species.data # fish data, no transform
 
 #species.data <- transform_data (data = species.data, transform_type = "square_root")
-#species.data <- transform_data (data = species.data, transform_type = "cube_root")
+species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
-#we need to look at this with Avery
+
 
 ```
 
@@ -441,6 +463,485 @@ adjacent_type + theme_classic()
 ##############################################################################
 
 
+
+```
+
+#univariate statistics/visulizations
+```{r ANOVA}
+
+```
+
+```{r Post_hoc_comparisons}
+
+```
+
+#multivariate statistics/visualizations
+```{r PERMANOVA}
+
+library(vegan)
+permanova<-adonis(species.data ~ Transect_Number * Structure_Present, env_data, permutations = 1000, method = "bray")
+permanova
+
+summary(permanova)
+permanova$aov.tab
+permanova$coefficients
+permanova$coef.sites
+permanova$f.perms
+permanova$model.matrix
+permanova$terms
+
+
+densityplot(permustats(permanova))
+
+
+
+
+# permanova to test for effect of relief and complexity
+
+#library(ecodist)
+    #species.bcd<-distance(as.matrix(species.data), method="bray")
+    #head(species.bcd)
+#environmental data from PCA and filtered for structural
+    
+#env_data.bcd <- filter(env_data.structural, env_data.structural$DRR != 'N/A')
+#env_data.filter <- filter(env_data.bcd, Transect_Type == "Structural")
+#env_data.filter <- as.matrix(env_data.filter)    
+#species.bcd_df <- as.matrix(species.bcd_df)
+
+#set.seed(318)
+#library(vegan)
+#permanova<-adonis(species.bcd_df ~ Temp_max, env_data.filter, permutations = 1000, method = "bray")
+#permanova
+#***********************************************
+#MANOVA
+#t0 <- filter(data, Transect_Type == "Structural")
+#radiating <- filter(data, Transect_Type == "Radiating")
+#t1 <- filter(radiating, Transect_Number == '1')
+#t2 <- filter(radiating, Transect_Number == '2')
+#t3 <- filter(radiating, Transect_Number == '3')
+
+#t0 <- as.matrix(t0)
+#t1 <- as.matrix(t1)
+#all.transects <- cbind (t0, t1,t2, t3)
+
+
+
+#********************************************
+
+
+#permanova.transect<-adonis(species.data ~ Transect_Number, env_data, permutations = 999, method = "bray")
+#permanova.transect2<-adonis2(species.data ~ Transect_Number, env_data, permutations = 999, method = "bray", by = "terms")
+#permanova.transect2
+
+ # permanova.transect
+  
+#  summary(permanova.transect)
+#*****************************************  
+#permanova.transect$aov.tab
+#permanova.transect$coefficients
+#permanova.transect$coef.sites
+#permanova.transect$f.perms
+#permanova.transect$model.matrix
+#permanova.transect$terms
+
+
+#densityplot(permustats(permanova.transect))
+#*********************************************
+  
+#perm.trans.sea <- adonis(species.data ~ Transect_Number * Sampling_Period, env_data, permutation = 999, method = "bray")
+#perm.trans.sea
+
+#******************************************************************
+  
+#set.seed(318)
+#library(vegan)
+#permanova<-adonis(species.bcd ~ Reef_Type*Depth_general*temp_avg, env_data, permutations = 1000, method = "bray")
+#permanova
+# Depth and reef type are significant
+
+
+#library(vegan)
+#permanova<-adonis(species.bcd ~ temp_avg, env_data, permutations = 1000, method = "bray")
+#permanova
+
+#library(vegan)
+#permanova<-adonis(species.bcd ~ Reef_type*avg_dep*DRR*ver_rel*temp_avg, env_data, permutations = 1000, method = "bray")
+#permanova
+# reef type, drr, temp are all significant!
+
+#permanova<-adonis(species.data ~ver_rel, env_data, permutations = 1000, method = "bray")
+# vertical relief and drr are significant for community according to permanova, but doesn't account for any variability
+
+#permanova<-adonis(species.bcd ~ Reef_type * ver_rel, env_data, permutations = 1000, method = "bray")
+# vertical relief and drr are significant for community according to permanova, but doesn't account for any variability
+
+#permanova<-adonis(species.bcd~drr*temp_avg*Site, env.data, permutations =1000, method="bray")
+#permanova
+
+#permanova<-adonis(species.data ~ Reef_type*drr, env.data, permutations = 10000, method = "bray")
+#permanova
+# reef type and drr are significant
+
+#permanova<-adonis(species.bcd ~ Reef_type * drr * avg_dep * sed_avg, env.data, permutations = 1000, method = "bray")
+#permanova
+# See that interactions aren't significant, so build as additive model instead
+
+#permanova<-adonis(species.bcd ~ Reef_type + drr + avg_dep + sed_avg, env.data, permutations = 1000, method = "bray")
+#permanova
+# See that all are significant!
+
+#permanova<-adonis(species.data ~ sed_stdv, env_data, permutations = 1000, method = "bray")
+
+#permanova<-adonis(species.bcd ~ Reef_type*ver_rel*drr*avg_dep*Samp*Location*sed_avg, env.data, permutations = 1000, method = "bray")
+#permanova
+# full model --> doesn't seem to indicate much.... 
+
+# This is the permanova output table
+#permanova$aov.tab
+
+# Other output
+#summary(permanova)
+#permanova$coefficients
+#permanova$coef.sites
+#permanova$f.perms
+#permanova$model.matrix
+#permanova$terms
+
+#densityplot(permanova)
+
+```
+
+```{r ANOSIM}
+
+# Goal to find differences between and among groups 
+
+library(ecodist)
+    species.bcd<-distance(as.matrix(species.data), method="bray")
+    head(species.bcd)
+
+library(vegan)
+set.seed(318)
+
+
+ano_reef<-anosim(species.data, env_data$Reef_Type, permutations = 1000, distance = "bray")  
+ano_reef
+  plot(ano_reef)
+  summary(ano_reef)
+  # result: community composition based on abundance is significantly different by reef type
+  
+  
+#env_data$Transect_Number <- as.numeric(env_data$Transect_Number)
+
+ano_transectnumber<-anosim(species.data, env_data$Transect_Number, permutations = 1000, distance = "bray")
+  ano_transectnumber
+  plot(ano_transectnumber)
+  summary(ano_transectnumber)
+  
+ano_transect_season <- anosim(species.data, env_data$Transect_Number :
+env_data$Sampling_Period, permutations = 1000, distance = "bray")
+ano_transect_season
+plot(ano_transect_season)
+summary(ano_transect_season)
+#what might make this work????
+  
+set.seed(318)
+ano_depth<-anosim(species.data, env_data$Depth_general, permutations = 1000, distance = "bray")
+  ano_depth
+  plot(ano_depth)
+  summary(ano_depth)
+
+ano_reef_depth <- anosim(species.data, env_data$Depth_general : env_data$Reef_type, permutations = 1000, distance = "bray")
+ano_reef_depth
+plot(ano_reef_depth)
+summary(ano_reef_depth)
+
+
+ano_site<-anosim(species.data, env_data$Site, permutations = 1000, distance = "bray")
+  ano_site
+  plot(ano_site)
+  summary(ano_site)
+
+ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = "bray")
+  ano_samp
+  plot(ano_samp)
+  summary(ano_samp)
+
+## Guidelines for interpretation. From Lauren Yeager's Community Analysis course in spring 2014.
+  # Null hypothesis is that no difference in community structure among groups
+  # ANOSIM is based on similarity matrix and is a non-parametric permutation procedure
+  # R ranges between -1 and 1
+    # R = 1 if all replicates w/i one group are more similar to each other than any replicate from a different group
+    # R approx 0 if null hypothesis true
+    # R <0 if there are more differences among samples within a group than between groups
+
+```
+
+```{r SIMPER}
+  
+```  
+
+```{r indicator_species}
+  
+```
+
+```{r new_nMDS}
+library(vegan)
+set.seed(318) 
+
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
+  # performs nMDS; arguments are as follows:
+  # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
+  # 2nd argument: dissimilarity index
+  # 3rd argument: k is number of dimensions
+  # 4th argument: trymax is maximum number of random starts used to search for a stable solution (iterations)
+  # 5th argument: the function does NOT autotransform data, rather it assumes your 1st argument is transformed correctly
+
+stressplot(species.metaMDS) # Shepard plot
+
+species.metaMDS$stress # stress value
+
+plot(species.metaMDS) # rough plot
+text(species.metaMDS$species[,1:2],rownames(species.metaMDS$species),cex=0.8,col="red") # add species labels to the plot (weighted averages)
+
+## references
+# https://cran.r-project.org/web/packages/vegan/vignettes/intro-vegan.pdf
+# https://jonlefcheck.net/2012/10/24/nmds-tutorial-in-r/
+# http://strata.uga.edu/6370/lecturenotes/multidimensionalScaling.html
+
+# extract info neccessary for polished plotting
+scores <- species.metaMDS$points # scores
+species.nms <- cbind(scores, env_data) # datset with scores and env data
+
+# weighted averages for species 
+species.wa <- data.frame(species.metaMDS$species) 
+species.wa <- cbind(row.names(species.wa), species.wa) 
+library(plyr)
+species.wa <- rename(species.wa, c("row.names(species.wa)"="species_code"))
+#added and named the sp code column, the first column w/ sp names is visually but NOT functionally there 
+
+stress <- species.metaMDS$stress # save stress value
+
+nms.xod1 <- dist(species.nms[,1]) # pearson correlation 
+nms.xod2 <- dist(species.nms[,1:2]) # pearson correlation
+r1<-cor(species.bcd,nms.xod1)
+r2.1<-r1^2; r2.1
+# axis 2 is 2-D minus 1-D solution:
+r2<-cor(species.bcd,nms.xod2)
+r2.2<-r2^2; 
+r2.2<-r2.2-r2.1
+
+# now plot it
+NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
+  yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
+  xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
+  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  library(colorspace)
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Reef_type, shape=species.nms$Reef_type), 
+               size=5) + # adds sample points
+    geom_text(data=species.wa,
+              aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+              alpha=0.9, # adds weighted averages for species
+              position=position_jitter(width=0.1,height=0.2))+
+    stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
+                 level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+    scale_colour_manual(name = "Reef Type", 
+                        values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
+    scale_shape_manual (name="Reef Type", 
+                        values = c("Artificial" = 17, "Natural" = 16))+
+    ggtitle(title)
+
+# if get error saying removed rows (geom_text), check to make sure no N/A values in dataframe....
+
+    
+```
+
+
+```{r nMDS} 
+library(ecodist)
+library(vegan)
+library(ggplot2)
+# nmds calculations
+out.nms <- calc_nms_ord(species.data = species.data)
+
+# if from function
+species.nms <- out.nms[[1]] # nmds scores
+r2.2 <- out.nms[[2]] # r^2 for NMS 2
+r2.1 <- out.nms[[3]] # r^2 for NMS 1
+stress <- out.nms[[4]] # stress value
+
+species.wa <- get_wght_avg_spec(species.nms, species.data) # species weighted average scores
+#vect.vf <- get_env_vectors (species.nms, env_data) # environmental vectors that have pval < 0.05
+hull.data.reefs  <-get_convex_hulls_reefs(species.nms) # convex hulls for reef type
+#hull.data.depths <- get_convex_hulls_depth(species.nms) # convex hulls for depth categories
+
+
+# Plots
+#plot_nmds_reef_type(species.nms, species.wa) 
+plot_nmds_transect_number(species.nms, species.wa)
+
+#plot_nmds_transect_number(species.nms)
+#plot_nmds_depth (species.nms)
+#plot_nmds_complexity_reef_type(species.nms)
+
+```
+
+```{r PCA}
+
+### Exploratory data analysis
+library(dplyr)
+summary(env_data)
+names(env_data)
+
+# remove rows where no water level logger data (NA values for temp, depth, and drr)
+
+env_data <- filter(env_data, env_data$DRR != 'N/A')
+
+nat <- filter(env_data, env_data$Reef_Type == 'Natural')
+art <- filter(env_data, env_data$Reef_Type == 'Artificial')
+art_no_na<- filter(art, art$DMF_Area_sqft != 'N/A')
+
+env_data <-rbind(nat, art_no_na) # for all reefs
+#env_data <- art_no_na # for ARTIFICIAL reefs
+
+# pick env variables to do PCA with 
+#env.data.pca<-env_data[,c(23, 9, 16, 14)] # select variables of interest for ARTIFICIAL
+env.data.pca<-env_data[,c(8, 15, 13)] # select variables of interest for NATURAL or ALL
+
+env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+env.data.pca$DRR <- as.numeric(env.data.pca$DRR)
+env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
+# convert the ENV data to z-scores
+# this relavitizes the environemtnal data
+# default is to center (subtract column means) and scale (divide by st dev)
+env.z <- scale(as.matrix(env.data.pca))  
+
+# Recall cor, cor.test, and pairs from previously ...
+# you should already have env17 from the Mantel lab
+env.cor <- cor(env.data.pca) # check for correlated variables
+cor.test(env.data.pca$avg_dep,env.data.pca$DRR)
+cor.test(env.data.pca$avg_dep,env.data.pca$Temp_avg)
+
+pairs(env.data.pca) # look for nonlinear relationships, eg xDepth sDepth
+  # see that ver_rel and drr are correlated so can exclude one of them
+
+# test normality
+apply(env.data.pca,2,shapiro.test) 
+
+# check for normal distribution
+hist(env.data.pca$DRR)
+#hist(env.data.pca$sed_stdv)
+hist(env.data.pca$avg_dep)
+hist(env.data.pca$DMF_Area_sqft)
+#env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+hist(env.data.pca$Temp_avg)
+
+# transform to correct skewed distributions
+env.data.pca$DRR<-sqrt(env.data.pca$DRR)
+hist(env.data.pca$DRR) #still not normal
+#env.data.pca$sed_stdv<-sqrt(env.data.pca$sed_stdv)
+env.data.pca$avg_dep<-sqrt(env.data.pca$avg_dep)
+hist(env.data.pca$avg_dep)
+env.data.pca$DMF_Area_sqft<-sqrt(env.data.pca$DMF_Area_sqft)
+hist(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_avg<-sqrt(env.data.pca$Temp_avg)
+hist(env.data.pca$Temp_avg)
+
+### PCA ----------
+
+#make sure violations of assumptions aren't egregious before you begin PCA (which we did before)
+set.seed(318)
+# Do the PCA ...
+# Here we have to use a correlation matrix because the variables
+# are in different units:
+env.pca <- princomp(env.data.pca, cor=T, scores=T)
+#env.pca <- princomp(env.z, cor=T, scores=T)
+  #cor=T to use correlation matrix (z-scores)
+  #cor=F to use covariance matrix
+  #scores = T means to calculate sample scores on new principal components for ordination
+
+# Summary shows you the eigenvalues; print does the same:
+summary(env.pca) 
+#these are square roots of eigenvalues
+#first pca has 76% of variance, next has 24% of variance
+print(env.pca)
+
+#eigenvalues
+env.pca$sdev->env.pca.sdev
+#write.csv(env.pca.sdev, "Inverts_Algae/2_Post-R_Data/env_pca_sdev.csv")
+
+# Plot produces a scree plot of the eigenvalues per PC:
+plot(env.pca)
+
+# Print the loadings, to see which variables go with each PC:
+print(env.pca$loadings) 
+#these are regression coefficients 
+# Print just the first 4, to 3 decimal places, and suppressing
+# any loadings less than ABS(0.2) (this might not work):
+#print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+print(env.pca$loadings,digits=3,cutoff=0.2)
+# for lab report, can export this as a .csv file
+# here we want to scan the loadings
+#env17_pca_loadings<-print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+env_pca_loadings<-print(env.pca$loadings,digits=3,cutoff=0.2)
+#write.csv(env_pca_loadings, "Inverts_Algae/2_Post-R_Data/env_pca_loadings.csv")
+
+attributes(env.pca)  # shows objects in pca
+
+# Biplot shows correlation vectors
+# between the PCs and the original variables:
+biplot(env.pca) 
+# a bi plot plots two axes. It is a plot that puts two things on it in ordination world. One is a plot of sample scores. Second is the correlation vectors that it adds to the sample scores. Correlation vectors are red arrows, one for each environemntal variable. Length of arrow is scaled to magnitude of correlation. Can also look at raw numbers instead of plot if need to. These help you figure out what PCs refer to so you can know what to call your axes (e.g. soil chemistry, elevation, etc)
+# The same, but plot asterisks for the plots (easier to see);
+# here 99 is the number of samples:
+
+# Plot the samples in the new PC space (defaults to PC 1 & 2):
+plot(env.pca$scores) 
+# An alternative, if you want to see different axes:
+env.pca.scores <- as.data.frame(env.pca$scores)
+names(env.pca.scores) # shows you that they are labelled Comp.1 etc
+
+## Rename environmental variables
+detach("package:dplyr", unload=TRUE)
+library(plyr)
+env.data.pca<-rename(env.data.pca, c("DMF_Area_sqft"="Area", "avg_dep"="Depth", "DRR"="Complexity", "Temp_avg"="Temperature"))
+
+# a table of correlations between PCs and the original variables: #HELP NOT WORKING
+library(ecodist)
+#env.data.pca <- na.omit(env.data.pca)
+cor2m(env.pca.scores,env.data.pca)
+# even tidier:
+env.pca.cor2m <- cor2m(env.pca.scores,env.data.pca)
+print(env.pca.cor2m, digits=3)
+
+## Plot it!
+plot_pca_reef_type() 
+env_data$Transect_Number <- as.character(env_data$Transect_Number) #don't forget to add as.character if using numeric
+plot_pca_transect_number()
+env_data$Site <- as.numeric(env_data$Site)
+env_data$Site <- filter(env_data, env_data$Site != "342")
+env_data$Site <- as.factor(env_data$Site)
+plot_pca_site()
+#plot_pca_reef_type_depth()
+#plot_pca_depth()
+#plot_pca_depth_sed()
+#plot_pca_depth_comp()
+
+#AR number
+#unique site
+#season
 
 ```
 

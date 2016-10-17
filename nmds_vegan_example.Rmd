@@ -1,0 +1,94 @@
+---
+title: "nMDS_vegan_annotated"
+author: "Avery B Paxton"
+date: "October 14, 2016"
+output: html_document
+---
+
+Example code to perform nMDS using vegan and plot the results within ggplot2. You'll need to get the necessary input data to feed into the metaMDS function in the species.data location. See below for annotated text. 
+
+
+```{r nmds_vegan, eval=FALSE}
+
+## code adapted from D. Urban's spring 2013 Landscape Ecology & Management Course (nms_etc.R) and Vegan Tutorial ##
+
+library(vegan)
+set.seed(318) 
+
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
+  # performs nMDS; arguments are as follows:
+  # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
+  # 2nd argument: dissimilarity index
+  # 3rd argument: k is number of dimensions
+  # 4th argument: trymax is maximum number of random starts used to search for a stable solution (iterations)
+  # 5th argument: the function does NOT autotransform data, rather it assumes your 1st argument is transformed correctly
+
+stressplot(species.metaMDS) # Shepard plot
+
+species.metaMDS$stress # stress value
+
+plot(species.metaMDS) # rough plot
+text(species.metaMDS$species[,1:2],rownames(species.metaMDS$species),cex=0.8,col="red") # add species labels to the plot (weighted averages)
+
+## references
+# https://cran.r-project.org/web/packages/vegan/vignettes/intro-vegan.pdf
+# https://jonlefcheck.net/2012/10/24/nmds-tutorial-in-r/
+# http://strata.uga.edu/6370/lecturenotes/multidimensionalScaling.html
+
+# extract info neccessary for polished plotting
+scores <- species.metaMDS$points # scores
+species.nms <- cbind(scores, env_data) # datset with scores and env data
+
+# weighted averages for species 
+species.wa <- data.frame(species.metaMDS$species) 
+species.wa <- cbind(row.names(species.wa), species.wa) 
+library(plyr)
+species.wa <- rename(species.wa, c("row.names(species.wa)"="species_code"))
+#added and named the sp code column, the first column w/ sp names is visually but NOT functionally there 
+
+stress <- species.metaMDS$stress # save stress value
+
+nms.xod1 <- dist(species.nms[,1]) # pearson correlation 
+nms.xod2 <- dist(species.nms[,1:2]) # pearson correlation
+r1<-cor(species.bcd,nms.xod1)
+r2.1<-r1^2; r2.1
+# axis 2 is 2-D minus 1-D solution:
+r2<-cor(species.bcd,nms.xod2)
+r2.2<-r2^2; 
+r2.2<-r2.2-r2.1
+
+# now plot it
+NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
+  yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
+  xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
+  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  library(colorspace)
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Reef_type, shape=species.nms$Reef_type), 
+               size=5) + # adds sample points
+    geom_text(data=species.wa,
+              aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+              alpha=0.9, # adds weighted averages for species
+              position=position_jitter(width=0.1,height=0.2))+
+    stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
+                 level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+    scale_colour_manual(name = "Reef Type", 
+                        values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
+    scale_shape_manual (name="Reef Type", 
+                        values = c("Artificial" = 17, "Natural" = 16))+
+    ggtitle(title)
+
+# if get error saying removed rows (geom_text), check to make sure no N/A values in dataframe....
+
+```
