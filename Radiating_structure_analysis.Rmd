@@ -468,7 +468,7 @@ adjacent_type + theme_classic()
 
 #univariate statistics/visulizations
 ```{r ANOVA}
-
+help <- anova()
 ```
 
 ```{r Post_hoc_comparisons}
@@ -766,7 +766,6 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
 
     
 ```
-
 
 ```{r nMDS} 
 library(ecodist)

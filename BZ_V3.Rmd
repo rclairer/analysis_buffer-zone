@@ -30,7 +30,13 @@ library(reshape2)
 
 fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new10.csv") #without 342 (version of new2, size bins that hayley changed)
 
+#fish_data <- filter(fish_data, Transect_Type == "Structural")
+fish_data <- filter(fish_data, Transect_Type == "Radiating")
+fish_data <- filter(fish_data, Species_Code != "SYSA")
+#fish_data <- filter(fish_data, ID != "AR-364_PODS_2015-09-21_R_T2")
 
+fish_data_nofi <- filter(fish_data, Species_Code == "NOFI")
+fish_data <- filter(fish_data, Species_Code != "NOFI")
 
 fish_meta <- combine_data_meta (data = fish_data, 
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
@@ -106,13 +112,28 @@ join3 <- join(join2, sites, by = c("Site", "Subsite"))
 #join4 <- cbind(join3[,1:9], join3[,17:40], join3[,10:16]) #FOR FUNCTIONAL GROUP 
 
 # new ones
-join4 <- cbind(join3[,1:7], join3[,88:111], join3[,8:87]) # species
+#join4 <- cbind(join3[,1:7], join3[,88:111], join3[,8:87]) # species
 #join4 <- cbind(join3[,1:7], join3[,40:ncol(join3)], join3[,8:39]) # family
 #join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
+
+
+
+#for structural, species
+#join4 <- cbind(join3[,1:7], join3[,75:98], join3[,8:74]) # species
+
+#for radiating, species
+join4 <- cbind(join3[,1:7], join3[,63:86], join3[,8:62]) # species
+
+#for radiating, family
+#join4 <- cbind(join3[,1:7], join3[,31:54], join3[,8:30]) # species
+
 
 join5 <- join4[,-c(8, 12)] # FOR SPECIES
 #join5 <- join4[,-c(8,12)] # FOR FAMILY 
 #join5 <- join4[,-c(8,12)] # FOR FUNCTIONAL GROUP
+
+#for structural, species
+
 
 data <- join5
 
@@ -148,8 +169,8 @@ env_data <- data[,1:env.end]
 species.data<-data[,sp.start:ncol(data)] # fish data
 species.orig<-species.data # fish data, no transform
 
-#species.data <- transform_data (data = species.data, transform_type = "square_root")
-species.data <- transform_data (data = species.data, transform_type = "cube_root")
+species.data <- transform_data (data = species.data, transform_type = "square_root")
+#species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 #we need to look at this with Avery
 
@@ -1290,7 +1311,7 @@ ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = 
 library(vegan)
 set.seed(318) 
 
-species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 2000, autotransform = TRUE) 
   # performs nMDS; arguments are as follows:
   # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
   # 2nd argument: dissimilarity index
@@ -1322,6 +1343,9 @@ species.wa <- rename(species.wa, c("row.names(species.wa)"="species_code"))
 #added and named the sp code column, the first column w/ sp names is visually but NOT functionally there 
 
 stress <- species.metaMDS$stress # save stress value
+
+
+species.bcd <- bcdist(species.data, rmzero=FALSE)###### CR added this
 
 nms.xod1 <- dist(species.nms[,1]) # pearson correlation 
 nms.xod2 <- dist(species.nms[,1:2]) # pearson correlation
@@ -1367,7 +1391,6 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
 # if get error saying removed rows (geom_text), check to make sure no N/A values in dataframe....
   
 ```
-
 
 ```{r nMDS}
 library(ecodist)
