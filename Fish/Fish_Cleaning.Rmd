@@ -84,7 +84,11 @@ fish <- test2
 fish <- filter(fish, Subsite != "HOUSTON")
 fish <- filter(fish, Subsite != "5-MILE-C")
 fish <- filter(fish, Site != "342")
-
+fish <- filter(fish, Subsite != "H-UNITS")
+fish <- filter(fish, Subsite != "CONC")
+fish <- filter(fish, Subsite != "DOMES")
+fish <- filter(fish, Subsite != "TRAINCARS")
+fish <- filter(fish, ID != "AR-372_NR1_2015-09-02_R_T1_T2_T3")
 ```
 
 test <- filter(fish, Sampling_Period != "Fall")
@@ -99,5 +103,7 @@ test$Transect_Number <- revalue(test$Transect_Number, c("2" = "1", "3" = "2", "4
 ```{r}
 
 # Export information in a csv file
-  write.csv(fish, file = "4_clean_data/fish_clean_data_output_structure.csv", row.names = FALSE)
+
+#write.csv(fish, file = "4_clean_data/fish_clean_data_output.csv", row.names = FALSE)
+  write.csv(fish, file = "4_clean_data/fish_clean_data_output_structure2.csv", row.names = FALSE)
 ```

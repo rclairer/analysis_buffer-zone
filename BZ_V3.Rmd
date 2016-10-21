@@ -28,15 +28,28 @@ library(dplyr)
 library(lubridate)
 library(reshape2)
 
-fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_new10.csv") #without 342 (version of new2, size bins that hayley changed)
+fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output.csv") #without 342 (version of new2, size bins that hayley changed, removing sites not used, removing t1_t2_t3
 
 #fish_data <- filter(fish_data, Transect_Type == "Structural")
-fish_data <- filter(fish_data, Transect_Type == "Radiating")
-fish_data <- filter(fish_data, Species_Code != "SYSA")
+#fish_data <- filter(fish_data, Transect_Type == "Radiating")
+#fish_data <- filter(fish_data, Species_Code != "SYSA")
 #fish_data <- filter(fish_data, ID != "AR-364_PODS_2015-09-21_R_T2")
 
-fish_data_nofi <- filter(fish_data, Species_Code == "NOFI")
-fish_data <- filter(fish_data, Species_Code != "NOFI")
+#fish_data_nofi <- filter(fish_data, Species_Code == "NOFI")
+#fish_data <- filter(fish_data, Species_Code != "NOFI")
+fish_data <- filter(fish_data, ID != "AR-364_PODS_2015-09-21_R_T2")
+fish_data <- filter(fish_data, ID != "AR-330_BARGE_2015-12-11_S_T0") #try adding back in
+fish_data <- filter(fish_data, ID != "AR-378_PODS_2015-09-14_R_T1")
+fish_data <- filter(fish_data, ID != "AR-364_BARGE_2015-12-10_R_T2")
+fish_data <- filter(fish_data, ID != "AR-372_NR2_2015-12-09_R_T5")
+fish_data <- filter(fish_data, ID != "AR-372_PODS_2015-12-09_R_T4")
+fish_data <- filter(fish_data, ID != "AR-372_RB1_2015-12-09_R_T3")
+fish_data <- filter(fish_data, ID != "AR-345_RB1_2015-10-15_R_T2")
+fish_data <- filter(fish_data, ID != "AR-345_RB2_2015-10-15_R_T3")
+fish_data <- filter(fish_data_both_radiating, ID != "AR-345_TITAN_2015-10-15_R_T3")
+
+#fish_data <- filter(fish_data, Site == "330")
+#fish_data <- filter(fish_data, Transect_Type == "Radiating")
 
 fish_meta <- combine_data_meta (data = fish_data, 
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
@@ -112,8 +125,8 @@ join3 <- join(join2, sites, by = c("Site", "Subsite"))
 #join4 <- cbind(join3[,1:9], join3[,17:40], join3[,10:16]) #FOR FUNCTIONAL GROUP 
 
 # new ones
-#join4 <- cbind(join3[,1:7], join3[,88:111], join3[,8:87]) # species
-#join4 <- cbind(join3[,1:7], join3[,40:ncol(join3)], join3[,8:39]) # family
+join4 <- cbind(join3[,1:7], join3[,79:102], join3[,8:78]) # species
+#join4 <- cbind(join3[,1:7], join3[,36:ncol(join3)], join3[,8:35]) # family
 #join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
 
 
@@ -122,7 +135,7 @@ join3 <- join(join2, sites, by = c("Site", "Subsite"))
 #join4 <- cbind(join3[,1:7], join3[,75:98], join3[,8:74]) # species
 
 #for radiating, species
-join4 <- cbind(join3[,1:7], join3[,63:86], join3[,8:62]) # species
+#join4 <- cbind(join3[,1:7], join3[,63:86], join3[,8:62]) # species
 
 #for radiating, family
 #join4 <- cbind(join3[,1:7], join3[,31:54], join3[,8:30]) # species
@@ -1311,7 +1324,7 @@ ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = 
 library(vegan)
 set.seed(318) 
 
-species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 2000, autotransform = TRUE) 
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
   # performs nMDS; arguments are as follows:
   # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
   # 2nd argument: dissimilarity index
@@ -1362,11 +1375,20 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
   xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
   title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
   library(colorspace)
+  
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
     geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Reef_type, shape=species.nms$Reef_type), 
+               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) 
+  
+  
+  
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), 
                size=5) + # adds sample points
     geom_text(data=species.wa,
               aes(x=species.wa[,2],y=species.wa[,3],label=species_code),

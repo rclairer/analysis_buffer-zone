@@ -28,14 +28,31 @@ library(dplyr)
 library(lubridate)
 library(reshape2)
 
-fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_structure.csv")
+fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_structure2.csv")
 fish_data_structure <- filter(fish_data, Structure_Present == "Yes")
 fish_data_no <- filter(fish_data, Structure_Present != "Yes")
 fish_data_no$Structure_Present <- "No"
 
 fish_data_both <- rbind(fish_data_structure, fish_data_no)
+fish_data_both <- filter(fish_data_both, Species_Code != "NOFI")
+fish_data_both_radiating <- filter(fish_data_both, Transect_Type == "Radiating")
 
-fish_meta_both <- combine_data_meta (data = fish_data_both, 
+#fish_data_nofi <- filter(fish_data, Species_Code == "NOFI")
+#fish_data <- filter(fish_data, Species_Code != "NOFI")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-364_PODS_2015-09-21_R_T2")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-330_BARGE_2015-12-11_S_T0") #try adding back in
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-378_PODS_2015-09-14_R_T1")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-364_BARGE_2015-12-10_R_T2")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_NR2_2015-12-09_R_T5")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_PODS_2015-12-09_R_T4")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_RB1_2015-12-09_R_T3")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_RB1_2015-10-15_R_T2")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_RB2_2015-10-15_R_T3")
+fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_TITAN_2015-10-15_R_T3")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, Site == "330")
+#fish_data <- filter(fish_data, Transect_Type == "Radiating")
+
+fish_meta_both <- combine_data_meta (data = fish_data_both_radiating, 
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
                                 merge_by = "Species_Code") 
 fish_meta_both <- filter(fish_meta_both, Pelagic.Demersal == "Demersal")
@@ -205,8 +222,8 @@ env_data <- data[,1:env.end]
 species.data<-data[,sp.start:ncol(data)] # fish data
 species.orig<-species.data # fish data, no transform
 
-#species.data <- transform_data (data = species.data, transform_type = "square_root")
-species.data <- transform_data (data = species.data, transform_type = "cube_root")
+species.data <- transform_data (data = species.data, transform_type = "square_root")
+#species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 
 
@@ -721,6 +738,10 @@ species.wa <- rename(species.wa, c("row.names(species.wa)"="species_code"))
 
 stress <- species.metaMDS$stress # save stress value
 
+library(ecodist)
+species.bcd <- bcdist(species.data, rmzero=FALSE)###### CR added this
+
+
 nms.xod1 <- dist(species.nms[,1]) # pearson correlation 
 nms.xod2 <- dist(species.nms[,1:2]) # pearson correlation
 r1<-cor(species.bcd,nms.xod1)
@@ -736,6 +757,30 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
   xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
   title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
   library(colorspace)
+ 
+  species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
+   
+   ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5)
+   
+   species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
+    ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Stucture_Present), size = 5)
+
+  
+  
+ 
+  
+  
+  
+  
+  
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
