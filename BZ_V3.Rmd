@@ -46,7 +46,7 @@ fish_data <- filter(fish_data, ID != "AR-372_PODS_2015-12-09_R_T4")
 fish_data <- filter(fish_data, ID != "AR-372_RB1_2015-12-09_R_T3")
 fish_data <- filter(fish_data, ID != "AR-345_RB1_2015-10-15_R_T2")
 fish_data <- filter(fish_data, ID != "AR-345_RB2_2015-10-15_R_T3")
-fish_data <- filter(fish_data_both_radiating, ID != "AR-345_TITAN_2015-10-15_R_T3")
+fish_data <- filter(fish_data, ID != "AR-345_TITAN_2015-10-15_R_T3")
 
 #fish_data <- filter(fish_data, Site == "330")
 #fish_data <- filter(fish_data, Transect_Type == "Radiating")
@@ -182,11 +182,11 @@ env_data <- data[,1:env.end]
 species.data<-data[,sp.start:ncol(data)] # fish data
 species.orig<-species.data # fish data, no transform
 
-species.data <- transform_data (data = species.data, transform_type = "square_root")
+#species.data <- transform_data (data = species.data, transform_type = "square_root")
 #species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 #we need to look at this with Avery
-
+species.data <- transform_data (data = species.data, transform_type = "square_root_plus_number")
 ```
 
 #BCD and distance
@@ -1324,7 +1324,7 @@ ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = 
 library(vegan)
 set.seed(318) 
 
-species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 2000, autotransform = FALSE) 
   # performs nMDS; arguments are as follows:
   # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
   # 2nd argument: dissimilarity index
@@ -1356,7 +1356,7 @@ species.wa <- rename(species.wa, c("row.names(species.wa)"="species_code"))
 #added and named the sp code column, the first column w/ sp names is visually but NOT functionally there 
 
 stress <- species.metaMDS$stress # save stress value
-
+library(ecodist)
 
 species.bcd <- bcdist(species.data, rmzero=FALSE)###### CR added this
 
@@ -1376,11 +1376,17 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
   title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
   library(colorspace)
   
+species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
+  
+   library(ggplot2) 
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
     geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) 
+               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Transect_Number),
+                 level = 0.50, linetype=2, size =1)
   
   
   

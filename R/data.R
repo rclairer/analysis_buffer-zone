@@ -233,6 +233,8 @@ transform_data <- function(data, transform_type = c("square_root", "cube_root", 
     data <- decostand(data, method = "pa", MARGIN = 2)
   if (transform_type == "log")
     data <- log(data)
+  if (transform_type == "square_root_plus_number")
+    data <- sqrt(data)+0.11
   data
 }
 

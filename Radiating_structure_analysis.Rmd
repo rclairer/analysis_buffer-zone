@@ -222,9 +222,10 @@ env_data <- data[,1:env.end]
 species.data<-data[,sp.start:ncol(data)] # fish data
 species.orig<-species.data # fish data, no transform
 
-species.data <- transform_data (data = species.data, transform_type = "square_root")
+#species.data <- transform_data (data = species.data, transform_type = "square_root")
 #species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
+species.data <- transform_data (data = species.data, transform_type = "square_root_plus_number")
 
 
 ```
@@ -771,7 +772,7 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
     geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Stucture_Present), size = 5)
+               aes(x = MDS1, y = MDS2), aes(data= species.nms, color = Structure_Present), size = 5)
 
   
   
