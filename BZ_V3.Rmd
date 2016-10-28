@@ -76,9 +76,9 @@ new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period
 #new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number + Structure_Present + Radiating_Structure ~ group) 
 
 new3[is.na(new3)]<-0
-new4 = new3[rowSums(new3[,8:ncol(new3)]) !=0,] # remove rows where there were no fish on the transect - need this for species, family, and functional group levels
-fish_abund_matrix <- new4
-
+#new4 = new3[rowSums(new3[,8:ncol(new3)]) !=0,] # CHANGED 10/25/16!!!remove rows where there were no fish on the transect - need this for species, family, and functional group levels
+#fish_abund_matrix <- new4
+fish_abund_matrix <- new3
 # fish_abund_matrix <- calc_fish_abund_matrix (data = fish_biom, 
 #                                       #tax_level = "Species_Code")
 #                                       #tax_level = "Family")
@@ -624,50 +624,56 @@ all.species.f <- filter(all.species.f, NEAR_DIST != 'NA')
 all.species.f$BCD <- as.character(all.species.f$BCD)
 all.species.f$BCD <- as.numeric(all.species.f$BCD)
 all.species.f$NEAR_DIST <- as.numeric(all.species.f$NEAR_DIST)
-all.species.f <- mutate(all.species.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
-
+#all.species.f <- mutate(all.species.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+all.species.f <- mutate(all.species.f, NEAR_DIST_km = NEAR_DIST/3280.84)#km
 
 fall.MHC.f <- filter(fall.MHC, BCD != 'NA')
 fall.MHC.f <- filter(fall.MHC.f, NEAR_DIST != 'NA')
 fall.MHC.f$BCD <- as.character(fall.MHC.f$BCD)
 fall.MHC.f$BCD <- as.numeric(fall.MHC.f$BCD)
 fall.MHC.f$NEAR_DIST <- as.numeric(fall.MHC.f$NEAR_DIST)
-fall.MHC.f <- mutate(fall.MHC.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+#fall.MHC.f <- mutate(fall.MHC.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+fall.MHC.f <- mutate(fall.MHC.f, NEAR_DIST_km = NEAR_DIST / 3280.84) #km
 
 fall.wil.f<- filter(fall.wil, BCD != 'NA')
 fall.wil.f <- filter(fall.wil.f, NEAR_DIST != 'NA')
 fall.wil.f$BCD <- as.character(fall.wil.f$BCD)
 fall.wil.f$BCD <- as.numeric(fall.wil.f$BCD)
 fall.wil.f$NEAR_DIST <- as.numeric(fall.wil.f$NEAR_DIST)
-fall.wil.f <- mutate(fall.wil.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+#fall.wil.f <- mutate(fall.wil.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+fall.wil.f <- mutate(fall.wil.f, NEAR_DIST_km = NEAR_DIST / 3280.84) #km
 
 winter.MHC.f<- filter(winter.MHC, BCD != 'NA')
 winter.MHC.f <- filter(winter.MHC.f, NEAR_DIST != 'NA')
 winter.MHC.f$BCD <- as.character(winter.MHC.f$BCD)
 winter.MHC.f$BCD <- as.numeric(winter.MHC.f$BCD)
 winter.MHC.f$NEAR_DIST <- as.numeric(winter.MHC.f$NEAR_DIST)
-winter.MHC.f <- mutate(winter.MHC.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+#winter.MHC.f <- mutate(winter.MHC.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+winter.MHC.f <- mutate(winter.MHC.f, NEAR_DIST_km = NEAR_DIST / 3280.84) #km
 
 winter.wil.f<- filter(winter.wil, BCD != 'NA')
 winter.wil.f <- filter(winter.wil.f, NEAR_DIST != 'NA')
 winter.wil.f$BCD <- as.character(winter.wil.f$BCD)
 winter.wil.f$BCD <- as.numeric(winter.wil.f$BCD)
 winter.wil.f$NEAR_DIST <- as.numeric(winter.wil.f$NEAR_DIST)
-winter.wil.f <- mutate(winter.wil.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+#winter.wil.f <- mutate(winter.wil.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+winter.wil.f <- mutate(winter.wil.f, NEAR_DIST_km = NEAR_DIST / 3280.84) #km
 
 spring.MHC.f<- filter(spring.MHC, BCD != 'NA')
 spring.MHC.f <- filter(spring.MHC.f, NEAR_DIST != 'NA')
 spring.MHC.f$BCD <- as.character(spring.MHC.f$BCD)
 spring.MHC.f$BCD <- as.numeric(spring.MHC.f$BCD)
 spring.MHC.f$NEAR_DIST <- as.numeric(spring.MHC.f$NEAR_DIST)
-spring.MHC.f <- mutate(spring.MHC.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+#spring.MHC.f <- mutate(spring.MHC.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+spring.MHC.f <- mutate(spring.MHC.f, NEAR_DIST_km = NEAR_DIST / 3280.84) #km
 
 spring.wil.f<- filter(spring.wil, BCD != 'NA')
 spring.wil.f <- filter(spring.wil.f, NEAR_DIST != 'NA')
 spring.wil.f$BCD <- as.character(spring.wil.f$BCD)
 spring.wil.f$BCD <- as.numeric(spring.wil.f$BCD)
 spring.wil.f$NEAR_DIST <- as.numeric(spring.wil.f$NEAR_DIST)
-spring.wil.f <- mutate(spring.wil.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+#spring.wil.f <- mutate(spring.wil.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+spring.wil.f <- mutate(spring.wil.f, NEAR_DIST_km = NEAR_DIST / 3280.84) #km
 
 #filter by site
 
@@ -707,222 +713,360 @@ wil <- rbind(fall.wil.f, winter.wil.f, spring.wil.f)
 library(ggplot2)
 
 #all
-plot.all = ggplot(all.species.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.all = ggplot(all.species.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.all + geom_point (aes(colour = Sampling_Period)) +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 60), breaks=seq(0, 60,by=10)) + geom_smooth(aes(colour = Sampling_Period))
+plot.all + geom_point (aes(colour = Sampling_Period)) +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(aes(colour = Sampling_Period))
+
+###########################################################################################3
 
 #fall.MHC
-plot.fall.MHC = ggplot(fall.MHC.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.fall.MHC = ggplot(fall.MHC.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.fall.MHC + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 10), breaks=seq(0, 10,by=1))
+plot.fall.MHC + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 15), breaks=seq(0, 15,by=1))
 
 #fall.wil
-plot.fall.wil = ggplot(fall.wil.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.fall.wil = ggplot(fall.wil.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.fall.wil + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 20), breaks=seq(0, 20,by=1)) + geom_smooth()
+plot.fall.wil + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 30), breaks=seq(0, 30,by=5)) + geom_smooth()
 
 #winter.MHC
-plot.winter.MHC = ggplot(winter.MHC.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.winter.MHC = ggplot(winter.MHC.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.winter.MHC + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 10), breaks=seq(0, 10,by=1))
+plot.winter.MHC + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 15), breaks=seq(0, 15,by=1))
 
 #winter.wil
-plot.winter.wil = ggplot(winter.wil.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.winter.wil = ggplot(winter.wil.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.winter.wil + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 20), breaks=seq(0, 20,by=1)) + geom_smooth()
+plot.winter.wil + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 30), breaks=seq(0, 30,by=5)) + geom_smooth()
 
 #spring MHC
-plot.spring.MHC = ggplot(spring.MHC.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.spring.MHC = ggplot(spring.MHC.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.spring.MHC + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 10), breaks=seq(0, 10,by=1))
+plot.spring.MHC + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 15), breaks=seq(0, 15,by=1))
 
 #spring wil
-plot.spring.wil = ggplot(spring.wil.f, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.spring.wil = ggplot(spring.wil.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.spring.wil + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance", limits=c(0, 20), breaks=seq(0, 20,by=1)) + geom_smooth()
+plot.spring.wil + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 30), breaks=seq(0, 30,by=5)) + geom_smooth()
 
 #MHC
-plot.MHC = ggplot(MHC, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.MHC = ggplot(MHC, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.MHC + geom_point (aes(colour = Sampling_Period)) +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 10), breaks=seq(0, 10,by=1)) 
+plot.MHC + geom_point (aes(colour = Sampling_Period)) +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 15), breaks=seq(0, 15,by=1)) 
 
 #wil
-plot.wil = ggplot(wil, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.wil = ggplot(wil, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.wil + geom_point (aes(colour = Sampling_Period)) +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 16), breaks=seq(0, 16,by=1)) + geom_smooth(aes(colour = Sampling_Period))
+plot.wil + geom_point (aes(colour = Sampling_Period)) +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 30), breaks=seq(0, 30,by=5)) + geom_smooth(aes(colour = Sampling_Period))
 
 #330 fall
-plot.330.fall = ggplot(site330.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.330.fall = ggplot(site330.fall, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.330.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.6), breaks=seq(0, 0.6,by=0.1))  + ggtitle("330 Fall")
+plot.330.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1))  + ggtitle("330 Fall")
 
 
 #330.winter* shows pattern
-plot.330.winter = ggplot(site330.winter, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.330.winter = ggplot(site330.winter, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.330.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.6), breaks=seq(0, 0.6,by=0.1))  +ggtitle("330 Winter")
+plot.330.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1))  +ggtitle("330 Winter")
 
 
 #345 fall*kinda shows pattern
-plot.345.fall = ggplot(site345.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.345.fall = ggplot(site345.fall, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.345.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.3), breaks=seq(0, 0.3,by=0.1)) + ggtitle("345 Fall")
+plot.345.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1)) + ggtitle("345 Fall")
 
 
 #345 spring
-plot.345.spring = ggplot(site345.spring, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.345.spring = ggplot(site345.spring, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.345.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.3), breaks=seq(0, 0.3,by=0.1))  + ggtitle("330 Fall") + geom_smooth(method= "lm")
+plot.345.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1))  + ggtitle("330 Fall") + geom_smooth(method= "lm")
 
-#364 fall*shows pattern
-plot.364.fall = ggplot(site364.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+#364 fall*shows pattern###############################################################
+plot.364.fall = ggplot(site364.fall, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.364.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.4), breaks=seq(0, 0.4,by=0.1)) + ggtitle("364 Fall")
+plot.364.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 0.6), breaks=seq(0, 0.6,by=0.1)) + ggtitle("364 Fall")
 
 #364 spring- affected by pods
-plot.364.spring = ggplot(site364.spring, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.364.spring = ggplot(site364.spring, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.364.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.4), breaks=seq(0, 0.4,by=0.1)) + ggtitle("364 Spring")
+plot.364.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1)) + ggtitle("364 Spring")
 
-#364 winter *shows interesting pattern
-plot.364.winter = ggplot(site364.winter, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+#364 winter *shows interesting pattern##############################################
+plot.364.winter = ggplot(site364.winter, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.364.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.4), breaks=seq(0, 0.4,by=0.1)) + ggtitle("364 Winter") 
+plot.364.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 0.6), breaks=seq(0, 0.6,by=0.1)) + ggtitle("364 Winter") 
 
 #370 fall*shows interesting pattern
-plot.370.fall = ggplot(site370.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.370.fall = ggplot(site370.fall, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.370.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("370 Fall") 
+plot.370.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("370 Fall") 
 
 #370 spring- affected by pod surveys
-plot.370.spring = ggplot(site370.spring, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.370.spring = ggplot(site370.spring, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.370.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("370 Spring") 
+plot.370.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("370 Spring") 
 
 #370 winter*shows very strong pattern
-plot.370.winter = ggplot(site370.winter, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.370.winter = ggplot(site370.winter, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.370.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("370 Winter") 
+plot.370.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("370 Winter") 
 
 #372 fall
-plot.372.fall = ggplot(site372.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.372.fall = ggplot(site372.fall, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.372.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.5), breaks=seq(0, 0.5,by=0.1)) + ggtitle("372 Fall") 
+plot.372.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1)) + ggtitle("372 Fall") 
 
 #372 winter
-plot.372.winter = ggplot(site372.winter, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.372.winter = ggplot(site372.winter, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.372.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.5), breaks=seq(0, 0.5,by=0.1)) + ggtitle("372 Winter") + geom_smooth(method = "loess")
+plot.372.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1)) + ggtitle("372 Winter") #+ geom_smooth(method = "loess")
 
 #372 spring
-plot.372.spring = ggplot(site372.spring, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.372.spring = ggplot(site372.spring, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.372.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.5), breaks=seq(0, 0.5,by=0.1)) + ggtitle("372 Winter") + geom_smooth(method = "loess")
+plot.372.spring + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1), breaks=seq(0, 1,by=0.1)) + ggtitle("372 Winter") #+ geom_smooth(method = "loess")
 
 #378 fall
-plot.378.fall = ggplot(site378.fall, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.378.fall = ggplot(site378.fall, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.378.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.7), breaks=seq(0, 0.7,by=0.1)) + ggtitle("378 Fall") 
+plot.378.fall + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("378 Fall") 
 
 #378 winter
-plot.378.winter = ggplot(site378.winter, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+plot.378.winter = ggplot(site378.winter, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-plot.378.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.7), breaks=seq(0, 0.7,by=0.1)) + ggtitle("378 Winter") 
-
-ggplot() +
-  
-stat_smooth(data = site330.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "red", span = 2, se = FALSE)+
-stat_smooth(data = site330.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "magenta", span = 2, se = FALSE)+
-#stat_smooth(data = site345.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "blue", span = 2, se = FALSE)+
-stat_smooth(data = site345.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "green", span = 2, se = FALSE)+
-stat_smooth(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purple", span = 2, se = FALSE)+
-stat_smooth(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral", span = 2, se = FALSE)+
-stat_smooth(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange", span = 2, se = FALSE)+
-stat_smooth(data = site370.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "yellow", span = 2, se = FALSE)+
-#stat_smooth(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick", span = 2, se = FALSE)+
-stat_smooth(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet", span = 2, se = FALSE)+
-#stat_smooth(data = site372.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "springgreen", span = 2, se = FALSE)+
-stat_smooth(data = site372.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue", span = 2, se = FALSE)+
-stat_smooth(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff", span = 2, se = FALSE)+
-#stat_smooth(data = site378.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "black", span = 2, se = FALSE)+
-#stat_smooth(data = site378.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "grey", span = 2, se = FALSE)+
-
-theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
+plot.378.winter + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("378 Winter") 
 
 ggplot() +
   
-geom_point(data = site330.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "red")+
-geom_point(data = site330.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "magenta")+
+stat_smooth(data = site330.fall, aes(x=NEAR_DIST_km, y=BCD), color = "red", span = 2, se = FALSE)+
+stat_smooth(data = site330.winter, aes(x=NEAR_DIST_km, y=BCD), color = "magenta", span = 2, se = FALSE)+
+stat_smooth(data = site345.fall, aes(x=NEAR_DIST_km, y=BCD), color = "blue", span = 2, se = FALSE)+
+stat_smooth(data = site345.spring, aes(x=NEAR_DIST_km, y=BCD), color = "green", span = 2, se = FALSE)+
+stat_smooth(data = site364.fall, aes(x=NEAR_DIST_km, y=BCD), color = "purple", span = 2, se = FALSE)+
+stat_smooth(data = site364.spring, aes(x=NEAR_DIST_km, y=BCD), color = "coral", span = 2, se = FALSE)+
+stat_smooth(data = site364.winter, aes(x=NEAR_DIST_km, y=BCD), color = "orange", span = 2, se = FALSE)+
+stat_smooth(data = site370.fall, aes(x=NEAR_DIST_km, y=BCD), color = "yellow", span = 2, se = FALSE)+
+stat_smooth(data = site370.spring, aes(x=NEAR_DIST_km, y=BCD), color = "firebrick", span = 2, se = FALSE)+
+stat_smooth(data = site370.winter, aes(x=NEAR_DIST_km, y=BCD), color = "violet", span = 2, se = FALSE)+
+stat_smooth(data = site372.fall, aes(x=NEAR_DIST_km, y=BCD), color = "springgreen", span = 2, se = FALSE)+
+stat_smooth(data = site372.spring, aes(x=NEAR_DIST_km, y=BCD), color = "steelblue", span = 2, se = FALSE)+
+stat_smooth(data = site372.winter, aes(x=NEAR_DIST_km, y=BCD), color = "peachpuff", span = 2, se = FALSE)+
+stat_smooth(data = site378.fall, aes(x=NEAR_DIST_km, y=BCD), color = "black", span = 2, se = FALSE)+
+stat_smooth(data = site378.winter, aes(x=NEAR_DIST_km, y=BCD), color = "grey", span = 2, se = FALSE)+
+
+theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("All sites, all seasons")
+
+ggplot() +
+  
+geom_point(data = site330.fall, aes(x=NEAR_DIST_km, y=BCD), color = "red")+
+geom_point(data = site330.winter, aes(x=NEAR_DIST_km, y=BCD), color = "magenta")+
+geom_point(data = site345.fall, aes(x=NEAR_DIST_km, y=BCD), color = "blue")+
+geom_point(data = site345.spring, aes(x=NEAR_DIST_km, y=BCD), color = "green")+
+geom_point(data = site364.fall, aes(x=NEAR_DIST_km, y=BCD), color = "purple")+
+geom_point(data = site364.spring, aes(x=NEAR_DIST_km, y=BCD), color = "coral")+
+geom_point(data = site364.winter, aes(x=NEAR_DIST_km, y=BCD), color = "orange")+
+geom_point(data = site370.fall, aes(x=NEAR_DIST_km, y=BCD), color = "yellow")+
+geom_point(data = site370.spring, aes(x=NEAR_DIST_km, y=BCD), color = "firebrick")+
+geom_point(data = site370.winter, aes(x=NEAR_DIST_km, y=BCD), color = "violet")+
+geom_point(data = site372.fall, aes(x=NEAR_DIST_km, y=BCD), color = "springgreen")+
+geom_point(data = site372.spring, aes(x=NEAR_DIST_km, y=BCD), color = "steelblue")+
+geom_point(data = site372.winter, aes(x=NEAR_DIST_km, y=BCD), color = "peachpuff")+
+geom_point(data = site378.fall, aes(x=NEAR_DIST_km, y=BCD), color = "black")+
+geom_point(data = site378.winter, aes(x=NEAR_DIST_km, y=BCD), color = "grey")+
+
+theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("All sites, all seasons")
+
+#ggplot() +
+  
+#geom_point(data = site330.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "red")+
+#geom_point(data = site330.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "magenta")+
 #geom_point(data = site345.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "blue")+
-geom_point(data = site345.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "green")+
-geom_point(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purple")+
-geom_point(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral")+
-geom_point(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange")+
+#geom_point(data = site345.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "green")+
+#geom_point(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purple")+
+#geom_point(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral")+
+#geom_point(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange")+
 #geom_point(data = site370.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "yellow")+
 #geom_point(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick")+
-geom_point(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet")+
+#geom_point(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet")+
 #geom_point(data = site372.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "springgreen")+
 #geom_point(data = site372.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue")+
-geom_point(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff")+
+#geom_point(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff")+
 #geom_point(data = site378.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "black")+
 #geom_point(data = site378.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "grey")+
 
-theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
+#theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
 
-ggplot() +
-  
-geom_point(data = site330.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "red")+
-geom_point(data = site330.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "magenta")+
-geom_point(data = site345.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "blue")+
-geom_point(data = site345.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "green")+
-geom_point(data = site364.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "purple")+
-geom_point(data = site364.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "coral")+
-geom_point(data = site364.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "orange")+
-geom_point(data = site370.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "yellow")+
-geom_point(data = site370.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "firebrick")+
-geom_point(data = site370.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "violet")+
-geom_point(data = site372.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "springgreen")+
-geom_point(data = site372.spring, aes(x=NEAR_DIST_nautical, y=BCD), color = "steelblue")+
-geom_point(data = site372.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "peachpuff")+
-geom_point(data = site378.fall, aes(x=NEAR_DIST_nautical, y=BCD), color = "black")+
-geom_point(data = site378.winter, aes(x=NEAR_DIST_nautical, y=BCD), color = "grey")+
-
-theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("All sites, all seasons")
+#all ones that were used to make curves
+#all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.winter, site372.winter)
 
 #all ones that were used to make curves
 all.points.test <- rbind(site330.fall, site330.winter, site345.fall, site345.spring, site364.fall, site364.spring, site364.winter, site370.fall, site370.spring, site370.winter, site372.fall, site372.winter, site372.spring, site378.fall, site378.winter)
 
+
+
+
 #all, including ones with one one comparison
-all.points.test <- rbind(site330.fall, site330.spring, site330.winter, site345.fall, site345.spring, site345.winter, site364.fall, site364.spring, site364.winter, site370.fall, site370.spring, site370.winter, site372.fall, site372.winter, site372.spring, site378.fall, site378.winter)
+#all.points.test <- rbind(site330.fall, site330.spring, site345.fall, site345.spring, site364.fall, site364.spring, site364.winter, site370.fall, site370.winter, site372.fall, site372.winter, site372.spring, site378.fall, site378.winter)
 
 #carefully selected
-all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.winter, site372.winter)
+#all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.winter, site372.winter)
 #carefuly selected with 370.spring
-all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.fall, site370.winter, site372.winter)
+#all.points.test <- rbind(site330.fall, site330.winter, site345.spring, site364.fall, site364.spring, site364.winter, site370.fall, site370.winter, site372.winter)
 
 
-all.points.test.plot = ggplot(all.points.test, aes(x=as.numeric(NEAR_DIST_nautical), y=as.numeric(BCD))) 
+all.points.test.plot = ggplot(all.points.test, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
 
-all.points.test.plot + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.05)) + scale_x_continuous(name = "Distance (nautical miles)", limits=c(0, 0.8), breaks=seq(0, 0.8,by=0.1)) + ggtitle("all points") +
+all.points.test.plot + geom_point () +theme_classic () +  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.1)) + scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.1)) + ggtitle("all points") +
   stat_smooth()
 ```
 
 ```{r BCD_max}
 a <- filter(site330.fall, BCD == max(site330.fall$BCD))
-b <-filter(site330.winter, BCD == max(site330.winter$BCD))
-c <-filter(site364.fall, BCD == max(site364.fall$BCD))
-d <-filter(site364.spring, BCD == max(site364.spring$BCD))
-e <-filter(site364.winter, BCD == max(site364.winter$BCD))
-f <-filter(site370.fall, BCD == max(site370.fall$BCD))
-g <-filter(site370.spring, BCD == max(site370.spring$BCD))
-h <-filter(site370.winter, BCD == max(site370.winter$BCD))
-i <-filter(site372.fall, BCD == max(site372.fall$BCD))
-j<-filter(site372.winter, BCD == max(site372.winter$BCD))
+b <- filter(site330.spring, BCD == max(site330.spring$BCD))
+c <- filter(site330.winter, BCD == max(site330.winter$BCD))
+d <- filter(site345.fall, BCD == max(site345.fall$BCD))
+e<- filter(site345.spring, BCD == max(site345.spring$BCD))
+f<- filter(site345.winter, BCD == max(site345.winter$BCD))
+g <-filter(site364.fall, BCD == max(site364.fall$BCD))
+h <-filter(site364.spring, BCD == max(site364.spring$BCD))
+i <-filter(site364.winter, BCD == max(site364.winter$BCD))
+j <-filter(site370.fall, BCD == max(site370.fall$BCD))
+k <-filter(site370.spring, BCD == max(site370.spring$BCD))
+l <-filter(site370.winter, BCD == max(site370.winter$BCD))
+m <-filter(site372.fall, BCD == max(site372.fall$BCD))
+n <- filter(site372.spring, BCD == max(site372.spring$BCD))
+o<-filter(site372.winter, BCD == max(site372.winter$BCD))
+p<-filter(site378.fall, BCD == max(site378.fall$BCD))
+q <-filter(site378.spring, BCD == max(site378.spring$BCD)) 
+r <- filter(site378.winter, BCD == max(site378.winter$BCD))
 
-findmaxbcd <- rbind(a, b, c, d, e, f, g, h, i, j)
-ave(findmaxbcd$NEAR_DIST_nautical)
+findmaxbcd <- rbind(a, b, c, d, e, f, g, h, i, j,k,l,m,n,o,p,q,r)
+avgdist <- ave(findmaxbcd$NEAR_DIST_km)
 
-#testing
+s <- filter(fall.MHC.f, BCD == max(fall.MHC.f$BCD))
+#t <- filter(fall.wil.f, BCD == max(fall.wil.f$BCD)) #max BCD is 1
+u <- filter(winter.MHC.f, BCD == max(winter.MHC.f$BCD))
+v <- filter(winter.wil.f, BCD == max(winter.wil.f$BCD))
+w <- filter(spring.MHC.f, BCD == max(spring.MHC.f$BCD))
+x <- filter(spring.wil.f, BCD == max(spring.wil.f$BCD))
+
+findmaxbcd2 <- rbind(s,u,v,w,x)
+avgdist2 <- ave(findmaxbcd2$NEAR_DIST_km)
+```
+
+```{r mantel}
+library(ecodist)
+
+data.st <- filter(data, Transect_Type == "Structural")
+data.st.fall <- filter(data.st, Sampling_Period == "Fall")
+data.st.winter <- filter(data.st, Sampling_Period == "Winter")
+data.st.spring <- filter(data.st, Sampling_Period == "Spring")
+data.st.330 <- filter(data.st, Site == "330")
+data.st.345 <- filter(data.st, Site == "345")
+data.st.364 <- filter(data.st, Site == "364")
+data.st.364 <- filter(data.st.364, Transect_Number == "0")
+data.st.370 <- filter(data.st, Site == "370")
+data.st.370 <- filter(data.st.370, Transect_Number == "0")
+data.st.372 <- filter(data.st, Site == "372")
+data.st.372 <- filter(data.st.372, Transect_Number == "0")
+data.st.378 <- filter(data.st, Site == "378")
+data.st.378 <- filter(data.st.378, Transect_Number == "0")
+
+env.end<- 29 #FOR SPECEIS
+sp.start<-30 #FOR SPECIES
+
+env_data.st <- data.st[,1:env.end]
+env_data.st.fall <- data.st.fall[,1:env.end]
+env_data.st.winter <- data.st.winter[,1:env.end]
+env_data.st.spring <- data.st.spring[,1:env.end]
+env_data.st.330 <- data.st.330[,1:env.end]
+env_data.st.345 <- data.st.345[,1:env.end]
+env_data.st.364 <- data.st.364[,1:env.end]
+env_data.st.370 <- data.st.370[,1:env.end]
+env_data.st.372 <- data.st.372[,1:env.end]
+env_data.st.378 <- data.st.378[,1:env.end]
+
+species.data.st  <- data.st[,sp.start:ncol(data.st)]
+species.orig.st<-species.data.st # fish data, no transform
+species.data.st.fall<-data.st.fall[,sp.start:ncol(data.st.fall)] # fish data
+species.orig.st.fall<-species.data.st.fall # fish data, no transform
+species.data.st.winter<-data.st.winter[,sp.start:ncol(data.st.fall)] # fish data
+species.orig.st.winter <-species.data.st.winter # fish data, no transform
+species.data.st.spring<-data.st.spring[,sp.start:ncol(data.st.spring)] # fish data
+species.orig.st.spring<-species.data.st.spring # fish data, no transform
+species.data.st.330 <- data.st.330[,sp.start:ncol(data.st.330)]
+species.orig.st.330 <- species.data.st.330
+species.data.st.345 <- data.st.345[,sp.start:ncol(data.st.345)]
+species.orig.st.345 <- species.data.st.345
+species.data.st.364 <- data.st.364[,sp.start:ncol(data.st.364)]
+species.orig.st.364 <- species.data.st.364
+species.data.st.370 <- data.st.370[,sp.start:ncol(data.st.370)]
+species.orig.st.370 <- species.data.st.370
+species.data.st.372 <- data.st.372[,sp.start:ncol(data.st.372)]
+species.orig.st.372 <- species.data.st.372
+species.data.st.378 <- data.st.378[,sp.start:ncol(data.st.378)]
+species.orig.st.378 <- species.data.st.378
+
+#species.data <- transform_data (data = species.data, transform_type = "square_root")
+#species.data <- transform_data (data = species.data, transform_type = "cube_root")
+#species.data <- transform_data (data = species.data, transform_type = "pres_abs")
+
+species.data.st <- transform_data (data = species.data.st, transform_type = "square_root_plus_number")
+species.data.st.fall <- transform_data (data = species.data.st.fall, transform_type = "square_root_plus_number")
+species.data.st.winter <- transform_data (data = species.data.st.winter, transform_type = "square_root_plus_number")
+species.data.st.spring <- transform_data (data = species.data.st.spring, transform_type = "square_root_plus_number")
+species.data.st.330 <- transform_data(data= species.data.st.330, transform_type = "square_root_plus_number")
+species.data.st.345 <- transform_data(data= species.data.st.345, transform_type = "square_root_plus_number")
+species.data.st.364 <- transform_data(data= species.data.st.364, transform_type = "square_root_plus_number")
+species.data.st.370 <- transform_data(data= species.data.st.370, transform_type = "square_root_plus_number")
+species.data.st.372 <- transform_data(data= species.data.st.372, transform_type = "square_root_plus_number")
+species.data.st.378 <- transform_data(data= species.data.st.378, transform_type = "square_root_plus_number")
+
+species.data.st.bcd <- bcdist(species.data.st, rmzero=FALSE)
+species.data.st.fall.bcd <- bcdist(species.data.st.fall, rmzero=FALSE)
+species.data.st.winter.bcd <- bcdist(species.data.st.winter, rmzero=FALSE)
+species.data.st.spring.bcd <- bcdist(species.data.st.spring, rmzero=FALSE)
+species.data.st.330.bcd <- bcdist(species.data.st.330, rmzero=FALSE)
+species.data.st.345.bcd <- bcdist(species.data.st.345, rmzero=FALSE)
+species.data.st.364.bcd <- bcdist(species.data.st.364, rmzero=FALSE)
+species.data.st.370.bcd <- bcdist(species.data.st.370, rmzero=FALSE)
+species.data.st.372.bcd <- bcdist(species.data.st.372, rmzero=FALSE)
+species.data.st.378.bcd <- bcdist(species.data.st.378, rmzero=FALSE)
+
+distance <- dist(cbind(data.st$Longitude_DD, data.st$Latitude_DD))
+distancefall<- dist(cbind(data.st.fall$Longitude_DD, data.st.fall$Latitude_DD))
+distancewinter<- dist(cbind(data.st.winter$Longitude_DD, data.st.winter$Latitude_DD))
+distancespring<- dist(cbind(data.st.spring$Longitude_DD, data.st.spring$Latitude_DD))
+distance330 <- dist(cbind(data.st.330$Longitude_DD, data.st.330$Latitude_DD))
+distance345 <- dist(cbind(data.st.345$Longitude_DD, data.st.345$Latitude_DD))
+distance364 <- dist(cbind(data.st.364$Longitude_DD, data.st.364$Latitude_DD))
+distance370 <- dist(cbind(data.st.370$Longitude_DD, data.st.370$Latitude_DD))
+distance372 <- dist(cbind(data.st.372$Longitude_DD, data.st.372$Latitude_DD))
+distance378 <- dist(cbind(data.st.378$Longitude_DD, data.st.378$Latitude_DD))
+
+mantel <- mantel(species.data.st.bcd ~ distance) #positive, sig 2-tail
+mantelfall <- mantel(species.data.st.fall.bcd ~ distancefall) #positive, sig 2-tail
+mantelwinter <- mantel(species.data.st.winter.bcd ~ distancewinter)#postive, no sig
+mantelspring <- mantel(species.data.st.spring.bcd ~ distancespring)#postive, sig 2-tail
+mantel330 <- mantel(species.data.st.330.bcd ~ distance330) #neg, no sig
+mantel345 <- mantel(species.data.st.345.bcd ~ distance345)#neg, no sig
+mantel364 <- mantel(species.data.st.364.bcd ~ distance364)#pos, no sig
+mantel370 <- mantel(species.data.st.370.bcd ~ distance370)#neg, no sig
+mantel372 <- mantel(species.data.st.372.bcd ~ distance372)#pos, no sig
+mantel378 <- mantel(species.data.st.378.bcd ~ distance378)#pos, no sig
+
+mantel.correlog <- mantel.correlog(species.data.st.bcd, distance)
+plot(mantel.correlog, alpha= 0.05)
+
+mantel.correlog.fall <- mantel.correlog(species.data.st.fall.bcd, distancefall)
+plot(mantel.correlog.fall, alpha= 0.05)
+
+mantel.correlog.winter <- mantel.correlog(species.data.st.winter.bcd, distancewinter)
+plot(mantel.correlog.winter, alpha= 0.05)
+
+mantel.correlog.spring <- mantel.correlog(species.data.st.spring.bcd, distancespring)
+plot(mantel.correlog.spring, alpha= 0.05)
 
 ```
 
@@ -1039,13 +1183,15 @@ ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 500), 
-                     breaks=seq(0, 500,by=100)) + 
+                     limits=c(0, 450), 
+                     breaks=seq(0, 450,by=100)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
         legend.position="none") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Ave Fish Abundance per Transect Type")
+
 
 # fill for extra variable (in this case season)
 test1 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
@@ -1058,13 +1204,14 @@ ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance, fill=Sampling_Perio
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 700), 
-                     breaks=seq(0, 700,by=100)) + 
+                     limits=c(0, 900), 
+                     breaks=seq(0, 900,by=100)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
         legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Ave Fish Abundance per Transect Type per Season")
 
 #order levels of treatment to appear orderly in plots, move this higher
 # facets
@@ -1075,8 +1222,8 @@ ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance)) +
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 700), 
-                     breaks=seq(0, 700,by=100)) + 
+                     limits=c(0, 900), 
+                     breaks=seq(0, 900,by=100)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
@@ -1120,6 +1267,42 @@ ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
 ```
 
 ```{r ANOVA}
+
+out.abudance <- lm(Abundance ~ Transect_Number, data = fishabundance)
+anova(out.abudance)
+summary(out.abudance)
+
+library(agricolae)
+hsd <- HSD.test(out.abudance, c("Transect_Number"))
+hsd
+
+pair <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
+pair
+######################################################################
+mod2 <- lm(Abundance ~ Transect_Number+ Sampling_Period, data = fishabundance)
+anova(mod2)
+summary(mod2)
+
+library(agricolae)
+hsd2.samp <- HSD.test(mod2, "Sampling_Period")
+hsd2.samp
+
+hsd2.tran <- HSD.test(mod2, "Transect_Number")
+hsd2.tran
+
+pair2 <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
+pair2
+#########################################################################################
+mod3 <- lm(Abundance ~ Transect_Number+ Reef_Type, data = fishabundance)
+anova(mod3)
+summary(mod3)
+
+library(agricolae)
+hsd3.samp <- HSD.test(mod3, "Reef_Type")
+hsd3.samp
+
+hsd3.tran <- HSD.test(mod3, "Transect_Number")
+hsd3.tran
 
 ```
 
@@ -1382,27 +1565,15 @@ species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
+    #geom_point(data = NMDS, 
+            #   aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
   stat_ellipse(data = NMDS, 
                  aes(x=MDS1,y=MDS2,colour=species.nms$Transect_Number),
-                 level = 0.50, linetype=2, size =1)
-  
-  
-  
-  ggplot()+
-    coord_equal()+ # axes sizes equal
-    theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), 
-               size=5) + # adds sample points
-    geom_text(data=species.wa,
-              aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
-              alpha=0.9, # adds weighted averages for species
-              position=position_jitter(width=0.1,height=0.2))+
-    stat_ellipse(data = NMDS, 
-                 aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
-                 level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
     scale_y_continuous(name=yl) + # names y axis
     scale_x_continuous(name=xl) + # names x axis
     theme(axis.text=element_text(size=16), 
@@ -1410,11 +1581,37 @@ species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
           legend.text=element_text(color="black", size=16), 
           legend.title=element_text(color="black", size = 16), 
           legend.position="bottom") + 
-    scale_colour_manual(name = "Reef Type", 
-                        values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
-    scale_shape_manual (name="Reef Type", 
-                        values = c("Artificial" = 17, "Natural" = 16))+
-    ggtitle(title)
+      scale_colour_manual(name = "Transect", 
+                       values = c("0" = "indianred2", "1" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+      ggtitle(title)
+  
+  
+  
+  #ggplot()+
+   # coord_equal()+ # axes sizes equal
+    #theme_bw()+ # basic theme
+  #  geom_point(data = NMDS, 
+   #            aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), 
+    #           size=5) + # adds sample points
+  #  geom_text(data=species.wa,
+   #           aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+    #          alpha=0.9, # adds weighted averages for species
+     #         position=position_jitter(width=0.1,height=0.2))+
+  #  stat_ellipse(data = NMDS, 
+   #              aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
+    #             level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+ #   scale_y_continuous(name=yl) + # names y axis
+  #  scale_x_continuous(name=xl) + # names x axis
+   # theme(axis.text=element_text(size=16), 
+    #      axis.title=element_text(size=16), 
+     #     legend.text=element_text(color="black", size=16), 
+      #    legend.title=element_text(color="black", size = 16), 
+       #   legend.position="bottom") + 
+  #  scale_colour_manual(name = "Reef Type", 
+  #                      values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
+ #   scale_shape_manual (name="Reef Type", 
+  #                      values = c("Artificial" = 17, "Natural" = 16))+
+   # ggtitle(title)
 
 # if get error saying removed rows (geom_text), check to make sure no N/A values in dataframe....
   

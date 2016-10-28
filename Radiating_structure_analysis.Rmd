@@ -34,8 +34,9 @@ fish_data_no <- filter(fish_data, Structure_Present != "Yes")
 fish_data_no$Structure_Present <- "No"
 
 fish_data_both <- rbind(fish_data_structure, fish_data_no)
-fish_data_both <- filter(fish_data_both, Species_Code != "NOFI")
+#fish_data_both <- filter(fish_data_both, Species_Code != "NOFI")
 fish_data_both_radiating <- filter(fish_data_both, Transect_Type == "Radiating")
+
 
 #fish_data_nofi <- filter(fish_data, Species_Code == "NOFI")
 #fish_data <- filter(fish_data, Species_Code != "NOFI")
@@ -486,7 +487,44 @@ adjacent_type + theme_classic()
 
 #univariate statistics/visulizations
 ```{r ANOVA}
-help <- anova()
+fishabundance <- mutate(data, Abundance = rowSums(data[,11:ncol(data)]))
+
+out.abudance <- lm(Abundance ~ Transect_Number, data = fishabundance)
+anova(out.abudance)
+summary(out.abudance)
+
+library(agricolae)
+hsd <- HSD.test(out.abudance, c("Transect_Number"))
+hsd
+
+pair <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
+pair
+###################################
+out.abudance.struc <- lm(Abundance ~ Structure_Present, data = fishabundance)
+anova(out.abudance.struc)
+summary(out.abudance.struc)
+
+library(agricolae)
+hsd <- HSD.test(out.abudance.struc, c("Structure_Present"))
+hsd
+
+pair <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
+pair
+######################################################################
+mod2 <- lm(Abundance ~ Transect_Number + Structure_Present, data = fishabundance)
+anova(mod2)
+summary(mod2)
+
+library(agricolae)
+hsd2.samp <- HSD.test(mod2, "Structure_Present")
+hsd2.samp
+
+hsd2.tran <- HSD.test(mod2, "Transect_Number")
+hsd2.tran
+
+pair2 <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
+pair2
+
 ```
 
 ```{r Post_hoc_comparisons}
@@ -761,40 +799,26 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
  
   species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
    
-   ggplot()+
-    coord_equal()+ # axes sizes equal
-    theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5)
+#   ggplot()+
+ #   coord_equal()+ # axes sizes equal
+  #  theme_bw()+ # basic theme
+   # geom_point(data = NMDS, 
+    #           aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5)
    
-   species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
-    ggplot()+
-    coord_equal()+ # axes sizes equal
-    theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2), aes(data= species.nms, color = Structure_Present), size = 5)
-
-  
-  
- 
-  
-  
-  
-  
-  
+   
+    library(ggplot2) 
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
     geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Reef_type, shape=species.nms$Reef_type), 
-               size=5) + # adds sample points
-    geom_text(data=species.wa,
-              aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
-              alpha=0.9, # adds weighted averages for species
-              position=position_jitter(width=0.1,height=0.2))+
-    stat_ellipse(data = NMDS, 
-                 aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
-                 level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Transect_Number),
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
     scale_y_continuous(name=yl) + # names y axis
     scale_x_continuous(name=xl) + # names x axis
     theme(axis.text=element_text(size=16), 
@@ -802,11 +826,84 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
           legend.text=element_text(color="black", size=16), 
           legend.title=element_text(color="black", size = 16), 
           legend.position="bottom") + 
-    scale_colour_manual(name = "Reef Type", 
-                        values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
-    scale_shape_manual (name="Reef Type", 
-                        values = c("Artificial" = 17, "Natural" = 16))+
-    ggtitle(title)
+      scale_colour_manual(name = "Transect", 
+                       values = c("0" = "indianred2", "1" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+      ggtitle(title)
+  
+  
+   
+ #  species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
+  #  ggplot()+
+   # coord_equal()+ # axes sizes equal
+    #theme_bw()+ # basic theme
+  #  geom_point(data = NMDS, 
+   #            aes(x = MDS1, y = MDS2), aes(data= species.nms, color = Structure_Present), size = 5)
+
+species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
+
+    library(ggplot2) 
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+               aes(x = MDS1, y = MDS2, color = species.nms$Structure_Present), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Structure_Present),
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+      scale_colour_manual(name = "Structure", 
+                       values = c("Yes" = "indianred2", "No" = "darkturquoise"))+
+      ggtitle(title)
+  
+  
+   
+  # species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
+   # ggplot()+
+  #  coord_equal()+ # axes sizes equal
+   # theme_bw()+ # basic theme
+    #geom_point(data = NMDS, 
+     #          aes(x = MDS1, y = MDS2), aes(data= species.nms, color = Structure_Present), size = 5)
+ 
+  
+ 
+  
+  
+
+#  ggplot()+
+ #   coord_equal()+ # axes sizes equal
+  #  theme_bw()+ # basic theme
+   # geom_point(data = NMDS, 
+    #           aes(x = MDS1, y = MDS2, color = species.nms$Reef_type, shape=species.nms$Reef_type), 
+     #          size=5) + # adds sample points
+  #  geom_text(data=species.wa,
+   #           aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+    #          alpha=0.9, # adds weighted averages for species
+     #         position=position_jitter(width=0.1,height=0.2))+
+  #  stat_ellipse(data = NMDS, 
+   #              aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
+    #             level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+   # scale_y_continuous(name=yl) + # names y axis
+    #scale_x_continuous(name=xl) + # names x axis
+  #  theme(axis.text=element_text(size=16), 
+   #       axis.title=element_text(size=16), 
+    #      legend.text=element_text(color="black", size=16), 
+     #     legend.title=element_text(color="black", size = 16), 
+      #    legend.position="bottom") + 
+  #  scale_colour_manual(name = "Reef Type", 
+   #                     values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
+    #scale_shape_manual (name="Reef Type", 
+     #                   values = c("Artificial" = 17, "Natural" = 16))+
+  #  ggtitle(title)
 
 # if get error saying removed rows (geom_text), check to make sure no N/A values in dataframe....
 
