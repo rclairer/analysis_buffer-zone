@@ -69,8 +69,12 @@ data$group <- data[,"Species_Code"] # change to family or function_group as need
 
 #data$group <- data[,"Family"] #### FAMILY AND FUNCTIONAL GROUP DON"T WORK AS IS BECAUSE THERE ARE FISH WITHOUT FAMILIES AND FUNCTIONAL GROUPS MATCHING THEM...NEEDS FIXING"
 
-new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number) %>% summarise(data_abund = sum(Abundance))
-new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number ~ group) 
+#new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number) %>% summarise(data_abund = sum(Abundance))
+#new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number ~ group) #USE THESE
+
+new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number, Visibility_Min_ft) %>% summarise(data_abund = sum(Abundance))
+  
+new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number + Visibility_Min_ft ~ group) 
 
 #new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number, Structure_Present, Radiating_Structure) %>% summarise(data_abund = sum(Abundance))
 #new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number + Structure_Present + Radiating_Structure ~ group) 
@@ -125,7 +129,7 @@ join3 <- join(join2, sites, by = c("Site", "Subsite"))
 #join4 <- cbind(join3[,1:9], join3[,17:40], join3[,10:16]) #FOR FUNCTIONAL GROUP 
 
 # new ones
-join4 <- cbind(join3[,1:7], join3[,79:102], join3[,8:78]) # species
+join4 <- cbind(join3[,1:8], join3[,80:103], join3[,9:79]) # species
 #join4 <- cbind(join3[,1:7], join3[,36:ncol(join3)], join3[,8:35]) # family
 #join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
 
@@ -141,7 +145,7 @@ join4 <- cbind(join3[,1:7], join3[,79:102], join3[,8:78]) # species
 #join4 <- cbind(join3[,1:7], join3[,31:54], join3[,8:30]) # species
 
 
-join5 <- join4[,-c(8, 12)] # FOR SPECIES
+join5 <- join4[,-c(9, 13)] # FOR SPECIES
 #join5 <- join4[,-c(8,12)] # FOR FAMILY 
 #join5 <- join4[,-c(8,12)] # FOR FUNCTIONAL GROUP
 
@@ -162,8 +166,8 @@ data <- join5
 # data <- filter(data, Depth_general == "Deep")
 #data <- filter(data, Reef_type == "Natural", Depth_general == "Intermediate")
 
-env.end<- 29 #FOR SPECEIS
-sp.start<-30 #FOR SPECIES
+env.end<- 30 #FOR SPECEIS
+sp.start<-31 #FOR SPECIES
 #env.end <- 29 #FOR FAMILY
 #sp.start <- 30 #FOR FAMILY
 #env.end <- 29 #FOR FUNCTIONAL GROUP
@@ -1171,7 +1175,7 @@ text(help2, use.n=TRUE, all=TRUE, cex=.8)
 #univariate statistics/visulizations
 ```{r ggplot2}
 library(ggplot2)
-fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
+fishabundance <- mutate(data, Abundance = rowSums(data[,31:ncol(data)]))
 
 #test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
 
@@ -1183,15 +1187,22 @@ ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 450), 
-                     breaks=seq(0, 450,by=100)) + 
+                     limits=c(0, 500), 
+                     breaks=seq(0, 500,by=100)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="none") + 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
   scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-  ggtitle("Ave Fish Abundance per Transect Type")
+  ggtitle("Fish Abundance per Transect Type")+
+annotate("text", x = 1, y = 440, label = "a", size = 5)+
+annotate("text", x = 2, y = 174, label = "b", size = 5)+
+annotate("text", x = 3, y = 63, label = "b", size = 5)+
+annotate("text", x = 4, y = 31, label = "b", size = 5)
 
+###############################################################################
 
 # fill for extra variable (in this case season)
 test1 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
@@ -1199,19 +1210,27 @@ test1$Sampling_Period <- factor(test1$Sampling_Period, c("Fall", "Winter", "Spri
 #order levels of treatment to appear orderly in plots
 
 
-ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance, fill=Sampling_Period)) +
-  theme_classic()+
-  geom_bar(position=position_dodge(), stat="identity", colour="black")+
-  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 900), 
-                     breaks=seq(0, 900,by=100)) + 
-  theme(axis.text=element_text(size=16, colour="black"), 
-        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
-        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-ggtitle("Ave Fish Abundance per Transect Type per Season")
+#ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance, fill=Sampling_Period)) +
+ # theme_classic()+
+  #geom_bar(position=position_dodge(), stat="identity", colour="black")+
+ # geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+#  scale_y_continuous(name="Average Fish Abundance", 
+  #                   limits=c(0, 900), 
+ #                    breaks=seq(0, 900,by=100)) + 
+#  theme(axis.text=element_text(size=16, colour="black"), 
+     #   axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+    #    axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+   #     legend.position="bottom",
+  #      axis.line.x = element_line(color="black", size = 0.5), 
+ #       axis.line.y = element_line(color="black", size = 0.5))+  
+ # scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 #m", "3" = "60-90 m"))+
+#ggtitle("Ave Fish Abundance per Transect Type per Season")
+
+
+ann_text <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(850,450,150,50),lab = c("a", "ab","b","b"),Sampling_Period = factor("Fall",levels = c("Fall","Winter","Spring")))
+ann_text_winter <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(510,230,90,40),lab = c("ab", "b","b","b"),Sampling_Period = factor("Winter",levels = c("Fall","Winter","Spring")))
+ann_text_spring <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(120,50,40,40),lab = c("b", "b","b","b"),Sampling_Period = factor("Spring",levels = c("Fall","Winter","Spring")))
+
 
 #order levels of treatment to appear orderly in plots, move this higher
 # facets
@@ -1227,12 +1246,46 @@ ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance)) +
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Fish Abundance per Transect Type per Season")+
+#annotate("text", x = 1, y = 850, label = "a", size = 5)+
+#annotate("text", x = 2, y = 450, label = "ab", size = 5)+
+#annotate("text", x = 3, y = 150, label = "b", size = 5)+
+#annotate("text", x = 4, y = 50, label = "b", size = 5)+
+geom_text(data = ann_text,aes(label =lab), size = 5)+
+geom_text(data = ann_text_winter,aes(label =lab), size = 5)+  
+geom_text(data = ann_text_spring,aes(label =lab), size = 5)  
 
-fishFall <- filter(fishabundance, Sampling_Period == "Fall")
-fishWinter <- filter(fishabundance, Sampling_Period == "Winter")
-fishSpring <- filter(fishabundance, Sampling_Period == "Spring")
+#######################################################################################
+
+test7 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = "Sampling_Period")
+test7$Sampling_Period <- factor(test7$Sampling_Period, c("Fall", "Winter", "Spring"))
+ggplot(test7, aes(x=as.factor(Sampling_Period), y=Abundance)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 400), 
+                     breaks=seq(0, 400,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Season")+#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Abundance per Season")+
+annotate("text", x = 1, y = 370, label = "a", size = 5)+
+annotate("text", x = 2, y = 170, label = "ab", size = 5)+
+annotate("text", x = 3, y = 50, label = "b", size = 5)
+####################################################################################
+
+#fishFall <- filter(fishabundance, Sampling_Period == "Fall")
+#fishWinter <- filter(fishabundance, Sampling_Period == "Winter")
+#fishSpring <- filter(fishabundance, Sampling_Period == "Spring")
   
 test2 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Reef_Type"))
 
@@ -1248,8 +1301,16 @@ ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
         legend.position="bottom") + 
   scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+#***************************************************8
+ann_text_art <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(500,200,80,20),lab = c("a", "ab","b","b"),Reef_Type = factor("Artificial",levels = c("Artificial","Natural")))
+ann_text_nat <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(330,80,30,45),lab = c("ab", "ab","b","b"),Reef_Type = factor("Natural",levels = c("Artificial","Natural")))
 
-ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
+
+
+
+
+
+ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance)) +
   theme_classic()+
   facet_wrap(~Reef_Type, ncol = 2) +
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
@@ -1261,12 +1322,115 @@ ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance, fill=Reef_Type)) +
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
         legend.position="bottom") + 
+  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Fish Abundance per Transect Type per Reef Type")+
+geom_text(data = ann_text_art,aes(label =lab), size = 5)+
+geom_text(data = ann_text_nat,aes(label =lab), size = 5)
+
+#just reef type
+test20 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Reef_Type"))
+
+ggplot(test20, aes(x=as.factor(Reef_Type), y=Abundance)) +
+  theme_classic()+
+  #facet_wrap(~Site, ncol = 6) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 160), 
+                     breaks=seq(0, 150,by=50)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Reef Type") +#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+ggtitle("Fish Abundance per Reef Type")+
+annotate("text", x = 1, y = 155, label = "a", size = 5)+
+annotate("text", x = 2, y = 90, label = "a", size = 5)
+
+#**************************************************************
+test3 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Site"))
+#test1$Sampling_Period <- factor(test1$Sampling_Period, c("Fall", "Winter", "Spring"))
+#order levels of treatment to appear orderly in plots
+
+#********************************************************************
+ann_text_330 <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(2300,510,250,20),lab = c("a", "b","b","b"),Site = factor("330",levels = c("330","345","364","370","372","378")))
+ann_text_345 <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(400,550,50,20),lab = c("b", "b","b","b"),Site = factor("345",levels = c("330","345","364","370","372","378")))
+ann_text_364 <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(600,400,30,20),lab = c("b", "b","b","b"),Site = factor("364",levels = c("330","345","364","370","372","378")))
+ann_text_330 <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(500,200,80,20),lab = c("a", "ab","b","b"),Site = factor("370",levels = c("330","345","364","370","372","378")))
+
+ann_text_330 <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(500,200,80,20),lab = c("a", "ab","b","b"),Site = factor("372",levels = c("330","345","364","370","372","378")))
+ann_text_330 <- data.frame(Transect_Number = c(0,1,2,3),Abundance = c(500,200,80,20),lab = c("a", "ab","b","b"),Site = factor("378",levels = c("330","345","364","370","372","378")))
+
+ggplot(test3, aes(x=as.factor(Transect_Number), y=Abundance)) +
+  theme_classic()+
+  facet_wrap(~Site, ncol = 6) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 2500), 
+                     breaks=seq(0, 2500,by=500)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
   scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+
+
+#################################################################################################
+test4 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Site"))
+
+ggplot(test4, aes(x=as.factor(Site), y=Abundance)) +
+  theme_classic()+
+  #facet_wrap(~Site, ncol = 6) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 600), 
+                     breaks=seq(0, 600,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Site") +#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+ggtitle("Fish Abundance per Site")+
+annotate("text", x = 1, y = 530, label = "a", size = 5)+
+annotate("text", x = 2, y = 220, label = "ab", size = 5)+
+annotate("text", x = 3, y = 190, label = "b", size = 5)+
+annotate("text", x = 4, y = 70, label = "b", size = 5)+
+annotate("text", x = 5, y = 170, label = "b", size = 5)+
+annotate("text", x = 6, y = 50, label = "b", size = 5)
+
+
+######################################################################################
+test10 <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Latitude_DD"))
+
+ggplot(test10, aes(x = as.factor(Latitude_DD), y=Abundance)) +
+  theme_classic()+
+  #facet_wrap(~Site, ncol = 6) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 600), 
+                     breaks=seq(0, 600,by=100)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom") + 
+  scale_x_discrete(name = "Latitude") +#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+ggtitle("Fish Abundance per Latitude")
 
 
 ```
 
 ```{r ANOVA}
+
+fishabundance$Transect_Number <- as.factor(fishabundance$Transect_Number)
+fishabundance$Site <- as.factor(fishabundance$Site)
+
 
 out.abudance <- lm(Abundance ~ Transect_Number, data = fishabundance)
 anova(out.abudance)
@@ -1283,10 +1447,18 @@ mod2 <- lm(Abundance ~ Transect_Number+ Sampling_Period, data = fishabundance)
 anova(mod2)
 summary(mod2)
 
+mod2 <- lm(Abundance ~ Sampling_Period* Transect_Number, data = fishabundance)
+anova(mod2)
+summary(mod2)
+
+
 library(agricolae)
-hsd2.samp <- HSD.test(mod2, "Sampling_Period")
+hsd2.samp <- HSD.test(mod2, c("Sampling_Period", "Transect_Number"))
 hsd2.samp
 
+library(agricolae)
+hsd2.samp <- HSD.test(mod2, "Transect_Number:Sampling_PeriodSpring")
+hsd2.samp
 hsd2.tran <- HSD.test(mod2, "Transect_Number")
 hsd2.tran
 
@@ -1298,11 +1470,83 @@ anova(mod3)
 summary(mod3)
 
 library(agricolae)
-hsd3.samp <- HSD.test(mod3, "Reef_Type")
-hsd3.samp
+hsd3.reef <- HSD.test(mod3, "Reef_Type")
+hsd3.reef
 
 hsd3.tran <- HSD.test(mod3, "Transect_Number")
 hsd3.tran
+
+###################################################################
+mod4 <- lm(Abundance ~ Transect_Number * Site, data = fishabundance)
+anova(mod4)
+summary(mod4)
+
+library(agricolae)
+hsd4.site <- HSD.test(mod4, "Site")
+hsd4.site
+
+hsd4.site.transect <- HSD.test(mod4, c("Transect_Number", "Site"))
+hsd4.site.transect
+#############################################################3
+
+mod5 <- lm(Abundance ~ Distance_To_Nearest_Land_ft, data = fishabundance)
+anova(mod5)
+summary(mod5)
+
+library(agricolae)
+hsd5.land <- HSD.test(mod5, "Distance_To_Nearest_Land_ft")
+hsd5.land
+
+
+##############################################################################
+mod6 <- lm(Abundance ~ Visibility_Min_ft, data = fishabundance)
+anova(mod6)
+summary(mod6)
+
+library(agricolae)
+hsd6.vis <- HSD.test(mod6, "Visibility_Min_ft")
+hsd6.vis
+####################################################
+mod7 <- lm(Abundance ~ Latitude_DD, data = fishabundance)
+anova(mod7)
+summary(mod7)
+
+library(agricolae)
+hsd7.lat <- HSD.test(mod7, "Latitude_DD")
+hsd7.lat
+##########################################################################
+mod9 <- lm(Abundance ~ Longitude_DD, data = fishabundance)
+anova(mod9)
+summary(mod9)
+
+library(agricolae)
+hsd9.long <- HSD.test(mod9, "Longitude_DD")
+hsd9.long
+################################################################################
+
+mod8 <- lm(Abundance ~ DRR, data = fishabundance)
+anova(mod8)
+summary(mod8)
+
+library(agricolae)
+hsd8.drr <- HSD.test(mod8, "DRR")
+hsd8.drr
+############################################################
+mod11 <- lm(Abundance ~ Transect_Number*Reef_Type, data = fishabundance)
+anova(mod11)
+summary(mod11)
+
+library(agricolae)
+hsd11.reef <- HSD.test(mod11, c("Transect_Number", "Reef_Type"))
+hsd11.reef
+###########################################################
+mod13 <- lm(Abundance ~ Reef_Type, data = fishabundance)
+anova(mod13)
+summary(mod13)
+
+library(agricolae)
+hsd11.reef <- HSD.test(mod11, c("Reef_Type"))
+hsd11.reef
 
 ```
 
