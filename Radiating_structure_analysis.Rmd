@@ -29,33 +29,59 @@ library(lubridate)
 library(reshape2)
 
 fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output_structure2.csv")
-fish_data_structure <- filter(fish_data, Structure_Present == "Yes")
-fish_data_no <- filter(fish_data, Structure_Present != "Yes")
+
+fish_data_reef <- filter(fish_data, Transect_Type == "Structural")
+fish_data_reef <- filter(fish_data_reef, Transect_Number == "0")
+fish_data_reef$Structure_Present <- "Yes"
+
+fish_data_rad <- filter(fish_data, Transect_Type == "Radiating")
+fish_data_structure <- filter(fish_data_rad, Structure_Present == "Yes")
+fish_data_no <- filter(fish_data_rad, Structure_Present != "Yes")
 fish_data_no$Structure_Present <- "No"
 
-fish_data_both <- rbind(fish_data_structure, fish_data_no)
+fish_data_both <- rbind(fish_data_structure, fish_data_no, fish_data_reef)
 #fish_data_both <- filter(fish_data_both, Species_Code != "NOFI")
-fish_data_both_radiating <- filter(fish_data_both, Transect_Type == "Radiating")
+#fish_data_both_radiating <- filter(fish_data_both, Transect_Type == "Radiating")
 
 
 #fish_data_nofi <- filter(fish_data, Species_Code == "NOFI")
 #fish_data <- filter(fish_data, Species_Code != "NOFI")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-364_PODS_2015-09-21_R_T2")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-330_BARGE_2015-12-11_S_T0") #try adding back in
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-378_PODS_2015-09-14_R_T1")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-364_BARGE_2015-12-10_R_T2")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_NR2_2015-12-09_R_T5")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_PODS_2015-12-09_R_T4")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_RB1_2015-12-09_R_T3")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_RB1_2015-10-15_R_T2")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_RB2_2015-10-15_R_T3")
-fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_TITAN_2015-10-15_R_T3")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-364_PODS_2015-09-21_R_T2")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-330_BARGE_2015-12-11_S_T0") #try adding back in
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-378_PODS_2015-09-14_R_T1")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-364_BARGE_2015-12-10_R_T2")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_NR2_2015-12-09_R_T5")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_PODS_2015-12-09_R_T4")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-372_RB1_2015-12-09_R_T3")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_RB1_2015-10-15_R_T2")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_RB2_2015-10-15_R_T3")
+#fish_data_both_radiating <- filter(fish_data_both_radiating, ID != "AR-345_TITAN_2015-10-15_R_T3")
 #fish_data_both_radiating <- filter(fish_data_both_radiating, Site == "330")
 #fish_data <- filter(fish_data, Transect_Type == "Radiating")
 
-fish_meta_both <- combine_data_meta (data = fish_data_both_radiating, 
+
+
+fish_data_both <- filter(fish_data_both, ID != "AR-364_PODS_2015-09-21_R_T2")
+#fish_data_both <- filter(fish_data_both, ID != "AR-330_BARGE_2015-12-11_S_T0") #try adding back in
+fish_data_both <- filter(fish_data_both, ID != "AR-378_PODS_2015-09-14_R_T1")
+fish_data_both <- filter(fish_data_both, ID != "AR-364_BARGE_2015-12-10_R_T2")
+fish_data_both <- filter(fish_data_both, ID != "AR-372_NR2_2015-12-09_R_T5")
+fish_data_both <- filter(fish_data_both, ID != "AR-372_PODS_2015-12-09_R_T4")
+fish_data_both <- filter(fish_data_both, ID != "AR-372_RB1_2015-12-09_R_T3")
+fish_data_both <- filter(fish_data_both, ID != "AR-345_RB1_2015-10-15_R_T2")
+fish_data_both <- filter(fish_data_both, ID != "AR-345_RB2_2015-10-15_R_T3")
+fish_data_both <- filter(fish_data_both, ID != "AR-345_TITAN_2015-10-15_R_T3")
+
+
+#fish_meta_both <- combine_data_meta (data = fish_data_both_radiating, 
+                      #          file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
+                       #         merge_by = "Species_Code") 
+
+fish_meta_both <- combine_data_meta (data = fish_data_both, 
                                 file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
                                 merge_by = "Species_Code") 
+
+
 fish_meta_both <- filter(fish_meta_both, Pelagic.Demersal == "Demersal")
 fish_meta_both <- filter(fish_meta_both, Water_Col_Position != "R_S_W", Water_Col_Position != "S_W", Water_Col_Position != "W")
 
@@ -238,15 +264,19 @@ library(dplyr)
 #fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
 
 
-fishabundstruc <- mutate(fish_abund_matrix_structure, Abundance = rowSums(fish_abund_matrix_structure[,11:ncol(fish_abund_matrix_structure)]))
+#fishabundstruc <- mutate(fish_abund_matrix_structure, Abundance = rowSums(fish_abund_matrix_structure[,11:ncol(fish_abund_matrix_structure)]))
 
-fishabundno <- mutate(fish_abund_matrix_no, Abundance = rowSums(fish_abund_matrix_no[,11:ncol(fish_abund_matrix_no)]))
+#fishabundno <- mutate(fish_abund_matrix_no, Abundance = rowSums(fish_abund_matrix_no[,11:ncol(fish_abund_matrix_no)]))
+
+fishabundance <- mutate(data, Abundance = rowSums(data[,11:ncol(data)]))
+
 #test <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Sampling_Period"))
 
-struc <- summarySE(fishabundstruc, measurevar = "Abundance", groupvars = c("Transect_Number"))
+#struc <- summarySE(fishabundstruc, measurevar = "Abundance", groupvars = c("Transect_Number"))
 
-no <- summarySE(fishabundno, measurevar = "Abundance", groupvars = c("Transect_Number"))
+#no <- summarySE(fishabundno, measurevar = "Abundance", groupvars = c("Transect_Number"))
 
+both <- summarySE(fishabundance, measurevar = "Abundance", groupvars = c("Transect_Number", "Structure_Present"))
 ################################################################################
 
 #ggplot(struc, aes(x=as.factor(Transect_Number), y=Abundance))+
@@ -275,10 +305,10 @@ no <- summarySE(fishabundno, measurevar = "Abundance", groupvars = c("Transect_N
    #     legend.position="none") + 
   #scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
 ##################################################################################
-struc$Structure <- "Yes"
-no$Structure <- "No"
-allstrucno <- rbind(no, struc)
-allstrucno [1,7] <- "Yes"
+#struc$Structure <- "Yes"
+#no$Structure <- "No"
+#allstrucno <- rbind(no, struc)
+#allstrucno [1,7] <- "Yes"
 
 ###################################################################################
 #allstrucno.plot = ggplot(allstrucno, aes(x=as.factor(Transect_Number), y=Abundance), fill = name)
@@ -295,37 +325,79 @@ allstrucno [1,7] <- "Yes"
      #   legend.position="bottom") + 
 #  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
 #######################################################################################
-transparent <- ggplot(NULL, aes(as.factor(Transect_Number), Abundance)) + 
-  geom_bar(aes(fill = "Yes"), data = struc, stat = "identity", alpha = 0.5) +
-  geom_bar(aes(fill = "No"), data = no, stat = "identity", alpha = 0.5)
-transparent + theme_classic()
+#transparent <- ggplot(NULL, aes(as.factor(Transect_Number), Abundance)) + 
+ # geom_bar(aes(fill = "Yes"), data = struc, stat = "identity", alpha = 0.5) +
+  #geom_bar(aes(fill = "No"), data = no, stat = "identity", alpha = 0.5)
+#transparent + theme_classic()
 #####################################################################################
 
-adjacent <- ggplot(allstrucno, aes(as.factor(Transect_Number), Abundance, fill = Structure)) + geom_bar(stat = "identity", position = "dodge")
+#adjacent <- ggplot(allstrucno, aes(as.factor(Transect_Number), Abundance, fill = Structure)) + geom_bar(stat = "identity", position = "dodge")
 
-adjacent + theme_classic()
+#adjacent + theme_classic()
 #####################################################################################
-allstrucno_test <- rbind(allstrucno[1,], allstrucno[5:7,], allstrucno[2:4,])
+#allstrucno_test <- rbind(allstrucno[1,], allstrucno[5:7,], allstrucno[2:4,])
 #allstrucno$name <- factor(allstrucno$name, c("no", "struc"))
 #order levels of treatment to appear orderly in plots
-allstrucno_test$abund <- c(allstrucno_test[1,3], allstrucno_test[2,3], allstrucno_test[3,3], allstrucno_test[4,3], (allstrucno_test[5,3]+ allstrucno_test[2,3]), (allstrucno_test[6,3]+allstrucno_test[3,3]), (allstrucno_test[7,3]+allstrucno_test[4,3]))
+#allstrucno_test$abund <- c(allstrucno_test[1,3], allstrucno_test[2,3], allstrucno_test[3,3], allstrucno_test[4,3], (allstrucno_test[5,3]+ allstrucno_test[2,3]), (allstrucno_test[6,3]+allstrucno_test[3,3]), (allstrucno_test[7,3]+allstrucno_test[4,3]))
 
 
-stack <- ggplot(allstrucno_test, aes(as.factor(Transect_Number), Abundance, fill = Structure)) + geom_bar(stat = "identity", position = "stack")
+#stack <- ggplot(allstrucno_test, aes(as.factor(Transect_Number), Abundance, fill = Structure)) + geom_bar(stat = "identity", position = "stack")
 
-stack + theme_classic()+ ggtitle("Demersal Fish Abundance on Structure")+
+#stack + theme_classic()+ ggtitle("Demersal Fish Abundance on Structure")+
+##########geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2)+#, position=position_dodge(0.9))+
+ # scale_y_continuous(name="Average Fish Abundance", 
+  #                   limits=c(0, 250), 
+   #                  breaks=seq(0, 250,by=50)) + 
+#  theme(axis.text=element_text(size=16, colour="black"), 
+ #       axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+  #      axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+   #     legend.position="bottom") + 
+ # scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ ########## geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = "identity", width=.2)
+#  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = position_dodge(0.5), width=.2)
+
+both$abund <- c(both[1,4], both[2,4], (both[3,4]+both[2,4]), both[4,4], (both[5,4]+both[4,4]), both[6,4], (both[7,4]+both[6,4]))
+
+stackboth <- ggplot(both, aes(as.factor(Transect_Number), Abundance, fill = Structure_Present)) + geom_bar(stat = "identity", position = "stack")
+
+stackboth + theme_classic()+ ggtitle("Demersal Fish Abundance Associated with Structure")+
 #geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2)+#, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 250), 
-                     breaks=seq(0, 250,by=50)) + 
+                     limits=c(0, 300), 
+                     breaks=seq(0, 300,by=50)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
-        legend.position="bottom") + 
-  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ scale_fill_discrete(name= "Structure Present")+
+ # scale_fill_manual(name= "Structure Present", values= c("Yes"= "grey20", "No" = "grey50"))+
  # geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = "identity", width=.2)
   geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = position_dodge(0.5), width=.2)
 
+
+
+
+
+fillboth <- ggplot(both, aes(as.factor(Transect_Number), Abundance, fill = Structure_Present)) + geom_bar(stat = "identity", position = "fill")
+
+fillboth + theme_classic()+ ggtitle("Proportion of Demersal Fish Abundance Associated with Structure")+
+#scale_y_continuous(name="Average Fish Abundance", 
+                    # limits=c(0, 250), 
+                    # breaks=seq(0, 250,by=50)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+  
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ scale_fill_discrete(name= "Structure Present")#+
+#scale_fill_manual(name = "Structure Present", values = c("Yes" = "grey20", "No" = "grey50"))
+ # geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = "identity", width=.2)
+  #geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = position_dodge(0.5), width=.2)
 
 ################################################################################
 #helpme <- ggplot(NULL, aes(as.factor(Transect_Number), Abundance), fill = name) +
@@ -457,24 +529,68 @@ stack + theme_classic()+ ggtitle("Demersal Fish Abundance on Structure")+
 
 #use fishabundstruc
 
-fishabundstruc$Radiating_Structure <- revalue(fishabundstruc$Radiating_Structure, c("Structure" = "Unknown Structure"))
-fishabundstruc$Radiating_Structure <- revalue(fishabundstruc$Radiating_Structure, c("Reef ball" = "Reef Ball"))
+#fishabundstruc$Radiating_Structure <- revalue(fishabundstruc$Radiating_Structure, c("Structure" = "Unknown Structure"))
+#fishabundstruc$Radiating_Structure <- revalue(fishabundstruc$Radiating_Structure, c("Reef ball" = "Reef Ball"))
 
-fishabundstruc$Radiating_Structure <- as.character(fishabundstruc$Radiating_Structure)
+#fishabundstruc$Radiating_Structure <- as.character(fishabundstruc$Radiating_Structure)
 
-fishabundstruc$Radiating_Structure <- ifelse(nchar(fishabundstruc$Radiating_Structure)==0, "Unknown Structure", fishabundstruc$Radiating_Structure)
+#fishabundstruc$Radiating_Structure <- ifelse(nchar(fishabundstruc$Radiating_Structure)==0, "Unknown Structure", fishabundstruc$Radiating_Structure)
 
-fishabundstruc[15,10] = "Unknown Structure"
+#fishabundstruc[15,10] = "Unknown Structure"
+#REMOVE SAILBOAT AND UNKNOWN STRUCUTRE
+
+rad <- filter(fishabundance, Transect_Type == "Radiating")
+
+radstruc <- filter(rad, Structure_Present == "Yes")
+radstruc$Radiating_Structure <- revalue(radstruc$Radiating_Structure, c("Structure" = "Unknown Structure"))
+radstruc$Radiating_Structure <- revalue(radstruc$Radiating_Structure, c("Reef ball" = "Reef Ball"))
+#radstruc$Radiating_Structure <- as.character(radstruc$Radiating_Structure)
+radstruc[14,10] = "Unknown Structure"
+
+#radstruc$Structure_Present <- as.factor(radstruc$Structure_Present)
+#REMOVE SAILBOAT AND UNKNOWN STRUCUTRE
+
+radstruc <- filter(radstruc, Radiating_Structure != "Sailboat")
+radstruc <- filter(radstruc, Radiating_Structure != "Unknown Structure")
+#radstruc$Radiating_Structure <- ifelse(nchar(radstruc$Radiating_Structure)==0, "Unknown Structure", radstruc$Radiating_Structure)
 
 #by transect
-adjacent_type <- ggplot(fishabundstruc, aes(as.factor(Transect_Number), Abundance, fill = Radiating_Structure)) + geom_bar(stat = "identity", position = "dodge")
+
+radstrucstats <- summarySE(radstruc, measurevar = "Abundance", groupvars = c("Transect_Number", "Radiating_Structure"))
+
+radstrucstatsmore <- summarySE(radstruc, measurevar = "Abundance", groupvars = c("Radiating_Structure"))
+#############################################################
+#not as helpful
+adjacent_type <- ggplot(radstrucstats, aes(as.factor(Transect_Number), Abundance, fill = Radiating_Structure)) + geom_bar(stat = "identity", position = "dodge")
 
 adjacent_type + theme_classic()
-
+#########################################################3
 #by type
-adjacent_type <- ggplot(fishabundstruc, aes(Radiating_Structure, Abundance)) + geom_bar(stat = "identity", position = "dodge")
+adjacent_type <- ggplot(radstrucstatsmore, aes(Radiating_Structure, Abundance)) + geom_bar(stat = "identity", position = "dodge")
 
-adjacent_type + theme_classic()
+adjacent_type + theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 120), 
+                     breaks=seq(0, 120,by=20)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  #scale_x_discrete(name = "Site") +#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+  scale_x_discrete(name = "Structure Type")+
+ggtitle("Fish Abundance per Structure Type")+
+annotate("text", x = 1, y = 15, label = "a", size = 5)+
+annotate("text", x = 2, y = 63, label = "a", size = 5)+
+annotate("text", x = 3, y = 110, label = "a", size = 5)+
+annotate("text", x = 4, y = 36, label = "a", size = 5)+
+annotate("text", x = 5, y = 18, label = "a", size = 5)
+
+
+
 
 
 
@@ -489,6 +605,7 @@ adjacent_type + theme_classic()
 ```{r ANOVA}
 fishabundance <- mutate(data, Abundance = rowSums(data[,11:ncol(data)]))
 
+fishabundance$Transect_Number <- as.factor(fishabundance$Transect_Number)
 out.abudance <- lm(Abundance ~ Transect_Number, data = fishabundance)
 anova(out.abudance)
 summary(out.abudance)
@@ -500,6 +617,7 @@ hsd
 pair <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
 pair
 ###################################
+fishabundance$Structure_Present <- as.factor(fishabundance$Structure_Present)
 out.abudance.struc <- lm(Abundance ~ Structure_Present, data = fishabundance)
 anova(out.abudance.struc)
 summary(out.abudance.struc)
@@ -511,12 +629,12 @@ hsd
 pair <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
 pair
 ######################################################################
-mod2 <- lm(Abundance ~ Transect_Number + Structure_Present, data = fishabundance)
+mod2 <- lm(Abundance ~ Transect_Number * Structure_Present, data = fishabundance)
 anova(mod2)
 summary(mod2)
 
 library(agricolae)
-hsd2.samp <- HSD.test(mod2, "Structure_Present")
+hsd2.samp <- HSD.test(mod2, c("Structure_Present", "Transect_Number"))
 hsd2.samp
 
 hsd2.tran <- HSD.test(mod2, "Transect_Number")
@@ -525,6 +643,14 @@ hsd2.tran
 pair2 <- pairwise.t.test(fishabundance$Abundance, fishabundance$Transect_Number, p.adj = "none")
 pair2
 
+
+############################################
+mod3 <- lm(Abundance ~ Radiating_Structure, data = radstruc)
+anova(mod3)
+summary(mod3)
+
+hsd2.radstruc <- HSD.test(mod3, "Radiating_Structure")
+hsd2.radstruc
 ```
 
 ```{r Post_hoc_comparisons}
@@ -535,8 +661,31 @@ pair2
 ```{r PERMANOVA}
 
 library(vegan)
-permanova<-adonis(species.data ~ Transect_Number * Structure_Present, env_data, permutations = 1000, method = "bray")
-permanova
+
+env_data$Transect_Number <- as.factor(env_data$Transect_Number)
+permanova_trans<-adonis(species.data ~ Transect_Number, env_data, permutations = 1000, method = "bray")
+permanova_trans
+summary(permanova_trans)
+
+
+env_data$Structure_Present <- as.factor(env_data$Structure_Present)
+permanova_struc<-adonis(species.data ~ Structure_Present, env_data, permutations = 1000, method = "bray")
+permanova_struc
+summary(permanova_struc)
+
+
+permanova_trans_struc<-adonis(species.data ~ Transect_Number * Structure_Present, env_data, permutations = 1000, method = "bray")
+permanova_trans_struc
+summary(permanova_trans_struc)
+
+
+
+
+
+
+
+
+
 
 summary(permanova)
 permanova$aov.tab
@@ -733,11 +882,75 @@ ano_samp<-anosim(species.data, env_data$Sample, permutations = 1000, distance = 
 ```
 
 ```{r SIMPER}
-  
+  library(vegan)
+groups_transect <- paste(as.character(env_data$Transect_Number))
+groups_transect <- as.factor(groups_transect)
+simp_transect <- simper(species.data, groups_transect)
+simp_transect
+summary(simp_transect, ordered = TRUE)
+
+groups_structure <- paste(as.character(env_data$Structure_Present))
+groups_structure <- as.factor(groups_structure)
+simp_structure <- simper(species.data, groups_structure)
+simp_structure
+summary(simp_structure, ordered = TRUE)
+
+groups_site <- paste(as.character(env_data$Site))
+groups_site <- as.factor(groups_site)
+simp_site <- simper(species.data, groups_site)
+simp_site
+summary(simp_site, ordered = TRUE)
+
+groups_reef <- paste(as.character(env_data$Reef_Type))
+groups_reef <- as.factor(groups_reef)
+simp_reef <- simper(species.data, groups_reef)
+simp_reef
+summary(simp_reef, ordered = TRUE)
+
+
 ```  
 
 ```{r indicator_species}
-  
+ library(indicspecies)
+
+#IS IT OKAY TO USE SPECIES.ORIG?????
+set.seed(318)
+groups_transect <- env_data$Transect_Number
+groups_transect <- as.factor(groups_transect)
+B=strassoc(species.orig, cluster=groups_transect,func="B")
+indval_transect <- multipatt(species.orig, groups_transect, control=how(nperm=999))
+summary(indval_transect, indvalcomp = TRUE)
+
+#filter for blank in group struct!!!!!
+newdata <- filter(data, Transect_Type == "Radiating")
+env.end<- 10 #FOR SPECEIS
+sp.start<-11 #FOR SPECIES
+
+env_data.new <- newdata[,1:env.end]
+ 
+species.data.new<-newdata[,sp.start:ncol(newdata)] # fish data
+species.orig.new<-species.data.new # fish data, no transform
+species.data.new <- transform_data (data = species.data.new, transform_type = "square_root_plus_number")
+
+groups_struc <- env_data.new$Structure_Present
+groups_struc <- as.character(groups_struc)
+B=strassoc(species.orig.new, cluster=groups_struc,func="B")
+indval_struc <- multipatt(species.orig.new, groups_struc, control= how(nperm = 999))
+summary(indval_struc)
+
+
+
+
+
+
+
+groups_season <- env_data$Sampling_Period
+indval_season <- multipatt(species.data, groups_season, control = how(nperm = 999))
+summary(indval_season)
+
+grouops_reef <- env_data$Reef_Type
+indval_reef <- multipatt(species.data, groups_reef, control = how(nperm = 999))
+summary(indval_reef) 
 ```
 
 ```{r new_nMDS}
@@ -810,8 +1023,8 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
+   # geom_point(data = NMDS, 
+          #     aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
   stat_ellipse(data = NMDS, 
                  aes(x=MDS1,y=MDS2,colour=species.nms$Transect_Number),
                  level = 0.50, linetype=2, size =1)+
@@ -826,8 +1039,10 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
           legend.text=element_text(color="black", size=16), 
           legend.title=element_text(color="black", size = 16), 
           legend.position="bottom") + 
-      scale_colour_manual(name = "Transect", 
+     scale_colour_manual(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
                        values = c("0" = "indianred2", "1" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+      #scale_colour_manual(name = "Distance from Reef", 
+                    #   values = c("0" = "indianred2", "1" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"), lables = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
       ggtitle(title)
   
   
@@ -841,18 +1056,18 @@ NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame t
 
 species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
 
-    library(ggplot2) 
-  ggplot()+
-    coord_equal()+ # axes sizes equal
-    theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Structure_Present), size = 5) +
+   library(ggplot2) 
+ ggplot()+
+   coord_equal()+ # axes sizes equal
+   theme_bw()+ # basic theme
+  # geom_point(data = NMDS, 
+         #    aes(x = MDS1, y = MDS2, color = species.nms$Structure_Present), size = 5) +
   stat_ellipse(data = NMDS, 
                  aes(x=MDS1,y=MDS2,colour=species.nms$Structure_Present),
                  level = 0.50, linetype=2, size =1)+
-  #geom_text(data=species.wa,
-             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
-             # alpha=0.9, # adds weighted averages for species
+ # geom_text(data=species.wa,
+           #   aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+            #  alpha=0.9, # adds weighted averages for species
              # position=position_jitter(width=0.1,height=0.2))+
     scale_y_continuous(name=yl) + # names y axis
     scale_x_continuous(name=xl) + # names x axis
@@ -865,7 +1080,36 @@ species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
                        values = c("Yes" = "indianred2", "No" = "darkturquoise"))+
       ggtitle(title)
   
+#  species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
+
+   # library(ggplot2) 
+  #ggplot()+
+  #  coord_equal()+ # axes sizes equal
+   # theme_bw()+ # basic theme
+  #  geom_point(data = NMDS, 
+ #             aes(x = MDS1, y = MDS2, color = species.nms$Structure_Present, shape = #species.nms$Transect_Number), size = 5) +
+  #stat_ellipse(data = NMDS, 
+          #      aes(x=MDS1,y=MDS2,colour=species.nms$Structure_Present, shape = species.nms$Transect_Number),
+            #     level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    #scale_y_continuous(name=yl) + # names y axis
+   # scale_x_continuous(name=xl) + # names x axis
+  #  theme(axis.text=element_text(size=16), 
+        #  axis.title=element_text(size=16), 
+         # legend.text=element_text(color="black", size=16), 
+        #  legend.title=element_text(color="black", size = 16), 
+       #   legend.position="bottom") + 
+      #scale_colour_manual(name = "Structure", 
+     #                  values = c("Yes" = "indianred2", "No" = "darkturquoise"))+
+    #scale_shape_manual(name = "Distance from Structure", labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+   #   ggtitle(title)
   
+  
+   
+
    
   # species.nms$Structure_Present <- as.factor(species.nms$Structure_Present)
    # ggplot()+

@@ -1339,10 +1339,12 @@ plot_pca_transect_number <- function(){
     geom_vline(aes(xintercept=0), linetype="dashed")+
     #scale_y_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) +
     #scale_x_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) + 
-    scale_shape_discrete(name="Transect Number", 
-                         labels=c("0", "1", "2", "3", "4", "5", "6"))+ 
-    scale_colour_manual(name = "Transect Number", 
-                        values = c("0" = "indianred2", "1" = "darkturquoise", "2" = "blueviolet", "3" = "olivedrab4", "4" = "tomato1", "5" = "lightpink2", "6" = "magenta"))+
+    scale_shape_discrete(name="Distance from Structure", 
+                         labels=c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+ 
+    scale_colour_discrete(name = "Distance from Structure",
+                          labels=c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+
+    #scale_colour_manual(name = "Distance from Structure", 
+         #               values = c("0" = "Structure"= "indianred2", "1" ="0-30 m" = "darkturquoise", "2" ="30-60 m" = "blueviolet", "3" ="60-90 m" = "olivedrab4"))+
     theme(axis.text=element_text(size=12), 
           axis.title=element_text(size=12), 
           legend.text=element_text(color="black", size=12), 
@@ -1372,9 +1374,42 @@ plot_pca_site <- function(){
     #scale_y_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) +
     #scale_x_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) + 
     scale_shape_discrete(name="Site", 
-                         labels=c("330", "342", "345", "364", "370", "372", "378"))+ 
+                         labels=c("330", "345", "364", "370", "372", "378"))+ 
     scale_colour_manual(name = "Site", 
-                        values = c("330" = "indianred2", "342" = "magenta", "345" = "darkturquoise", "364" = "blueviolet", "370" = "olivedrab4", "372" = "tomato1", "378" = "lightpink2"))+
+                        values = c("330" = "indianred2",  "345" = "darkturquoise", "364" = "blueviolet", "370" = "olivedrab4", "372" = "tomato1", "378" = "lightpink2"))+
+    theme(axis.text=element_text(size=12), 
+          axis.title=element_text(size=12), 
+          legend.text=element_text(color="black", size=12), 
+          legend.position="bottom")+
+    geom_segment(data = vect.vf,
+                 aes(x = 0, xend = Comp.1, y = 0, yend = Comp.2), 
+                 arrow = arrow(length = unit(0.25, "cm")), 
+                 colour = "red") +
+    geom_text(data = vect.vf, 
+              aes(x = Comp.1 + 0.3, y = Comp.2 + 0.06, label = Env),
+              size = 5)
+}
+plot_pca_sampling_period <- function(){
+  PCA = data.frame(PCA1 = env.pca.scores$Comp.1, PCA2 = env.pca.scores$Comp.2)
+  library(ggplot2)
+  library(gridExtra)
+  vf<-envfit(env.pca.scores[,c(1:2)],env.data.pca)
+  vect.vf <- as.data.frame(scores(vf, display = "vectors"))
+  vect.vf <- cbind(vect.vf, Env = rownames(vect.vf))
+  ggplot(PCA, aes(PCA1, PCA2))+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(aes(shape=env_data$Sampling_Period, colour=env_data$Sampling_Period), size=5)+
+    geom_hline(aes(yintercept=0), linetype="dashed")+
+    geom_vline(aes(xintercept=0), linetype="dashed")+
+    #scale_y_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) +
+    #scale_x_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) + 
+    scale_shape_discrete(name="Season", 
+                         labels=c("Fall", "Winter", "Spring"))+ 
+    scale_colour_discrete(name="Season", 
+                         labels=c("Fall", "Winter", "Spring"))+ 
+    #scale_colour_manual(name = "Sampling Period", 
+               #        values = c("Fall" = "indianred2",  "Winter" = "darkturquoise", "Spring" = "blueviolet"))+
     theme(axis.text=element_text(size=12), 
           axis.title=element_text(size=12), 
           legend.text=element_text(color="black", size=12), 
