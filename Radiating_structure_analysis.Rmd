@@ -363,8 +363,8 @@ stackboth <- ggplot(both, aes(as.factor(Transect_Number), Abundance, fill = Stru
 stackboth + theme_classic()+ ggtitle("Demersal Fish Abundance Associated with Structure")+
 #geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2)+#, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 300), 
-                     breaks=seq(0, 300,by=50)) + 
+                     limits=c(0, 270), 
+                     breaks=seq(0, 270,by=50)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
@@ -372,8 +372,8 @@ stackboth + theme_classic()+ ggtitle("Demersal Fish Abundance Associated with St
         axis.line.x = element_line(color="black", size = 0.5), 
         axis.line.y = element_line(color="black", size = 0.5))+ 
   scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
- scale_fill_discrete(name= "Structure Present")+
- # scale_fill_manual(name= "Structure Present", values= c("Yes"= "grey20", "No" = "grey50"))+
+ #scale_fill_discrete(name= "Structure Present")+
+ scale_fill_manual(name= "Structure Present", values= c("Yes"= "grey20", "No" = "grey50"))+
  # geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = "identity", width=.2)
   geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = position_dodge(0.5), width=.2)
 
@@ -394,8 +394,8 @@ fillboth + theme_classic()+ ggtitle("Proportion of Demersal Fish Abundance Assoc
         axis.line.x = element_line(color="black", size = 0.5), 
         axis.line.y = element_line(color="black", size = 0.5))+  
   scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
- scale_fill_discrete(name= "Structure Present")#+
-#scale_fill_manual(name = "Structure Present", values = c("Yes" = "grey20", "No" = "grey50"))
+ #scale_fill_discrete(name= "Structure Present")#+
+scale_fill_manual(name = "Structure Present", values = c("Yes" = "grey20", "No" = "grey50"))
  # geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = "identity", width=.2)
   #geom_errorbar(aes(ymin=abund-se, ymax=abund+se), position = position_dodge(0.5), width=.2)
 
