@@ -222,7 +222,7 @@ calc_temp_metrics <- function(data, trans_level = c("indiv", "avgd")){
 
 ## Transform Data ---------------------------------------------
 
-transform_data <- function(data, transform_type = c("square_root", "cube_root", "fourth_root", "pres_abs", "log")){
+transform_data <- function(data, transform_type = c("square_root", "cube_root", "fourth_root", "pres_abs", "log", "square_root_plus_number", "box-cox")){
   if (transform_type == "square_root")
     data <- sqrt (data)
   if (transform_type == "cube_root")
@@ -235,6 +235,8 @@ transform_data <- function(data, transform_type = c("square_root", "cube_root", 
     data <- log(data)
   if (transform_type == "square_root_plus_number")
     data <- sqrt(data)+ 0.3 # 0.11
+  if (transform_type == "box-cox")
+    data <- sqrt(data + 0.1) # c = 0.1, lambda = 0.5
   data
 }
 

@@ -1339,10 +1339,10 @@ plot_pca_transect_number <- function(){
     geom_vline(aes(xintercept=0), linetype="dashed")+
     #scale_y_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) +
     #scale_x_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) + 
-    scale_shape_discrete(name="Distance from Structure", 
-                         labels=c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+ 
-    scale_colour_discrete(name = "Distance from Structure",
-                          labels=c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+
+    scale_shape_discrete(name="Distance from Reef", 
+                         labels=c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+ 
+    scale_colour_discrete(name = "Distance from Reef",
+                          labels=c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+
     #scale_colour_manual(name = "Distance from Structure", 
          #               values = c("0" = "Structure"= "indianred2", "1" ="0-30 m" = "darkturquoise", "2" ="30-60 m" = "blueviolet", "3" ="60-90 m" = "olivedrab4"))+
     theme(axis.text=element_text(size=12), 

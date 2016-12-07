@@ -35,6 +35,7 @@ fish_data_str_0 <- filter(fish_data, Transect_Number == "0")
 fish_data_rad <- filter(fish_data, Transect_Type == "Radiating")
 
 fish_data <- rbind(fish_data_str_0, fish_data_rad)
+#fish_data <- filter(fish_data, Species_Code != "NOFI") ###############USE IF FILTERING TRANSECTS WITH 0 FISH
 #fish_data <- filter(fish_data, Transect_Type == "Structural")
 #fish_data <- filter(fish_data, Transect_Type == "Radiating")
 #fish_data <- filter(fish_data, Species_Code != "SYSA")
@@ -144,7 +145,9 @@ joinbiom3 <- join(joinbiom2, sites, by = c("Site", "Subsite"))
 
 # new ones
 join4 <- cbind(join3[,1:7], join3[,81:104], join3[,8:80]) # species
+#join4 <- cbind(join3[,1:7], join3[,80:103], join3[,8:79]) #for exclusion of NOFI
 joinbiom4 <- cbind(joinbiom3[,1:7], joinbiom3[,81:104], joinbiom3[,8:80])
+#joinbiom4 <- cbind(joinbiom3[,1:7], joinbiom3[,80:103], joinbiom3[,8:79])#for exclusion of NOFI
 #join4 <- cbind(join3[,1:7], join3[,36:ncol(join3)], join3[,8:35]) # family
 #join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
 
@@ -209,8 +212,12 @@ species.orig.biom <- species.data.biom
 #species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 #we need to look at this with Avery
-species.data <- transform_data (data = species.data, transform_type = "square_root_plus_number")
-species.data.biom <- transform_data (data = species.data.biom, transform_type = "square_root_plus_number")
+#species.data <- transform_data (data = species.data, transform_type = "square_root_plus_number")
+#species.data.biom <- transform_data (data = species.data.biom, transform_type = "square_root_plus_number")
+
+species.data <- transform_data (data = species.data, transform_type = "box-cox")
+species.data.biom <- transform_data (data = species.data.biom, transform_type = "box-cox")
+
 ```
 
 ```{r comm_metrics}
@@ -555,6 +562,8 @@ library (dplyr)
 
 
 # this is the function called calc_bcd_dist_matrix that puts sites and their dissimilarities and distances in a pretty matrix
+
+data <- env.species.bcd
 calc_bcd_dist_matrix <- function(data){
 site_subsite <- paste(data$Site, data$Subsite, sep = "_") # identify unique site and subsite combinations
 uniq <- unique(unlist(site_subsite))  # saves unique site and subsite combinations as object called 'uniq' so that can use them in the loop below for counting purposes
@@ -563,7 +572,9 @@ uniq <- unique(unlist(site_subsite))  # saves unique site and subsite combinatio
 results <- data.frame(site_in = character(), subsite_in = character(), id_in = character(), site_far = character(), subsite_far = character(), id_far = character(), dist = integer(), dissim = integer())
 
 p=1 # p is the counter, initialize it at 1, represents number of uniq site and subsite combinations
-  for (p in 1:length(uniq)){
+  #for (p in 1:length(uniq)){
+  #for (p in 1:24){
+   for(p in 1:nrow(data)){ 
     ## In site
       a <- rep(data[p,2], nrow(data)) # in site
       b <- rep(data[p,3], nrow(data)) # in subsite
@@ -784,8 +795,31 @@ plot.all.ggplot +
         axis.line.y = element_line(color="black", size = 0.5))+
 geom_point (colour = "grey") + 
   scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.2)) +
-  scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black")+
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
   ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
+
+less40 <- filter(all.species.f, NEAR_DIST_km < 40)
+greater70 <- filter
+testing <- geom_smooth(data = less40, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD)))
+
+plot.all.ggplot + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + 
+  geom_smooth(data = less40, colour = "black", fullrange = FALSE)+
+  geom_smooth(data = greater70, colour = "black", fullrange = FALSE)+
+  #testing+
+  ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
+
 
 ###########################################################################################3
 
@@ -1170,6 +1204,11 @@ plot(mantel.correlog.spring, alpha= 0.05)
 
 ```{r distance_NR}
 
+all.species.f <- as.data.frame(all.species.f)
+
+NRin <- filter(all.species.f, NEAR_Subsite == "NR1")
+
+
 #site 370
 #distance to NR1
 #site370 <- filter(data, Site == "370")
@@ -1346,7 +1385,7 @@ ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
   theme_classic()+
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=Abundance-se, ymax=Abundance+se), width=.2, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Abundance", 
+  scale_y_continuous(name="Average Fish Abundance (ind./m^2)", 
                      limits=c(0, 500), 
                      breaks=seq(0, 500,by=100)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
@@ -1355,13 +1394,83 @@ ggplot(test, aes(x=as.factor(Transect_Number), y=Abundance)) +
         legend.position="none", 
         axis.line.x = element_line(color="black", size = 0.5), 
         axis.line.y = element_line(color="black", size = 0.5))+ 
-  scale_x_discrete(name = "Distance from Structure", labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-  ggtitle("Fish Abundance by Distance from Structure")+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Abundance by Distance from Reef")+
 annotate("text", x = 1, y = 460, label = "a", size = 5)+
 annotate("text", x = 2, y = 180, label = "b", size = 5)+
 annotate("text", x = 3, y = 63, label = "b", size = 5)+
 annotate("text", x = 4, y = 27, label = "b", size = 5)
+########################################################################################3
+fishbiomass <- mutate(databiom, Biomass = rowSums(databiom[,30:ncol(databiom)]))
 
+testbiom <- summarySE(fishbiomass, measurevar = "Biomass", groupvars = c("Transect_Number"))
+
+
+ggplot(testbiom, aes(x=as.factor(Transect_Number), y=Biomass)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=Biomass-se, ymax=Biomass+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Biomass (g/m^2)", 
+                     limits=c(0, 45), 
+                     breaks=seq(0, 45,by=10)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Biomass by Distance from Reef")+
+annotate("text", x = 1, y = 43, label = "a", size = 5)+
+annotate("text", x = 2, y = 9, label = "b", size = 5)+
+annotate("text", x = 3, y = 5, label = "b", size = 5)+
+annotate("text", x = 4, y = 4, label = "b", size = 5)
+##########################################################################################################
+testshan <- summarySE(comm_mets, measurevar = "shan", groupvars = c("Transect_Number"))
+
+
+ggplot(testshan, aes(x=as.factor(Transect_Number), y=shan)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=shan-se, ymax=shan+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Shannon's Diversity Index", 
+                     limits=c(0, 1.2), 
+                     breaks=seq(0, 1.2,by=0.2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Shannon's Diversity Index by Distance from Reef")+
+annotate("text", x = 1, y = 1.17, label = "a", size = 5)+
+annotate("text", x = 2, y = 0.45, label = "b", size = 5)+
+annotate("text", x = 3, y = 0.25, label = "c", size = 5)+
+annotate("text", x = 4, y = 0.3, label = "bc", size = 5)
+##############################################################################################
+testS <- summarySE(comm_mets, measurevar = "S", groupvars = c("Transect_Number"))
+
+
+ggplot(testS, aes(x=as.factor(Transect_Number), y=S)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=S-se, ymax=S+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Species Richness", 
+                     limits=c(0, 9), 
+                     breaks=seq(0, 9,by=2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Species Richness by Distance from Reef")+
+annotate("text", x = 1, y = 8.5, label = "a", size = 5)+
+annotate("text", x = 2, y = 3, label = "b", size = 5)+
+annotate("text", x = 3, y = 1.5, label = "c", size = 5)+
+annotate("text", x = 4, y = 1.5, label = "c", size = 5)
 ###############################################################################
 
 # fill for extra variable (in this case season)
@@ -1409,8 +1518,8 @@ ggplot(test1, aes(x=as.factor(Transect_Number), y=Abundance)) +
         legend.position="bottom",
         axis.line.x = element_line(color="black", size = 0.5), 
         axis.line.y = element_line(color="black", size = 0.5))+ 
-  scale_x_discrete(name = "Distance from Structure", labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-ggtitle("Fish Abundance by Distance from Structure by Season")+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Fish Abundance by Distance from Reef by Season")+
 #annotate("text", x = 1, y = 850, label = "a", size = 5)+
 #annotate("text", x = 2, y = 450, label = "ab", size = 5)+
 #annotate("text", x = 3, y = 150, label = "b", size = 5)+
@@ -1484,8 +1593,8 @@ ggplot(test2, aes(x=as.factor(Transect_Number), y=Abundance)) +
         legend.position="bottom", 
 axis.line.x = element_line(color="black", size = 0.5), 
         axis.line.y = element_line(color="black", size = 0.5))+ 
-  scale_x_discrete(name = "Distance from Structure", labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-ggtitle("Fish Abundance by Distance from Struture by Reef Type")+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Fish Abundance by Distance from Reef by Reef Type")+
 geom_text(data = ann_text_art,aes(label =lab), size = 5)+
 geom_text(data = ann_text_nat,aes(label =lab), size = 5)
 
@@ -1677,6 +1786,28 @@ anova(out.shan)
 summary(out.shan)
 hsdshan <- HSD.test(out.shan, c("Transect_Number"))
 hsdshan
+
+#SIMPSON'S DIVERSITY
+out.simp <- lm(simp ~ Transect_Number, data = comm_mets)
+anova(out.simp)
+summary(out.simp)
+hsdsimp <- HSD.test(out.simp, c("Transect_Number"))
+hsdsimp
+
+#INVERSE SIMPSON'S DIVERSITY
+#out.invsimp <- lm(simp_inv ~ Transect_Number, data = comm_mets)
+#anova(out.invsimp)
+#summary(out.invsimp)
+#hsdinvsimp <- HSD.test(out.invsimp, c("Transect_Number"))
+#hsdinvsimp
+
+
+#EVENNESS
+out.J <- lm(J ~ Transect_Number, data = comm_mets)
+anova(out.J)
+summary(out.J)
+hsdJ <- HSD.test(out.J, c("Transect_Number"))
+hsdJ
 ######################################################################
 mod2 <- lm(Abundance ~ Transect_Number+ Sampling_Period, data = fishabundance)
 anova(mod2)
@@ -2326,7 +2457,7 @@ species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
           legend.text=element_text(color="black", size=16), 
           legend.title=element_text(color="black", size = 16), 
           legend.position="bottom") + 
-      scale_colour_manual(name = "Distance from Structure", labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+      scale_colour_manual(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
                        values = c("0" = "indianred2", "1" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
       ggtitle(title)
   
@@ -2508,12 +2639,14 @@ env_data <- filter(env_data, env_data$DRR != 'N/A')
 
 # pick env variables to do PCA with 
 #env.data.pca<-env_data[,c(23, 9, 16, 14)] # select variables of interest for ARTIFICIAL
-env.data.pca<-env_data[,c(10, 15, 25)] # select variables of interest for NATURAL or ALL
+#env.data.pca<-env_data[,c(10, 15, 25)] # select variables of interest for NATURAL or ALL
+env.data.pca <- env_data[,c(10,15,13)]
 
 #env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
 env.data.pca$Temp_min <- as.numeric(env.data.pca$Temp_min)
 env.data.pca$DRR <- as.numeric(env.data.pca$DRR)
-env.data.pca$Latitude_DD <- as.numeric(env.data.pca$Latitude_DD)
+#env.data.pca$Latitude_DD <- as.numeric(env.data.pca$Latitude_DD)
+env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
 #env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
 # convert the ENV data to z-scores
 # this relavitizes the environemtnal data
@@ -2532,12 +2665,13 @@ pairs(env.data.pca) # look for nonlinear relationships, eg xDepth sDepth
   # see that ver_rel and drr are correlated so can exclude one of them
 
 # test normality
-apply(env.data.pca,2,shapiro.test) 
+apply(env.data.pca,2,shapiro.test)
 
 # check for normal distribution
 hist(env.data.pca$DRR)
 hist(env.data.pca$Temp_min)
-hist(env.data.pca$Latitude_DD)
+#hist(env.data.pca$Latitude_DD)
+hist(env.data.pca$avg_dep)
 #hist(env.data.pca$sed_stdv)
 #hist(env.data.pca$avg_dep)
 #hist(env.data.pca$DMF_Area_sqft)
@@ -2554,9 +2688,10 @@ hist(env.data.pca$DRR) #still not normal
 #hist(env.data.pca$DMF_Area_sqft)
 env.data.pca$Temp_min<-sqrt(env.data.pca$Temp_min)
 hist(env.data.pca$Temp_min)
-env.data.pca$Latitude_DD<-sqrt(env.data.pca$Latitude_DD)
-hist(env.data.pca$Latitude_DD)
-
+#env.data.pca$Latitude_DD<-sqrt(env.data.pca$Latitude_DD)
+#hist(env.data.pca$Latitude_DD)
+env.data.pca$avg_dep <- sqrt(env.data.pca$avg_dep)
+hist(env.data.pca$avg_dep)
 ### PCA ----------
 
 #make sure violations of assumptions aren't egregious before you begin PCA (which we did before)
@@ -2615,7 +2750,8 @@ names(env.pca.scores) # shows you that they are labelled Comp.1 etc
 detach("package:dplyr", unload=TRUE)
 library(plyr)
 #env.data.pca<-rename(env.data.pca, c("DMF_Area_sqft"="Area", "avg_dep"="Depth", "DRR"="Complexity", "Temp_avg"="Temperature"))
-env.data.pca<-rename(env.data.pca, c("Latitude_DD"="Latitude", "DRR"="Complexity", "Temp_min"="Temperature"))
+#env.data.pca<-rename(env.data.pca, c("Latitude_DD"="Latitude", "DRR"="Complexity", "Temp_min"="Temperature"))
+env.data.pca<-rename(env.data.pca, c("avg_dep"="Depth", "DRR"="Complexity", "Temp_min"="Temperature"))
 
 # a table of correlations between PCs and the original variables: #HELP NOT WORKING
 library(ecodist)
