@@ -1,0 +1,2222 @@
+---
+title: "BZ_analysis"
+author: "Claire_Rosemond"
+date: "December 12, 2016"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r working_dir}
+
+setwd("C:/Users/rclairer/Dropbox (Paxton)/Paxton Team Folder/CRFL - Artificial Reefs/Buffer_Zone/analysis_buffer-zone")
+
+```
+
+```{r setup}
+
+invisible(sapply(list.files(path = "R", pattern = "R$", full.names = TRUE), source)) # find functions and other dependencies in .R files
+
+```
+
+```{r get_data}
+
+### FISH DATA ### --------------------------------------------------------------
+detach("package:plyr", unload=TRUE)
+library(dplyr)
+library(lubridate)
+library(reshape2)
+
+fish_data <- read.csv ("Fish/4_clean_data/fish_clean_data_output.csv") #without 342 (version of new2, size bins that hayley changed, removing sites not used, removing t1_t2_t3
+
+fish_data_str <- filter(fish_data, Transect_Type == "Structural")
+fish_data_str_0 <- filter(fish_data, Transect_Number == "0")
+fish_data_rad <- filter(fish_data, Transect_Type == "Radiating")
+
+fish_data <- rbind(fish_data_str_0, fish_data_rad)
+#fish_data <- filter(fish_data, Species_Code != "NOFI") ###############USE IF FILTERING TRANSECTS WITH 0 FISH
+#fish_data <- filter(fish_data, Transect_Number == "0" | Transect_Number == "3")##############if only 1 and 0
+
+fish_data <- filter(fish_data, ID != "AR-364_PODS_2015-09-21_R_T2")
+fish_data <- filter(fish_data, ID != "AR-378_PODS_2015-09-14_R_T1")
+fish_data <- filter(fish_data, ID != "AR-364_BARGE_2015-12-10_R_T2")
+fish_data <- filter(fish_data, ID != "AR-372_NR2_2015-12-09_R_T5")
+fish_data <- filter(fish_data, ID != "AR-372_PODS_2015-12-09_R_T4")
+fish_data <- filter(fish_data, ID != "AR-372_RB1_2015-12-09_R_T3")
+fish_data <- filter(fish_data, ID != "AR-345_RB1_2015-10-15_R_T2")
+fish_data <- filter(fish_data, ID != "AR-345_RB2_2015-10-15_R_T3")
+fish_data <- filter(fish_data, ID != "AR-345_TITAN_2015-10-15_R_T3")
+
+
+fish_meta <- combine_data_meta (data = fish_data, 
+                                file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
+                                merge_by = "Species_Code") 
+
+fish_biom<-make_fish_biomass_col(data = fish_meta)
+#fish_subset <- subset_data (data = fish_biom,
+                          #sub_cat = "Pelagic.Demersal", #sub_cat = "Snapper.Grouper",
+                          #sub_val = "Demersal") # YES for yes
+
+## make fish abundance matrix
+fish_biom -> data
+
+data$group <- data[,"Species_Code"] # change to family or function_group as needed
+#data$group <- data[,"Family"]
+#data$group <- data[,"Functional_Group"]
+#data$gruop <- data[, "Snapper.Grouper"]
+
+new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number) %>% summarise(data_abund = sum(Abundance))
+new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number ~ group)
+
+new2biom <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number) %>% summarise(data_biom = sum(biomass))
+new3biom <- dcast(new2biom, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number ~ group)
+
+#FOR VISIBILITY
+#new2 <- data %>% group_by(group, ID, Site, Subsite, Date, Transect_Type, Sampling_Period, Transect_Number, Visibility_Min_ft) %>% summarise(data_abund = sum(Abundance))
+#new3 <- dcast(new2, ID + Site + Subsite + Date + Transect_Type + Sampling_Period + Transect_Number + Visibility_Min_ft ~ group) 
+ 
+
+new3[is.na(new3)]<-0
+new3biom[is.na(new3biom)] <- 0
+
+fish_abund_matrix <- new3
+fish_biom_matrix <- new3biom
+
+
+fish <- fish_abund_matrix # select either abundance or biomass matrix
+fishbiom <- fish_biom_matrix
+
+
+### COMPLEXITY DATA ### -------------------------------------------------------
+comp <-read.table("Complexity/3_Clean_Data/comp_site_change.csv", header=T, sep=',')
+
+
+### TEMPEATURE DATA ### -------------------------------------------------------
+temp <-read.table("Temperature/3_Clean_Data/temp_site_change.csv", header=T, sep=',')
+
+
+### SITES METADATA ### ------------------------------------------------------------
+#sites <-read.table("Metadata/Sites/CRFL-AR_SITES_Master_2016-06-30_new.csv", header=T, sep=',')
+
+sites <-read.table("Metadata/Sites/CRFL-AR_SITES_Master_2017-01-23.csv", header=T, sep=',')
+
+### MERGE DATA ### ------------------------------------------------------------
+
+library(plyr)
+
+join1 <- join(fish, temp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+join2 <- join(join1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+join3 <- join(join2, sites, by = c("Site", "Subsite")) 
+
+joinbiom1 <- join(fishbiom, temp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+joinbiom2 <- join(joinbiom1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
+joinbiom3 <- join(joinbiom2, sites, by = c("Site", "Subsite")) 
+
+join4 <- cbind(join3[,1:7], join3[,81:110], join3[,8:80]) # species
+#join4 <- cbind(join3[,1:7], join3[,80:103], join3[,8:79]) #for exclusion of NOFI
+#join4 <- cbind(join3[,1:7], join3[,79:102], join3[,8:78]) #for exclusion of 2 and 3 and no fi
+#join4 <- cbind(join3[,1:7], join3[,72:95], join3[,8:71]) # for exclusion of 1 and 2
+joinbiom4 <- cbind(joinbiom3[,1:7], joinbiom3[,81:110], joinbiom3[,8:80])
+#joinbiom4 <- cbind(joinbiom3[,1:7], joinbiom3[,80:103], joinbiom3[,8:79])#for exclusion of NOFI
+#joinbiom4 <- cbind(joinbiom3[,1:7], joinbiom3[,79:102], joinbiom3[,8:80])#for exclusion of 2 and 3
+#joinbiom4 <- cbind(join3[,1:7], join3[,72:95], join3[,8:71]) # for exclusion of 1 and 2
+
+
+#join4 <- cbind(join3[,1:7], join3[,36:ncol(join3)], join3[,8:35]) # family
+#join4 <- cbind(join3[,1:7], join3[,16:ncol(join3)], join3[8:15]) #Functional group
+
+join5 <- join4[,-c(8, 12)]
+joinbiom5 <- joinbiom4[,-c(8, 12)]
+
+data <- join5
+databiom <- joinbiom5
+
+
+env.end<- 35
+sp.start<-36
+
+env_data <- data[,1:env.end]
+ 
+species.data<-data[,sp.start:ncol(data)] # fish data
+species.orig<-species.data # fish data, no transform
+
+species.data.biom <- databiom[,sp.start:ncol(databiom)]
+species.orig.biom <- species.data.biom
+#species.data <- transform_data (data = species.data, transform_type = "square_root")
+#species.data.biom <- transform_data (data = species.data.biom, transform_type = "square_root")
+#species.data <- transform_data (data = species.orig, transform_type = "cube_root")
+#species.data <- transform_data (data = species.data, transform_type = "pres_abs")
+#species.data <- transform_data (data = species.orig, transform_type = "box-cox")
+#species.data.biom <- transform_data (data = species.data.biom, transform_type = "box-cox")
+
+
+write.csv(species.data, file = "Metadata/species.csv", row.names = FALSE)
+write.csv(data, file = "Metadata/data.csv", row.names = FALSE)
+
+```
+
+
+#Tallys for Results section
+
+```{r tallys}
+library(dplyr)
+#total number of fish
+totalfish <- sum(fish_meta$Abundance)
+totalfish
+
+#total species
+totalspecies <- count(unique(fish_meta$Species_Code))
+totalspecies
+
+#total families
+totalfamily <- count(unique(fish_meta$Family))
+totalfamily
+
+#total transects
+totaltransects <- count(unique(fish_meta$ID))
+totaltransects
+
+#total biomass
+fish_biom2 <- filter(fish_biom, biomass != "NA")
+totalbiomass <- sum(fish_biom2$biomass)
+totalbiomass
+
+
+testingingin <- fish_meta %>% group_by(Species_Code) %>% summarise(testingggggg = cumsum(Abundance))
+
+
+count(fish_meta, Species_Code)
+```
+
+
+#UNIVARIATE ANALYSIS
+
+```{r univariate_transform}
+
+#species.data <- transform_data (data = species.orig, transform_type = "square_root")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "square_root")
+#species.data <- transform_data (data = species.orig, transform_type = "cube_root")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "cube_root")
+species.data <- transform_data (data = species.orig, transform_type = "fourth_root")
+species.data.biom <- transform_data (data = species.orig.biom, transform_type = "fourth_root")
+#species.data <- transform_data (data = species.orig, transform_type = "log")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "log")
+#species.data <- transform_data (data = species.orig, transform_type = "pres_abs")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "pres_abs")
+#species.data <- transform_data (data = species.orig, transform_type = "box-cox")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "box-cox")
+#species.data <- transform_data (data = species.orig, transform_type = "log +1")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "log +1")
+
+```
+
+```{r comm_metrics}
+
+library(vegan)
+
+  S <- specnumber(species.data) # species richness (S)
+  shan <- diversity (species.data, index = "shannon") # shannon diversity
+  simp <- diversity (species.data, index = "simpson") # simpson's diversity
+  simp_inv <- diversity (species.data, index = "invsimpson") # inverse simpson's diversity
+  J <- shan / log (S) # pielou's evenness (J)
+  abund <- rowSums (species.data, na.rm = FALSE, dims = 1) # total abundance for each sample
+  biom <- rowSums (species.data.biom, na.rm = FALSE, dims = 1) # totaal biomass for each sample
+  comm_mets <- cbind (abund, biom, S, shan, simp, simp_inv, J, env_data) 
+  
+  write.csv(comm_mets, file = "Metadata/comm_mets.csv", row.names = FALSE)
+
+  
+
+```
+
+```{r univariate_normality_test}
+#testing univariate normality
+#attach(comm_mets)
+qqnorm(abund)
+qqline(abund)
+shapiro.test(abund)
+
+qqnorm(biom)
+qqline(biom)
+shapiro.test(biom)
+
+qqnorm(shan)
+qqline(shan)
+shapiro.test(shan)
+
+qqnorm(S)
+qqline(S)
+shapiro.test(S)
+
+qqnorm(J)
+qqline(J)
+shapiro.test(J)
+
+
+#y <- abund
+#G <- Transect_Number
+
+# Bartlett Test of Homogeneity of Variances
+#bartlett.test(y~G, data=comm_mets)
+
+# Figner-Killeen Test of Homogeneity of Variances
+#fligner.test(y~G, data=comm_mets)
+
+```
+
+```{r classification_trees}
+library(rpart)
+
+#not transformed
+
+comm_mets$Transect_Number <- as.factor(comm_mets$Transect_Number)
+comm_mets$Site <- as.factor(comm_mets$Site)
+comm_mets$Structure_Material <- as.factor(comm_mets$Structure_Material)
+comm_mets$Sampling_Period <- as.factor(comm_mets$Sampling_Period)
+comm_mets$Reef_Type <- as.factor(comm_mets$Reef_Type)
+comm_mets$GIS_FID <- as.factor(comm_mets$GIS_FID)
+
+
+tree <- rpart(abund ~ Transect_Number + Site + Sampling_Period + Reef_Type + Structure_Material, comm_mets, method = "class")
+
+printcp(tree)
+plotcp(tree)
+rsq.rpart(tree)
+print(tree)
+summary(tree)
+plot(tree)
+text(tree)
+post(tree, title = "Classification Tree")
+
+
+
+
+
+#grow a tree
+#categorical (classification) method = "class", continuous (regression) methode = "anvoa"
+data$Transect_Number <- as.character(data$Transect_Number)
+data$Site <- as.character(data$Site)
+data$Sampling_Period <- as.character(data$Sampling_Period)
+
+
+help_new2 <- rpart(species.data ~ Transect_Number + Site + Sampling_Period + Temp_min + max_dep + Structure_Type + Reef_Type + Distance_To_Nearest_Land_ft, data, method = "anova")
+#help_new2
+#plot(help_new2, uniform=TRUE, 
+#  	main="Classification Tree")
+#text(help_new2, use.n=TRUE, all=TRUE, cex=.8)
+printcp(help_new2)
+plotcp(help_new2)
+rsq.rpart(help_new2)
+print(help_new2)
+summary(help_new2)
+plot(help_new2)
+text(help_new2)
+post(help_new2, title = "Classification Tree")
+
+prune.help_new2 <- prune(help_new2, cp = help_new2$cptable[which.min(help_new2$cptable[,"xerror"]),"CP"])
+plot(prune.help_new2, uniform=TRUE, 
+  	main="Pruned Classification Tree")
+text(prune.help_new2, use.n=TRUE, all=TRUE, cex=.8)
+post(prune.help_new2, title = "Pruned Classification Tree")
+
+
+
+
+help <- rpart(data, method = "anova")
+#help
+#summary(help)
+#plot(help, uniform=TRUE, 
+  #	main="Classification Tree")
+#text(help, use.n=TRUE, all=TRUE, cex=.8)
+printcp(help)
+plotcp(help)
+rsq.rpart(help)
+print(help)
+summary(help)
+plot(help)
+text(help)
+post(help, title = "Classification Tree")
+
+prune.help <- prune(help, cp = help$cptable[which.min(help$cptable[,"xerror"]),"CP"])
+plot(prune.help, uniform=TRUE, 
+  	main="Pruned Classification Tree")
+text(prune.help, use.n=TRUE, all=TRUE, cex=.8)
+post(prune.help, title = "Pruned Classification Tree")
+
+
+
+cats <- rpart(species.data ~ Transect_Number + Site + Sampling_Period + Reef_Type, data, method = "anova")
+printcp(cats)
+plotcp(cats)
+rsq.rpart(cats)
+print(cats)
+summary(cats)
+plot(cats)
+text(cats)
+post(cats, title = "Classification Tree")
+
+prune.cats <- prune(cats, cp = cats$cptable[which.min(cats$cptable[,"xerror"]),"CP"])
+plot(prune.cats, uniform=TRUE, 
+  	main="Pruned Classification Tree")
+text(prune.cats, use.n=TRUE, all=TRUE, cex=.8)
+post(prune.cats, title = "Pruned Classification Tree")
+
+dogs <- rpart(species.data ~ Transect_Number + Sampling_Period, data, method = "anova")
+printcp(dogs)
+plotcp(dogs)
+rsq.rpart(dogs)
+print(dogs)
+summary(dogs)
+plot(dogs)
+text(dogs)
+post(dogs, title = "Classification Tree")
+
+prune.dogs <- prune(dogs, cp = dogs$cptable[which.min(dogs$cptable[,"xerror"]),"CP"])
+plot(prune.dogs, uniform=TRUE, 
+  	main="Pruned Classification Tree")
+text(prune.dogs, use.n=TRUE, all=TRUE, cex=.8)
+post(prune.dogs, title = "Pruned Classification Tree")
+
+
+
+help2 <- rpart(data, method = "class")
+help2
+plot(help2, uniform=TRUE, 
+  	main="Classification Tree")
+text(help2, use.n=TRUE, all=TRUE, cex=.8)
+
+
+```
+
+
+```{r ANOVA}
+library(agricolae)
+  
+comm_mets$Transect_Number <- as.factor(comm_mets$Transect_Number)
+comm_mets$Site <- as.factor(comm_mets$Site)
+comm_mets$Sampling_Period <- as.factor(comm_mets$Sampling_Period)
+comm_mets$Reef_Type <- as.factor(comm_mets$Reef_Type)
+comm_mets$Structure_Type <- as.factor(comm_mets$Structure_Type)
+comm_mets$GIS_FID <- as.factor(comm_mets$GIS_FID)
+
+
+env.cor.data <- cor.test(env_data$Temp_avg,env_data$Temp_max)
+env.cor.data2 <- cor.test(env_data$Temp_avg,env_data$Temp_min)
+env.cor.data3 <- cor.test(env_data$max_dep,env_data$min_dep)
+env.cor.data4 <- cor.test(env_data$min_dep,env_data$avg_dep)
+env.cor.data5 <- cor.test(env_data$min_dep,env_data$Temp_min)
+env.cor.data6 <- cor.test(env_data$ver_rel_m,env_data$DRR)
+env.cor.data6 <- cor.test(env_data$Sampling_Period,env_data$Temp_avg)
+
+
+
+########################################################################################################
+
+#everything <- lm(abund ~ Transect_Number * Sampling_Period * Site * Reef_Type * DRR * Latitude_DD * Temp_min * avg_dep * Structure_Type * Distance_To_Nearest_Land_ft* ver_rel_m, data = comm_mets)
+#anova(everything)
+#summary(everything)
+
+forreef <- filter(comm_mets, Transect_Number == "0")
+
+abundreef <- lm(abund ~ Distance_to_NR, data = forreef)
+anova(abundreef)
+summary(abundreef)
+
+library(nlme)
+#library(car) need version 3.2.5
+
+out.lm.1 <- lm(abund ~ Site/GIS_FID * Transect_Number * Sampling_Period * Structure_Material, data =  comm_mets)
+anova(out.lm.1)
+#Anova(out1)
+out.lm.1.5 <- lm(sqrt(abund) ~ Site/GIS_FID * Transect_Number * Sampling_Period * Structure_Material, data = comm_mets)
+anova(out.lm.1.5)
+out.lm.1.75 <- lm((abund)^(1/3) ~ Site/GIS_FID * Transect_Number * Sampling_Period * Structure_Material, data = comm_mets)
+anova(out.lm.1.75)
+out.lm.1.8 <- lm((abund)^(1/4) ~ Site/GIS_FID * Transect_Number * Sampling_Period * Structure_Material, data = comm_mets)
+anova(out.lm.1.8)#AIC MUCHHHHHH lower than others
+
+
+out2 <- lm(abund ~ Transect_Number + Sampling_Period + Transect_Number:Sampling_Period, data = comm_mets)
+anova(out2)
+summary(out2)
+
+out3 <- lme((abund)^(1/4) ~ Transect_Number + Sampling_Period, random = ~1|Site/GIS_FID, data = comm_mets)
+anova(out3)
+
+out4  <- lme((abund)^(1/4) ~ Transect_Number + Sampling_Period + Structure_Material + Transect_Number:Sampling_Period + Transect_Number:Structure_Material + Sampling_Period:Structure_Material, random = ~1|Site/GIS_FID, data = comm_mets)
+anova(out4)
+
+out4 <- lme((abund)^(1/4) ~ Transect_Number * Sampling_Period * Structure_Material, random = ~1|Site/GIS_FID, data = comm_mets)
+anova(out4)
+#***********************************************************************
+out4 <- lme((abund)^(1/4) ~ Transect_Number + Sampling_Period + Structure_Material, random = ~1|Site/GIS_FID, data = comm_mets)
+anova(out4)
+#*****************************************************************************
+#no longer inclusive of all sites
+comm_mets1 <- filter(comm_mets, DRR != 'NA')
+
+out4  <- lme((abund)^(1/4) ~ Transect_Number * Sampling_Period * Structure_Material, random = ~1|Site/GIS_FID, data = comm_mets1)
+anova(out4)
+
+out4.5  <- lme((abund)^(1/4) ~ Transect_Number * Sampling_Period * ver_rel_m, random = ~1|Site/GIS_FID, data = comm_mets1)
+anova(out4.5)
+
+
+
+out5  <- lme((abund)^(1/4) ~ Transect_Number * Temp_avg *DRR * avg_dep, random = ~1|Site/GIS_FID, data = comm_mets1)
+anova(out5)
+
+
+biomreef <- lm(biom ~ Distance_to_NR+ Distance_to_HB + Distance_to_AR + GIS_FID, data = forreef)
+anova(biomreef)
+summary(biomreef)
+
+divreef <- lm(shan ~ Distance_to_NR+ Distance_to_HB + Distance_to_AR + GIS_FID, data = forreef)
+anova(divreef)
+summary(divreef)
+
+richreef <- lm(S ~ Distance_to_NR+ Distance_to_HB + Distance_to_AR + GIS_FID, data = forreef)
+anova(richreef)
+summary(richreef)
+
+evenreef <- lm(J ~ Distance_to_NR+ Distance_to_HB + Distance_to_AR + GIS_FID, data = forreef)
+anova(evenreef)
+summary(evenreef)
+
+
+
+contin_va <- lm(abund ~ Temp_avg + Temp_max + Temp_min + max_dep + min_dep + avg_dep + ver_rel_m + DRR + Depth_ft + Longitude_DD + Latitude_DD + Distance_To_Nearest_Land_ft + Time_Since_Deployment_yrs + DMF_Area_sqft, data = comm_mets)
+anova(contin_va)
+summary(contin_va)
+
+contin_va_2 <- lm(abund ~ Longitude_DD + Latitude_DD + Distance_To_Nearest_Land_ft, data = comm_mets)
+anova(contin_va_2)
+summary(contin_va_2)
+
+contin_va_3 <- lm(abund ~ Temp_min + min_dep + ver_rel_m + Distance_To_Nearest_Land_ft, data = comm_mets)
+anova(contin_va_3)
+summary(contin_va_3)
+
+#everything <- lm(abund ~ Transect_Number * Sampling_Period * Site * GIS_FID * Reef_Type * Structure_Type, data = comm_mets)
+#anova(everything)
+#summary(everything)
+
+everything2 <- lm(abund ~ Transect_Number + Sampling_Period + GIS_FID/Site + Structure_Material/Reef_Type, data = comm_mets)
+anova(everything2)
+summary(everything2)
+
+#MIXED MODEL
+
+mixedmod <- lm(abund ~ Transect_Number + Sampling_Period + Site + Reef_Type + Structure_Type + Temp_min + ver_rel_m, data = comm_mets)
+anova(mixedmod)
+summary(mixedmod)
+
+#everything2 <- lm(abund ~ as.factor(Transect_Number) + as.factor(Sampling_Period) + as.factor(Site) + as.factor(Reef_Type) + Structure_Type + Transect_Number:Sampling_Period + Transect_Number:Site, data = comm_mets)
+#anova(everything2)
+#summary(everything2)
+
+everythingbiom <- lm(biom ~ Transect_Number + Sampling_Period + Site + Reef_Type + Structure_Type, data = comm_mets)
+anova(everythingbiom)
+summary(everythingbiom)
+
+everythingS <- lm(S ~ Transect_Number + Sampling_Period + Site + Reef_Type + Structure_Type, data = comm_mets)
+anova(everythingS)
+summary(everythingS)
+
+everythingshan <- lm(shan ~ Transect_Number + Sampling_Period + Site + Reef_Type + Structure_Type, data = comm_mets)
+anova(everythingshan)
+summary(everythingshan)
+
+everythingJ <- lm(J ~ Transect_Number + Sampling_Period + Site + Reef_Type + Structure_Type, data = comm_mets)
+anova(everythingJ)
+summary(everythingJ)
+
+######################################################################################################
+#ABUNDANCE
+out.abudance <- lm(abund ~ Transect_Number, data = comm_mets)
+anova(out.abudance)
+summary(out.abudance)
+hsd <- HSD.test(out.abudance, c("Transect_Number"))
+hsd
+
+#BIOMASS
+out.biomass <- lm(biom ~ Transect_Number, data = comm_mets)
+anova(out.biomass)
+summary(out.biomass)
+hsdbiom <- HSD.test(out.biomass, c("Transect_Number"))
+hsdbiom
+
+#SPECIES RICHNESS
+out.S <- lm(S ~ Transect_Number, data = comm_mets)
+anova(out.S)
+summary(out.S)
+hsdS <- HSD.test(out.S, c("Transect_Number"))
+hsdS
+
+#SHANNON'S DIVERSITY
+out.shan <- lm(shan ~ Transect_Number, data = comm_mets)
+anova(out.shan)
+summary(out.shan)
+hsdshan <- HSD.test(out.shan, c("Transect_Number"))
+hsdshan
+
+#SIMPSON'S DIVERSITY
+out.simp <- lm(simp ~ Transect_Number, data = comm_mets)
+anova(out.simp)
+summary(out.simp)
+hsdsimp <- HSD.test(out.simp, c("Transect_Number"))
+hsdsimp
+
+#INVERSE SIMPSON'S DIVERSITY
+#out.invsimp <- lm(simp_inv ~ Transect_Number, data = comm_mets)
+#anova(out.invsimp)
+#summary(out.invsimp)
+#hsdinvsimp <- HSD.test(out.invsimp, c("Transect_Number"))
+#hsdinvsimp
+
+#EVENNESS
+out.J <- lm(J ~ Transect_Number, data = comm_mets)
+anova(out.J)
+summary(out.J)
+hsdJ <- HSD.test(out.J, c("Transect_Number"))
+hsdJ
+
+######################################################################
+#interations
+
+transsamp <- lm(abund ~ Transect_Number * Sampling_Period, data = comm_mets)
+anova(transsamp)
+summary(transsamp)
+hsd.transsamp <- HSD.test(transsamp, c("Transect_Number", "Sampling_Period"))
+hsd.transsamp
+
+transsampbio <- lm(biom ~ Transect_Number * Sampling_Period, data = comm_mets)
+anova(transsampbio)
+summary(transsampbio)
+hsd.transsampbio <- HSD.test(transsampbio, c("Transect_Number", "Sampling_Period"))
+hsd.transsampbio
+
+transsite <- lm(abund ~ Transect_Number * Site, data = comm_mets)
+anova(transsite)
+summary(transsite)
+hsd.transsite <- HSD.test(transsite, c("Transect_Number", "Site"))
+hsd.transsite
+
+transreef <- lm(abund ~ Transect_Number*Reef_Type, data = comm_mets)
+anova(transreef)
+summary(transreef)
+hsd.transreef <- HSD.test(transreef, c("Transect_Number", "Reef_Type"))
+hsd.transreef
+
+transreefbio <- lm(biom ~ Transect_Number*Reef_Type, data = comm_mets)
+anova(transreefbio)
+summary(transreefbio)
+hsd.transreefbio <- HSD.test(transreefbio, c("Transect_Number", "Reef_Type"))
+hsd.transreefbio
+##############################################################################
+#Sampling period
+
+samp <- lm(abund ~ Sampling_Period, data = comm_mets)
+anova(samp)
+summary(samp)
+hsd.samp <- HSD.test(samp, "Sampling_Period")
+hsd.samp
+##########################################################################
+#Site
+siteanova <-lm(abund ~ Site, data = comm_mets)
+anova(siteanova)
+summary(siteanova)
+hsd.siteanova <- HSD.test(siteanova, "Site")
+hsd.siteanova
+
+
+##########################################################
+#GIS_FID
+fidanova <-lm(abund ~ GIS_FID, data = comm_mets)
+anova(fidanova)
+summary(fidanova)
+hsd.fidanova <- HSD.test(fidanova, "GIS_FID")
+hsd.fidanova
+
+
+#########################################################################################
+#Reef type
+
+reefanova <- lm(abund ~ Reef_Type, data = comm_mets)
+anova(reefanova)
+summary(reefanova)
+hsd.reefanova <- HSD.test(reefanova, c("Reef_Type"))
+hsd.reefanova
+
+reefanovabio <- lm(biom ~ Reef_Type, data = comm_mets)
+anova(reefanovabio)
+summary(reefanovabio)
+hsd.reefanovabio <- HSD.test(reefanovabio, c("Reef_Type"))
+hsd.reefanovabio
+
+##################################################################################
+#visibility
+#vis <- lm(abund ~ Visibility_Min_ft, data = comm_mets)
+#summary(vis)
+
+```
+
+```{r ggplot2}
+
+library(ggplot2)
+
+testabund <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number"))
+
+
+A <- ggplot(testabund, aes(x=as.factor(Transect_Number), y=abund)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 15), 
+                     breaks=seq(0, 15,by=5)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Abundance by Distance from Reef")+
+annotate("text", x = 1, y = 14.5, label = "a", size = 5)+
+annotate("text", x = 2, y = 5, label = "b", size = 5)+
+annotate("text", x = 3, y = 2.5, label = "c", size = 5)+
+annotate("text", x = 4, y = 2, label = "c", size = 5)
+
+########################################################################################3
+
+testbiom <- summarySE(comm_mets, measurevar = "biom", groupvars = c("Transect_Number"))
+
+
+B <- ggplot(testbiom, aes(x=as.factor(Transect_Number), y=biom)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=biom-se, ymax=biom+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Biomass (g/m^2)", 
+                     limits=c(0, 8), 
+                     breaks=seq(0, 8,by=2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Biomass by Distance from Reef")+
+annotate("text", x = 1, y = 7, label = "a", size = 5)+
+annotate("text", x = 2, y = 2.25, label = "b", size = 5)+
+annotate("text", x = 3, y = 1.25, label = "c", size = 5)+
+annotate("text", x = 4, y = 1.25, label = "bc", size = 5)
+########################################################################################################
+
+testshan <- summarySE(comm_mets, measurevar = "shan", groupvars = c("Transect_Number"))
+
+
+C <- ggplot(testshan, aes(x=as.factor(Transect_Number), y=shan)) 
+C +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=shan-se, ymax=shan+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Shannon's Diversity Index", 
+                     limits=c(0, 2), 
+                     breaks=seq(0, 2,by=0.5)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Shannon's Diversity Index by Distance from Reef")+
+annotate("text", x = 1, y = 1.9, label = "a", size = 5)+
+annotate("text", x = 2, y = 0.8, label = "b", size = 5)+
+annotate("text", x = 3, y = 0.4, label = "c", size = 5)+
+annotate("text", x = 4, y = 0.4, label = "c", size = 5)
+##############################################################################################
+testS <- summarySE(comm_mets, measurevar = "S", groupvars = c("Transect_Number"))
+
+
+D <- ggplot(testS, aes(x=as.factor(Transect_Number), y=S))
+D +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=S-se, ymax=S+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Species Richness", 
+                     limits=c(0, 9), 
+                     breaks=seq(0, 9,by=2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Species Richness by Distance from Reef")+
+annotate("text", x = 1, y = 8.5, label = "a", size = 5)+
+annotate("text", x = 2, y = 3, label = "b", size = 5)+
+annotate("text", x = 3, y = 1.5, label = "c", size = 5)+
+annotate("text", x = 4, y = 1.5, label = "c", size = 5)
+############################################################################
+
+
+testJ <- summarySE(comm_mets, measurevar = "J", groupvars = c("Transect_Number"))
+
+
+E <- ggplot(testJ, aes(x=as.factor(Transect_Number), y=J)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=S-se, ymax=S+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Evenness", 
+                     limits=c(0, 9), 
+                     breaks=seq(0, 9,by=2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Species Evenness by Distance from Reef")+
+annotate("text", x = 1, y = 8.5, label = "a", size = 5)+
+annotate("text", x = 2, y = 3, label = "b", size = 5)+
+annotate("text", x = 3, y = 1.5, label = "c", size = 5)+
+annotate("text", x = 4, y = 1.5, label = "c", size = 5)
+###############################################################################
+
+testabund2 <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number", "Sampling_Period"))
+testabund2$Sampling_Period <- factor(testabund2$Sampling_Period, c("Fall", "Winter", "Spring"))
+#order levels of treatment to appear orderly in plots
+
+ann_text <- data.frame(Transect_Number = c(0,1,2,3), abund = c(20.5,12,6,5),lab = c("a", "bc","de","e"),Sampling_Period = factor("Fall",levels = c("Fall","Winter","Spring")))
+ann_text_winter <- data.frame(Transect_Number = c(0,1,2,3), abund = c(15.5,5,3,2),lab = c("b", "e","e","e"),Sampling_Period = factor("Winter",levels = c("Fall","Winter","Spring")))
+ann_text_spring <- data.frame(Transect_Number = c(0,1,2,3), abund = c(9.5,2,1,2),lab = c("cd", "e","e","e"),Sampling_Period = factor("Spring",levels = c("Fall","Winter","Spring")))
+
+
+ggplot(testabund2, aes(x=as.factor(Transect_Number), y=abund)) +
+  theme_classic()+
+  facet_wrap(~Sampling_Period, ncol=3)+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 21), 
+                     breaks=seq(0, 21,by=5)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Fish Abundance by Distance from Reef by Season")+
+geom_text(data = ann_text,aes(label =lab), size = 5)+
+geom_text(data = ann_text_winter,aes(label =lab), size = 5)+  
+geom_text(data = ann_text_spring,aes(label =lab), size = 5)  
+
+#######################################################################################
+
+testabund3 <- summarySE(comm_mets, measurevar = "abund", groupvars = "Sampling_Period")
+testabund3$Sampling_Period <- factor(testabund3$Sampling_Period, c("Fall", "Winter", "Spring"))
+
+ggplot(testabund3, aes(x=as.factor(Sampling_Period), y=abund)) +
+  theme_classic()+
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 12), 
+                     breaks=seq(0, 12,by=2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Season")+#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Abundance per Season")+
+annotate("text", x = 1, y = 11, label = "a", size = 5)+
+annotate("text", x = 2, y = 5, label = "b", size = 5)+
+annotate("text", x = 3, y = 3, label = "c", size = 5)
+####################################################################################
+
+testabund4 <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number", "Reef_Type"))
+
+#ggplot(testabund4, aes(x=as.factor(Transect_Number), y=abund, fill=Reef_Type)) +
+ # theme_classic()+
+#  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+#  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+#  scale_y_continuous(name="Average Fish Abundance", 
+ #                    limits=c(0, 500), 
+  #                   breaks=seq(0, 500,by=100)) + 
+#  theme(axis.text=element_text(size=16, colour="black"), 
+ #       axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+  #      axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+   #     legend.position="bottom") + 
+#  scale_x_discrete(name = "Transect Type", labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+##############################################################################
+
+ann_text_art <- data.frame(Transect_Number = c(0,1,2,3),abund = c(14.5,5,2.5,2),lab = c("a", "ab","b","b"),Reef_Type = factor("Artificial",levels = c("Artificial","Natural")))
+ann_text_nat <- data.frame(Transect_Number = c(0,1,2,3),abund = c(16,5.5,3,4),lab = c("ab", "ab","b","b"),Reef_Type = factor("Natural",levels = c("Artificial","Natural")))
+
+ggplot(testabund4, aes(x=as.factor(Transect_Number), y=abund)) +
+  theme_classic()+
+  facet_wrap(~Reef_Type, ncol = 2) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 16), 
+                     breaks=seq(0, 16,by=5)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom", 
+axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ggtitle("Fish Abundance by Distance from Reef by Reef Type")+
+geom_text(data = ann_text_art,aes(label =lab), size = 5)+
+geom_text(data = ann_text_nat,aes(label =lab), size = 5)
+
+###########################################################################################
+testabund4 <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Reef_Type"))
+
+ggplot(testabund4, aes(x=as.factor(Reef_Type), y=abund)) +
+  theme_classic()+
+  #facet_wrap(~Site, ncol = 6) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 6), 
+                     breaks=seq(0, 6,by=1)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Reef Type") +#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+ggtitle("Fish Abundance per Reef Type")+
+annotate("text", x = 1, y = 5.1, label = "a", size = 5)+
+annotate("text", x = 2, y = 5.8, label = "a", size = 5)
+
+##################################################################################################
+
+#testabund6 <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number", "Site"))
+#testabund6$Sampling_Period <- factor(testabund6$Sampling_Period, c("Fall", "Winter", "Spring"))
+
+#ann_text_330 <- data.frame(Transect_Number = c(0,1,2,3), abund = c(2300,510,250,20),lab = c("a", "b","b","b"),Site = factor("330",levels = c("330","345","364","370","372","378")))
+
+#ann_text_345 <- data.frame(Transect_Number = c(0,1,2,3), abund = c(400,550,50,20),lab = c("b", "b","b","b"),Site = factor("345",levels = c("330","345","364","370","372","378")))
+#ann_text_364 <- data.frame(Transect_Number = c(0,1,2,3), abund = c(600,400,30,20),lab = c("b", "b","b","b"),Site = factor("364",levels = c("330","345","364","370","372","378")))
+#ann_text_370 <- data.frame(Transect_Number = c(0,1,2,3), abund = c(500,200,80,20),lab = c("b", "b","b","b"),Site = factor("370",levels = c("330","345","364","370","372","378")))
+#ann_text_372 <- data.frame(Transect_Number = c(0,1,2,3), abund = c(500,200,80,20),lab = c("b", "b","b","b"),Site = factor("372",levels = c("330","345","364","370","372","378")))
+#ann_text_378 <- data.frame(Transect_Number = c(0,1,2,3), abund = c(500,200,80,20),lab = c("b", "b","b","b"),Site = factor("378",levels = c("330","345","364","370","372","378")))
+
+#xpos <- c(0,1,2,3) 
+#ypos <- c(2200,500,100,20)
+#lab <- c("a", "b", "b", "b")
+#ldata <- data.frame(xpos, ypos, lab, Site = factor("330", levels= #c("330","345","364","370","372","378")))
+
+#ggplot(test3, aes(x=as.factor(Transect_Number), y=abund)) +
+ # theme_classic()+
+  #facet_wrap(~Site, nrow = 1,ncol = 6) +
+  #geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  #geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+#  scale_y_continuous(name="Average Fish Abundance", 
+ #                    limits=c(0, 2500), 
+  #                   breaks=seq(0, 2500,by=500)) + 
+#  theme(axis.text=element_text(size=16, colour="black"), 
+ #       axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+  #      axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+   #     legend.position="bottom", 
+#axis.line.x = element_line(color="black", size = 0.5), 
+ #       axis.line.y = element_line(color="black", size = 0.5))+ 
+#  scale_x_discrete(name = "Distance from Structure", labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+#ggtitle("Fish Abundance by Distance from Structure by Site")+
+
+ # geom_text(data= data.frame(x= 1, y = 2200, Site = "330"), aes(label = "a"))
+
+#  geom_text(data=ldata, aes(x=xpos, y=ypos, 
+                          #  label=lab, size=1))
+#geom_text(aes(x, y, label=lab),
+      #data=data.frame(x=c(0,1,2,3), y=c(2250, 500,300,100), lab=c("a","b","b", "b"), Site = "330"))
+  
+ # annotate("text", data = data.frame (x = c(0,1,2,3), y = c(2250,500,300,100), Site = "330", label = c("a","b","b","b"), size = 5))
+        
+         
+#geom_text(data = ann_text_330,aes(label =lab), size = 5)+
+#geom_text(data = ann_text_345,aes(label =lab), size = 5)+
+#geom_text(data = ann_text_364,aes(label =lab), size = 5)+
+#geom_text(data = ann_text_370,aes(label =lab), size = 5)+
+#geom_text(data = ann_text_372,aes(label =lab), size = 5)+
+#geom_text(data = ann_text_378,aes(label =lab), size = 5)
+
+
+#################################################################################################
+testabund7 <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Site"))
+
+ggplot(testabund7, aes(x=as.factor(Site), y=abund)) +
+  theme_classic()+
+  #facet_wrap(~Site, ncol = 6) +
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 8), 
+                     breaks=seq(0, 8,by=2)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="bottom",
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Site") +#, labels = c("0" = "Structural", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+ggtitle("Fish Abundance per Site")+
+annotate("text", x = 1, y = 7.3, label = "ab", size = 5)+
+annotate("text", x = 2, y = 7.3, label = "ab", size = 5)+
+annotate("text", x = 3, y = 5.8, label = "ab", size = 5)+
+annotate("text", x = 4, y = 5, label = "ab", size = 5)+
+annotate("text", x = 5, y = 7.1, label = "a", size = 5)+
+annotate("text", x = 6, y = 3, label = "b", size = 5)
+
+
+grid_arrange_shared_legend <- function(...) {
+plots <- list(...)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position="bottom"))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  grid.arrange(
+    do.call(arrangeGrob, lapply(plots, function(x)
+      x + theme(legend.position="none"))),
+    legend,
+    ncol = 1,
+    heights = unit.c(unit(1, "npc") - lheight, lheight))
+}
+
+
+multiple_plots <- grid_arrange_shared_legend(A, B, ncol = 2)
+
+
+gtable(widths = list(), heights = list(), respect = FALSE,
+name = "layout", rownames = NULL, colnames = NULL, vp = NULL)
+
+multilove <- gtable_add_grob(A, B, 1,1)
+plot(multilove)
+
+
+par(mfrow=c(2,3)) # plots as one row and two columns
+A
+B
+C
+D
+E
+
+#dev.off()
+
+# Plot distance vs. depth
+plot(data_final$dist_m_scaled, data_final$Abs_Pres_m, type = "l", xlim=c(0,30), ylim=c(20,5), xlab="Distance (m)", ylab="Depth (m)")
+title("Contour")
+
+mtext(as.character(uniq[p]), side=3, outer=TRUE, line=-3) # adds overall title
+
+```
+
+#MULTIVARIATE ANALYSIS
+```{r multivariate_transform}
+
+#species.data <- transform_data (data = species.orig, transform_type = "square_root")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "square_root")
+#species.data <- transform_data (data = species.orig, transform_type = "cube_root")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "cube_root")
+#species.data <- transform_data (data = species.orig, transform_type = "fourth_root")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "fourth_root")
+#species.data <- transform_data (data = species.orig, transform_type = "log")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "log")
+#species.data <- transform_data (data = species.orig, transform_type = "pres_abs")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "pres_abs")
+species.data <- transform_data (data = species.orig, transform_type = "box-cox")
+species.data.biom <- transform_data (data = species.orig.biom, transform_type = "box-cox")
+#species.data <- transform_data (data = species.orig, transform_type = "log + 1")
+#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "log + 1")
+
+
+```
+
+```{r multivariate_normality_test}
+
+
+#testing for normality
+#library(mvoutlier)
+#outliers <- 
+#aq.plot(species.data[c("mpg","disp","hp","drat","wt","qsec")])
+#outliers # show list of outliers
+
+
+#library(mvnormtest)
+#mshapiro.test(species.data)
+#x <- as.matrix(species.data) # n x p numeric matrix
+#center <- colMeans(x) # centroid
+#n <- nrow(x); p <- ncol(x); cov <- cov(x); 
+#d <- mahalanobis(x,center,cov) # distances 
+#qqplot(qchisq(ppoints(n),df=p),d,
+#  main="QQ Plot Assessing Multivariate Normality",
+#  ylab="Mahalanobis D2")
+#abline(a=0,b=1)
+
+```
+
+```{r PERMANOVA}
+library(vegan)
+
+set.seed(318)
+env_data$Transect_Number <- as.factor(env_data$Transect_Number)
+env_data$Site <- as.factor(env_data$Site)
+env_data$Sampling_Period <- as.factor(env_data$Sampling_Period)
+env_data$Reef_Type <- as.factor(env_data$Reef_Type)
+env_data$Structure_Type <- as.factor(env_data$Structure_Type)
+
+#permanova.everything <- adonis (species.data ~ Transect_Number * Sampling_Period * Site * Reef_Type * DRR * Latitude_DD * Temp_min * avg_dep * Structure_Type * Distance_To_Nearest_Land_ft* ver_rel_m, permutations = 999, method = "bray")
+#permanova.everything
+#summary(permanova.everything)
+
+permanova.everything <- adonis (species.data ~ Transect_Number * Sampling_Period * Site * Reef_Type * Structure_Type, env_data, permutations = 999, method = "bray")
+permanova.everything
+summary(permanova.everything)
+
+permanova.everything2 <- adonis (species.data ~ Transect_Number + Sampling_Period + Site + Reef_Type + Structure_Type, env_data, permutations = 999, method = "bray")
+permanova.everything2
+summary(permanova.everything2)
+
+################################################################################################
+
+#transect
+
+permanova.transect<-adonis(species.data ~ Transect_Number, env_data, permutations = 999, method = "bray")
+permanova.transect
+  
+summary(permanova.transect)
+  
+permanova.transect$aov.tab
+permanova.transect$coefficients
+permanova.transect$coef.sites
+permanova.transect$f.perms
+permanova.transect$model.matrix
+permanova.transect$terms
+
+
+densityplot(permustats(permanova.transect))
+
+#################################################################################################
+
+perm.trans.sea <- adonis(species.data ~ Transect_Number * Sampling_Period, env_data, permutation = 999, method = "bray")
+perm.trans.sea
+summary(perm.trans.sea)
+
+perm.samp <- adonis(species.data ~ Sampling_Period, env_data, permutation = 999, method = "bray")
+perm.samp
+summary(perm.samp)
+
+perm.trans.site <- adonis(species.data ~ Transect_Number * Site, env_data, permutation = 999, method = "bray")
+perm.trans.site
+summary(perm.trans.site)
+
+perm.site <- adonis(species.data ~ Site, env_data, permutation = 999, method = "bray")
+perm.site
+summary(perm.site)
+
+perm.trans.reef <- adonis(species.data ~ Transect_Number * Reef_Type, env_data, permutation = 999, method = "bray")
+perm.trans.reef
+summary(perm.trans.reef)
+
+perm.reef <- adonis(species.data ~ Reef_Type, env_data, permutation = 999, method = "bray")
+perm.reef
+summary(perm.reef)
+
+```
+
+```{r nMDS}
+## code adapted from D. Urban's spring 2013 Landscape Ecology & Management Course (nms_etc.R) and Vegan Tutorial ##
+
+library(vegan)
+set.seed(318) 
+
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
+  # performs nMDS; arguments are as follows:
+  # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
+  # 2nd argument: dissimilarity index
+  # 3rd argument: k is number of dimensions
+  # 4th argument: trymax is maximum number of random starts used to search for a stable solution (iterations)
+  # 5th argument: the function does NOT autotransform data, rather it assumes your 1st argument is transformed correctly
+
+stressplot(species.metaMDS) # Shepard plot
+
+species.metaMDS$stress # stress value
+
+plot(species.metaMDS) # rough plot
+text(species.metaMDS$species[,1:2],rownames(species.metaMDS$species),cex=0.8,col="red") # add species labels to the plot (weighted averages)
+
+## references
+# https://cran.r-project.org/web/packages/vegan/vignettes/intro-vegan.pdf
+# https://jonlefcheck.net/2012/10/24/nmds-tutorial-in-r/
+# http://strata.uga.edu/6370/lecturenotes/multidimensionalScaling.html
+
+# extract info neccessary for polished plotting
+scores <- species.metaMDS$points # scores
+species.nms <- cbind(scores, env_data) # datset with scores and env data
+
+# weighted averages for species 
+species.wa <- data.frame(species.metaMDS$species) 
+species.wa <- cbind(row.names(species.wa), species.wa) 
+library(plyr)
+species.wa <- rename(species.wa, c("row.names(species.wa)"="species_code"))
+#added and named the sp code column, the first column w/ sp names is visually but NOT functionally there 
+
+stress <- species.metaMDS$stress # save stress value
+library(ecodist)
+
+species.bcd <- bcdist(species.data, rmzero=FALSE)###### CR added this
+
+nms.xod1 <- dist(species.nms[,1]) # pearson correlation 
+nms.xod2 <- dist(species.nms[,1:2]) # pearson correlation
+r1<-cor(species.bcd,nms.xod1)
+r2.1<-r1^2; r2.1
+# axis 2 is 2-D minus 1-D solution:
+r2<-cor(species.bcd,nms.xod2)
+r2.2<-r2^2; 
+r2.2<-r2.2-r2.1
+
+# now plot it
+NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
+  yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
+  xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
+  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  library(colorspace)
+  
+species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
+  
+   library(ggplot2) 
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    #geom_point(data = NMDS, 
+               #aes(x = MDS1, y = MDS2, shape = species.nms$Transect_Number), size = 5) +
+ #stat_ellipse(data = NMDS, 
+              #aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
+               # level = 0.95, linetype=2, size =1)+
+     stat_ellipse(data = NMDS, 
+              aes(x=MDS1,y=MDS2,linetype=species.nms$Transect_Number),
+                level = 0.5, size =1)+
+    # stat_ellipse(data = NMDS, 
+             # aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
+               # level = 0.5, linetype=2, size =1)+
+  #ordihull(NMDS,groups=species.nms$Transect_Number,draw="polygon",col="grey90",label=F)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+      #scale_linetype_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+     scale_linetype_manual(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+          values = c("0" = "dashed", "1" = "dotdash", "2" = "dotted", "3"= "solid"))+
+                      #values = c("0" = 0, "1" = 1, "2" = 2, "3"= 3))+
+      ggtitle(title)
+  
+  species.nms$Sampling_Period <- as.factor(species.nms$Sampling_Period)
+  
+species.nms$Sampling_Period <- factor(species.nms$Sampling_Period, c("Fall", "Winter", "Spring"))
+
+  
+library(ggplot2) 
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    #geom_point(data = NMDS, 
+             # aes(x = MDS1, y = MDS2, color = species.nms$Sampling_Period), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Sampling_Period),
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+      scale_colour_manual(name = "Season",#, labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+                     values = c("Fall" = "indianred2", "Winter" = "Seagreen", "Spring" = "darkturquoise"))+
+  #   scale_colour_manual(name = "Site") +
+    #, #labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+                      # values = c("330" = "indianred2", "345" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+      ggtitle(title)
+  
+species.nms$Site <- as.factor(species.nms$Site)
+ 
+  
+library(ggplot2) 
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+              aes(x = MDS1, y = MDS2, color = species.nms$Site), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Site),
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+      #scale_colour_manual(name = "Site",#, labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+                   #  values = c("330" = "indianred2", "345" = "Seagreen", "364" = "darkturquoise", "370" = "chartreuse", "372" = "coral", "378" = "magenta"))+
+  #   scale_colour_manual(name = "Site") +
+    #, #labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+                      # values = c("330" = "indianred2", "345" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+    
+    scale_colour_discrete(name= "Site")+
+      ggtitle(title)
+  
+  
+species.nms$Reef_Type <- as.factor(species.nms$Reef_Type)
+  
+library(ggplot2) 
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(data = NMDS, 
+              aes(x = MDS1, y = MDS2, color = species.nms$Reef_Type), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Reef_Type),
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom") + 
+      #scale_colour_manual(name = "Site",#, labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+                   #  values = c("330" = "indianred2", "345" = "Seagreen", "364" = "darkturquoise", "370" = "chartreuse", "372" = "coral", "378" = "magenta"))+
+  #   scale_colour_manual(name = "Site") +
+    #, #labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+                      # values = c("330" = "indianred2", "345" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+    
+    scale_colour_discrete(name= "Reef Type")+
+      ggtitle(title)
+  
+species.nms$Structure_Type <- as.factor(species.nms$Structure_Type)
+  
+   library(ggplot2) 
+  ggplot()+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    #geom_point(data = NMDS, 
+              # aes(x = MDS1, y = MDS2, color = species.nms$Structure_Type), size = 5) +
+  stat_ellipse(data = NMDS, 
+                 aes(x=MDS1,y=MDS2,colour=species.nms$Structure_Type),
+                 level = 0.50, linetype=2, size =1)+
+  #geom_text(data=species.wa,
+             # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+             # alpha=0.9, # adds weighted averages for species
+             # position=position_jitter(width=0.1,height=0.2))+
+    scale_y_continuous(name=yl) + # names y axis
+    scale_x_continuous(name=xl) + # names x axis
+    theme(axis.text=element_text(size=16), 
+          axis.title=element_text(size=16), 
+          legend.text=element_text(color="black", size=16), 
+          legend.title=element_text(color="black", size = 16), 
+          legend.position="bottom")# + 
+    #  scale_colour_manual(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+    #                   values = c("0" = "indianred2", "1" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
+    #  ggtitle(title)
+  
+  #ggplot()+
+   # coord_equal()+ # axes sizes equal
+    #theme_bw()+ # basic theme
+  #  geom_point(data = NMDS, 
+   #            aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), 
+    #           size=5) + # adds sample points
+  #  geom_text(data=species.wa,
+   #           aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
+    #          alpha=0.9, # adds weighted averages for species
+     #         position=position_jitter(width=0.1,height=0.2))+
+  #  stat_ellipse(data = NMDS, 
+   #              aes(x=MDS1,y=MDS2,colour=species.nms$Reef_type),
+    #             level = 0.50, linetype=2, size =1) + # adds ellipses for 95% confidence intervals
+ #   scale_y_continuous(name=yl) + # names y axis
+  #  scale_x_continuous(name=xl) + # names x axis
+   # theme(axis.text=element_text(size=16), 
+    #      axis.title=element_text(size=16), 
+     #     legend.text=element_text(color="black", size=16), 
+      #    legend.title=element_text(color="black", size = 16), 
+       #   legend.position="bottom") + 
+  #  scale_colour_manual(name = "Reef Type", 
+  #                      values = c("Artificial" = "indianred2", "Natural" = "darkturquoise"))+
+ #   scale_shape_manual (name="Reef Type", 
+  #                      values = c("Artificial" = 17, "Natural" = 16))+
+   # ggtitle(title)
+
+# if get error saying removed rows (geom_text), check to make sure no N/A values in dataframe....
+  
+```
+
+```{r PCA}
+
+### Exploratory data analysis
+
+library(dplyr)
+summary(env_data)
+names(env_data)
+
+# remove rows where no water level logger data (NA values for temp, depth, and drr)
+
+env_data <- filter(env_data, env_data$DRR != 'N/A')
+#env_data <- filter(env_data, env_data$DMF_Area_sqft != 'N/A')
+
+#nat <- filter(env_data, env_data$Reef_Type == 'Natural')
+#art <- filter(env_data, env_data$Reef_Type == 'Artificial')
+#art_no_na<- filter(art, art$DMF_Area_sqft != 'N/A')
+
+#env_data <-rbind(nat, art_no_na) # for all reefs
+#env_data <- art_no_na # for ARTIFICIAL reefs
+
+# pick env variables to do PCA with 
+#env.data.pca<-env_data[,c(23, 9, 16, 14)] # select variables of interest for ARTIFICIAL
+#env.data.pca<-env_data[,c(10, 15, 25)] # select variables of interest for NATURAL or ALL
+env.data.pca <- env_data[,c(10,15,13)]
+#env.data.pca <- env_data[,c(10,15,13,22,27)]
+
+
+#env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_min <- as.numeric(env.data.pca$Temp_min)
+env.data.pca$DRR <- as.numeric(env.data.pca$DRR)
+#env.data.pca$Latitude_DD <- as.numeric(env.data.pca$Latitude_DD)
+env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
+#env.data.pca$avg_dep <- as.numeric(env.data.pca$avg_dep)
+#env.data.pca$ver_rel_m <- as.numeric(env.data.pca$ver_rel_m)
+#env.data.pca$DMF_Area_sqft <- as.numeric(env.data.pca$DMF_Area_sqft)
+#env.data.pca$Distance_To_Nearest_Land_ft <- as.numeric(env.data.pca$Distance_To_Nearest_Land_ft)
+
+# convert the ENV data to z-scores
+# this relavitizes the environemtnal data
+# default is to center (subtract column means) and scale (divide by st dev)
+env.z <- scale(as.matrix(env.data.pca))  
+
+# Recall cor, cor.test, and pairs from previously ...
+# you should already have env17 from the Mantel lab
+
+env.cor <- cor(env.data.pca) # check for correlated variables
+#cor.test(env.data.pca$avg_dep,env.data.pca$DRR)
+#cor.test(env.data.pca$avg_dep,env.data.pca$Temp_min)
+
+
+pairs(env.data.pca) # look for nonlinear relationships, eg xDepth sDepth
+  # see that ver_rel and drr are correlated so can exclude one of them
+
+# test normality
+apply(env.data.pca,2,shapiro.test)
+
+# check for normal distribution
+hist(env.data.pca$DRR)
+hist(env.data.pca$Temp_min)
+#hist(env.data.pca$Latitude_DD)
+hist(env.data.pca$avg_dep)
+#hist(env.data.pca$sed_stdv)
+#hist(env.data.pca$avg_dep)
+#hist(env.data.pca$DMF_Area_sqft)
+#env.data.pca$Temp_avg <- as.numeric(env.data.pca$Temp_avg)
+#hist(env.data.pca$Temp_avg)
+#hist(env.data.pca$DMF_Area_sqft)
+#hist(env.data.pca$Distance_To_Nearest_Land_ft)
+
+# transform to correct skewed distributions
+env.data.pca$DRR<-(env.data.pca$DRR)^(1/4)
+hist(env.data.pca$DRR) #still not normal
+#env.data.pca$sed_stdv<-sqrt(env.data.pca$sed_stdv)
+#env.data.pca$avg_dep<-sqrt(env.data.pca$avg_dep)
+#hist(env.data.pca$avg_dep)
+#env.data.pca$DMF_Area_sqft<-sqrt(env.data.pca$DMF_Area_sqft)
+#hist(env.data.pca$DMF_Area_sqft)
+env.data.pca$Temp_min<-(env.data.pca$Temp_min)^(1/4)
+hist(env.data.pca$Temp_min)
+#env.data.pca$Latitude_DD<-sqrt(env.data.pca$Latitude_DD)
+#hist(env.data.pca$Latitude_DD)
+env.data.pca$avg_dep <- (env.data.pca$avg_dep)^(1/4)
+hist(env.data.pca$avg_dep)
+#env.data.pca$DMF_Area_sqft <- (env.data.pca$DMF_Area_sqft)^(1/4)
+#hist(env.data.pca$DMF_Area_sqft)
+#env.data.pca$Distance_To_Nearest_Land_ft <- (env.data.pca$Distance_To_Nearest_Land_ft)^(1/4)
+#hist(env.data.pca$Distance_To_Nearest_Land_ft)
+
+
+
+### PCA ----------
+
+#make sure violations of assumptions aren't egregious before you begin PCA (which we did before)
+set.seed(318)
+# Do the PCA ...
+# Here we have to use a correlation matrix because the variables
+# are in different units:
+env.pca <- princomp(env.data.pca, cor=T, scores=T)
+#env.pca <- princomp(env.z, cor=T, scores=T)
+  #cor=T to use correlation matrix (z-scores)
+  #cor=F to use covariance matrix
+  #scores = T means to calculate sample scores on new principal components for ordination
+
+# Summary shows you the eigenvalues; print does the same:
+summary(env.pca) 
+#these are square roots of eigenvalues
+#first pca has 76% of variance, next has 24% of variance
+print(env.pca)
+
+#eigenvalues
+env.pca$sdev->env.pca.sdev
+#write.csv(env.pca.sdev, "Inverts_Algae/2_Post-R_Data/env_pca_sdev.csv")
+
+# Plot produces a scree plot of the eigenvalues per PC:
+plot(env.pca)
+
+# Print the loadings, to see which variables go with each PC:
+print(env.pca$loadings) 
+#these are regression coefficients 
+# Print just the first 4, to 3 decimal places, and suppressing
+# any loadings less than ABS(0.2) (this might not work):
+#print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+print(env.pca$loadings,digits=3,cutoff=0.2)
+# for lab report, can export this as a .csv file
+# here we want to scan the loadings
+#env17_pca_loadings<-print(env.pca$loadings[,1:4],digits=3,cutoff=0.2)
+env_pca_loadings<-print(env.pca$loadings,digits=3,cutoff=0.2)
+#write.csv(env_pca_loadings, "Inverts_Algae/2_Post-R_Data/env_pca_loadings.csv")
+
+attributes(env.pca)  # shows objects in pca
+
+# Biplot shows correlation vectors
+# between the PCs and the original variables:
+biplot(env.pca) 
+# a bi plot plots two axes. It is a plot that puts two things on it in ordination world. One is a plot of sample scores. Second is the correlation vectors that it adds to the sample scores. Correlation vectors are red arrows, one for each environemntal variable. Length of arrow is scaled to magnitude of correlation. Can also look at raw numbers instead of plot if need to. These help you figure out what PCs refer to so you can know what to call your axes (e.g. soil chemistry, elevation, etc)
+# The same, but plot asterisks for the plots (easier to see);
+# here 99 is the number of samples:
+
+# Plot the samples in the new PC space (defaults to PC 1 & 2):
+plot(env.pca$scores) 
+# An alternative, if you want to see different axes:
+env.pca.scores <- as.data.frame(env.pca$scores)
+names(env.pca.scores) # shows you that they are labelled Comp.1 etc
+
+## Rename environmental variables
+detach("package:dplyr", unload=TRUE)
+library(plyr)
+#env.data.pca<-rename(env.data.pca, c("DMF_Area_sqft"="Area", "avg_dep"="Depth", "DRR"="Complexity", "Temp_avg"="Temperature"))
+#env.data.pca<-rename(env.data.pca, c("Latitude_DD"="Latitude", "DRR"="Complexity", "Temp_min"="Temperature"))
+env.data.pca<-rename(env.data.pca, c("avg_dep"="Depth", "DRR"="Complexity", "Temp_min"="Temperature"))
+
+# a table of correlations between PCs and the original variables: #HELP NOT WORKING
+library(ecodist)
+#env.data.pca <- na.omit(env.data.pca)
+cor2m(env.pca.scores,env.data.pca)
+# even tidier:
+env.pca.cor2m <- cor2m(env.pca.scores,env.data.pca)
+print(env.pca.cor2m, digits=3)
+
+## Plot it!
+plot_pca_reef_type() 
+env_data$Transect_Number <- as.character(env_data$Transect_Number) #don't forget to add as.character if using numeric
+plot_pca_transect_number()
+#env_data$Site <- as.numeric(env_data$Site)
+#env_data$Site <- filter(env_data, env_data$Site != "342")
+env_data$Site <- as.factor(env_data$Site)
+plot_pca_site()
+#env_data$Sampling_Period <- as.character(env_data$Sampling_Period)
+env_data$Sampling_Period <- factor(env_data$Sampling_Period, c("Fall", "Winter", "Spring"))
+
+plot_pca_sampling_period()
+
+env_data$Structure_Type <- as.factor(env_data$Structure_Type, c(""))
+plot_pca_structure_type()
+#plot_pca_reef_type_depth()
+#plot_pca_depth()
+#plot_pca_depth_sed()
+#plot_pca_depth_comp()
+
+```
+
+```{r SIMPER}
+# Goal: Use similarity percentages to find out 'who' is responsible for the differences
+env_data <- data[,1:env.end]
+
+
+library(vegan)
+groups_transect <- paste(as.character(env_data$Transect_Number))
+groups_transect <- as.factor(groups_transect)
+simp_transect <- simper(species.data, groups_transect)
+simp_transect
+summary(simp_transect, ordered = TRUE)
+
+groups_season <- paste(as.character(env_data$Sampling_Period))
+groups_season <- as.factor(groups_season)
+simp_season <- simper(species.data, groups_season)
+simp_season
+summary(simp_season, ordered = TRUE)
+
+groups_site <- paste(as.character(env_data$Site))
+groups_site <- as.factor(groups_site)
+simp_site <- simper(species.data, groups_site)
+simp_site
+summary(simp_site, ordered = TRUE)
+
+groups_reef <- paste(as.character(env_data$Reef_Type))
+groups_reef <- as.factor(groups_reef)
+simp_reef <- simper(species.data, groups_reef)
+simp_reef
+summary(simp_reef, ordered = TRUE)
+
+
+```  
+
+```{r indicator_species}
+library(indicspecies)
+species.data <- as.data.frame(species.data)
+env_data <- as.data.frame(env_data)
+
+
+groups_transect <- env_data$Transect_Number
+groups_transect <- as.factor(groups_transect)
+B=strassoc(species.data, cluster=groups_transect,func="B")
+indval_transect <- multipatt(species.data, groups_transect, control=how(nperm=999))
+summary(indval_transect, indvalcomp = TRUE)
+
+groups_site <- env_data$Site
+groups_site <- as.factor(groups_site)
+B=strassoc(species.data, cluster=groups_site,func="B")
+indval_site <- multipatt(species.data, groups_site, control= how(nperm = 999))
+summary(indval_site, indvalcomp = TRUE)
+
+groups_season <- env_data$Sampling_Period
+groups_season <- as.factor(groups_season)
+B=strassoc(species.orig, cluster=groups_season,func="B")
+indval_season <- multipatt(species.orig, groups_season, control = how(nperm = 999))
+summary(indval_season, indvalcomp = TRUE)
+
+groups_reef <- env_data$Reef_Type
+groups_reef <- as.factor(groups_reef)
+B=strassoc(species.orig, cluster=groups_reef,func="B")
+indval_reef <- multipatt(species.orig, groups_reef, control = how(nperm = 999))
+summary(indval_reef, indvalcomp = TRUE)
+
+
+# obtain classification using multivariate CART model
+#library(mvpart)
+#fit <- mvpart(data.matrix(species.data)~ avg_dep + DRR + temp_min, env_data)
+#summary(fit) # fits multivariate tree with particular variables of interest
+#groups <- fit$where # group composition based on terminal nodes
+
+## obtain classification using fuzzy clustering
+#library(cluster)
+#k<-3 # pick number of clusters
+#spe.fuz <- fanny(species.data, k=k, memb.exp=1.5)
+#summary(spe.fuz)
+#spefuz.g <- spe.fuz$clustering
+# site membership
+#spe.fuz$membership
+# nearest crisp clustering
+#groups <- spe.fuz$clustering
+
+# run indicator species analysis with site group combinations
+#indval = multipatt(species.data, groups, control=how(nperm=999))
+#summary(indval) # obtain list of indicator for each site group
+#summary(indval, indvalcomp=TRUE) # displays indicator components of A and B
+#summary(indval, alpha = 1) # indicator species analysis for all species (alpha is 1 rather than 0.05); this still has some species missing that belong to all groups
+#indval$sign #visualize missing species that belong to all groups (those with an NA)
+
+# exclude site group combinations because difficult to interpret ecologically
+#indvalori = multipatt(species.data, groups, duleg = TRUE, control = how(nperm=999)) # just does single sites or groups rather than combinations
+#summary(indvalori)
+
+# species combinations as indicators of site groups
+#combos = combinespecies(species.data, max.order = 2)$XC
+#indvalcombo = multipatt(combos, groups, duleg=TRUE, control=how(nperm=999))
+#summary(indvalcombo, invalcomp=TRUE)
+
+# species combinations whose frequency in group 2 in larger than 20%
+#B = strassoc(species.data, cluster = groups, func = "B")
+#sel = which(B[,2]>0.2)
+#sel
+#sc = indicators(X=species.data[,sel], cluster = groups, group = "1", verbose = TRUE, At=0.5, Bt=0.2)
+#print(sc, sqrtIVt = 0.6)
+
+# prune indicators to reduce 
+#sc2 = pruneindicators(sc, At=0.8, Bt=0.2, verbose = TRUE)
+#print(sc2) # so these are great indicators for the site group that was coded in; also shows their coverage --> the indicators together cover ___% of the sites belonging to the target group!! 
+  
+```
+
+#BCD and DISTANCE
+
+``` {r BCD_function_prep}
+library(ecodist)
+library(vegan)
+library(ggplot2)
+detach("package:plyr", unload=TRUE)
+library(dplyr)
+
+data <- join5
+
+
+structural.data <- filter(data, Transect_Type == "Structural")
+
+env.end<- 29 #FOR SPECEIS
+sp.start<-30 #FOR SPECIES
+
+env_data.structural <- structural.data[,1:env.end]
+
+species.data.structural <-structural.data[,sp.start:ncol(structural.data)] # fish data
+species.orig.structural <-species.data.structural # fish data, no transform
+
+species.data.structural <- transform_data (data = species.data.structural, transform_type = "box-cox")
+
+set.seed(318) # for reproducibility
+species.bcd<-bcdist(species.data.structural, rmzero=FALSE) # build distance matrix based on bray curtis
+#species.bcd <- bcdist(species.orig.structural, rmzero = FALSE)
+species.bcd_df <- as.matrix(species.bcd)
+######################################################################################3
+
+distance <- read.csv ("Distance/dive_pts_distance_to_other_dive_pts_ft.csv") #
+distance.matrix <- as.matrix(distance[,2:4])
+distance.matrix <- as.data.frame(distance.matrix)
+distance.codes <-as.matrix(sites[,c(1,2,13)]) 
+distance.codes <- as.data.frame(distance.codes)
+
+#########################################################################################
+#for all
+half.species.bcd <- matrix(nrow=nrow(species.bcd_df), ncol=nrow(species.bcd_df))
+ j=1  # j is "outer loop" counter (columns); begin at 1
+  for (j in 1:nrow(species.bcd_df)) {
+    i=1  # i is "inner loop" counter (rows)
+    for (i in 1:nrow(species.bcd_df)) {
+      if (i<=j) {
+        half.species.bcd[i,j] <- "NA" # writes NA values to matrix c by row i and col j
+        i=i+1
+      }
+      else {
+        half.species.bcd[i,j] <- species.bcd_df[i,j] 
+      }
+      i=i+1
+    }  
+    j=j+1
+  }
+ 
+env.species.bcd <- cbind(env_data.structural [,1:7], half.species.bcd)
+env.species.bcd <- as.data.frame(env.species.bcd)
+
+env.species.bcd$Site <- as.character(env.species.bcd$Site)
+env.species.bcd$Subsite <- as.character(env.species.bcd$Subsite)
+
+
+```
+
+```{r BCD_function}
+detach("package:dplyr", unload=TRUE)
+library (plyr)
+
+
+#data <- env.species.bcd.fall # name data simply
+
+#out<-calc_bcd_dist_matrix(data=env.species.bcd.fall) # where you use the function 
+
+
+# this is the function called calc_bcd_dist_matrix that puts sites and their dissimilarities and distances in a pretty matrix
+
+calc_bcd_dist_matrix <- function(data){
+site_subsite <- paste(data$Site, data$Subsite, sep = "_") # identify unique site and subsite combinations
+uniq <- unique(unlist(site_subsite))  # saves unique site and subsite combinations as object called 'uniq' so that can use them in the loop below for counting purposes
+
+# Make data frame to store results of outlier detection
+results <- data.frame(site_in = character(), subsite_in = character(), id_in = character(), site_far = character(), subsite_far = character(), id_far = character(), dist = integer(), dissim = integer())
+
+p=1 # p is the counter, initialize it at 1, represents number of uniq site and subsite combinations
+  #for (p in 1:length(uniq)){
+  #for (p in 1:24){
+   for(p in 1:nrow(data)){ 
+    ## In site
+      a <- rep(data[p,2], nrow(data)) # in site
+      b <- rep(data[p,3], nrow(data)) # in subsite
+      IN <- cbind(a,b)
+    ## Far site
+      NEAR <- data[,2:3] # always the second (site) and thrid (subsite) columns of data, just repeated, for the far
+    ## Dissimilarity
+      DISS <- data[,p+7] # dissimilarity value is always in the column of p + 7
+    ##Sampling_Period  
+      Sampling_Period <- data[,6]
+    ## Combine results    
+      combo <- cbind(IN, NEAR, Sampling_Period, DISS)
+      results <- rbind(results, combo)
+    p=p+1
+    }
+
+# if need to reset, use these two lines of code
+# p <- NULL
+# results <- NULL
+
+IN <- results[,1:2]
+
+IN <- as.data.frame(IN)
+colnames(IN) <- c("Site", "Subsite")
+
+joining1 <- join(IN, distance.codes, by = c("Site", "Subsite"))
+
+colnames(joining1) <- c("IN_Site", "IN_Subsite", "IN_FID")
+joining1$IN_FID <- as.character (joining1$IN_FID)
+
+NEAR <- results[,3:4] 
+NEAR <-as.data.frame(NEAR)
+colnames(NEAR) <- c("Site", "Subsite")
+
+joining2 <- join(NEAR, distance.codes, by = c("Site", "Subsite"))
+colnames(joining2)<- c("NEAR_Site", "NEAR_Subsite", "NEAR_FID")
+joining2$NEAR_FID <- as.character(joining2$NEAR_FID)
+
+DISS <- results[,6]
+DISS <- as.data.frame(DISS) 
+colnames(DISS) <- "BCD"
+
+Sampling_Period <- results [,5]
+Sampling_Period <- as.data.frame(Sampling_Period)
+colnames (Sampling_Period) <- "Sampling_Period"
+
+distance.matrix$IN_FID <- as.numeric(distance.matrix$IN_FID)
+distance.matrix$NEAR_FID <- as.numeric(distance.matrix$NEAR_FID)
+distance.matrix$NEAR_DIST <- as.character(distance.matrix$NEAR_DIST)
+
+
+IN.NEAR.DISS <- cbind(joining1, joining2, Sampling_Period, DISS)
+IN.NEAR.DISS$IN_FID <- as.numeric(IN.NEAR.DISS$IN_FID)
+IN.NEAR.DISS$NEAR_FID <- as.numeric(IN.NEAR.DISS$NEAR_FID)
+
+dist.IN.NEAR.DISS <- join(IN.NEAR.DISS, distance.matrix, by = c ("IN_FID", "NEAR_FID"))
+dist.IN.NEAR.DISS
+}
+
+all.species <-calc_bcd_dist_matrix(data=env.species.bcd)
+
+```
+
+```{r BCD_filter}
+detach("package:plyr", unload=TRUE)
+library (dplyr)
+
+all.species.f <- filter(all.species, BCD != 'NA')
+all.species.f <- filter(all.species.f, NEAR_DIST != 'NA')
+all.species.f$BCD <- as.character(all.species.f$BCD)
+all.species.f$BCD <- as.numeric(all.species.f$BCD)
+all.species.f$NEAR_DIST <- as.numeric(all.species.f$NEAR_DIST)
+#all.species.f <- mutate(all.species.f, NEAR_DIST_nautical = NEAR_DIST / 6076.12) #nautical miles
+all.species.f <- mutate(all.species.f, NEAR_DIST_km = NEAR_DIST/3280.84)#km
+
+```
+
+```{r BCD_plot}
+library(ggplot2)
+
+BCDanova <- lm(BCD ~ NEAR_DIST_km, data = all.species.f)
+summary(BCDanova)
+
+plot.all.ggplot = ggplot(all.species.f, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
+
+
+plot.all.ggplot + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
+
+less40 <- filter(all.species.f, NEAR_DIST_km < 40)
+greater70 <- filter(all.species.f, NEAR_DIST_km > 40)
+#testing <- geom_smooth(data = less40, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD)))
+
+plot.all.ggplot + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 0.75), breaks=seq(0, 0.75, by=0.1)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
+site <- filter(all.species.f, NEAR_DIST_km < 5)
+
+plot.site = ggplot(site, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
+plot.site + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 0.8), breaks=seq(0, 0.8, by=0.2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.25)) + 
+  geom_smooth(colour = "black", fullrange = FALSE, method = "lm")+
+  ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
+
+
+
+###########################################################################################3
+
+```
+
+```{r BCD_max}
+
+maxlandscape <- filter(all.species.f, BCD == max(all.species.f$BCD))
+#################################################################################
+
+
+max330 <- filter(all.species.f, IN_Site == "330" & NEAR_Site == "330")
+
+max345 <- filter(all.species.f, IN_Site == "345" & NEAR_Site == "345")
+
+max364 <- filter(all.species.f, IN_Site == "364" & NEAR_Site == "364")
+
+max370 <- filter(all.species.f, IN_Site == "370" & NEAR_Site == "370")
+
+max372 <- filter(all.species.f, IN_Site == "372" & NEAR_Site == "372")
+
+max378 <- filter(all.species.f, IN_Site == "378" & NEAR_Site == "378")
+
+
+
+a <- filter(max330, BCD == max(max330$BCD))
+b <- filter(max345, BCD == max(max345$BCD))
+c <- filter(max364, BCD == max(max364$BCD))
+d <- filter(max370, BCD == max(max370$BCD))
+e <- filter(max372, BCD == max(max372$BCD))
+f <- filter(max378, BCD == max(max378$BCD))
+
+
+findmaxbcd <- rbind(a, b, c, d, e, f)
+
+avgdist <- ave(findmaxbcd$NEAR_DIST_km)
+
+sedist <- sd(findmaxbcd$NEAR_DIST_km)/sqrt(length(findmaxbcd$NEAR_DIST_km))
+
+avgbcd <- ave(findmaxbcd$BCD)
+
+sebcd <- sd(findmaxbcd$BCD)/sqrt(length(findmaxbcd$BCD))
+
+###########################################################################################
+
+#mhc <- rbind(a, b)
+#wil <- rbind(c, d, e, f)
+
+#avgdistmhc <- ave(mhc$NEAR_DIST_km)
+
+#sedistmhc <- sd(mhc$NEAR_DIST_km)/sqrt(length(mhc$NEAR_DIST_km))
+
+#avgbcdmhc <- ave(mhc$BCD)
+
+#sebcdmhc <- sd(mhc$BCD)/sqrt(length(mhc$BCD))
+
+#avgdistwil <- ave(wil$NEAR_DIST_km)
+
+#sedistwil <- sd(wil$NEAR_DIST_km)/sqrt(length(wil$NEAR_DIST_km))
+
+#avgbcdwil <- ave(wil$BCD)
+
+#sebcdwil <- sd(wil$BCD)/sqrt(length(wil$BCD))
+
+
+```
+
+```{r mantel}
+library(ecodist)
+
+data.st <- filter(data, Transect_Type == "Structural")
+data.st.fall <- filter(data.st, Sampling_Period == "Fall")
+data.st.winter <- filter(data.st, Sampling_Period == "Winter")
+data.st.spring <- filter(data.st, Sampling_Period == "Spring")
+
+env.end<- 29 #FOR SPECEIS
+sp.start<-30 #FOR SPECIES
+
+env_data.st <- data.st[,1:env.end]
+env_data.st.fall <- data.st.fall[,1:env.end]
+env_data.st.winter <- data.st.winter[,1:env.end]
+env_data.st.spring <- data.st.spring[,1:env.end]
+
+species.data.st  <- data.st[,sp.start:ncol(data.st)]
+species.orig.st<-species.data.st # fish data, no transform
+species.data.st.fall<-data.st.fall[,sp.start:ncol(data.st.fall)] # fish data
+species.orig.st.fall<-species.data.st.fall # fish data, no transform
+species.data.st.winter<-data.st.winter[,sp.start:ncol(data.st.fall)] # fish data
+species.orig.st.winter <-species.data.st.winter # fish data, no transform
+species.data.st.spring<-data.st.spring[,sp.start:ncol(data.st.spring)] # fish data
+species.orig.st.spring<-species.data.st.spring # fish data, no transform
+
+species.data.st <- transform_data (data = species.data.st, transform_type = "box-cox")
+species.data.st.fall <- transform_data (data = species.data.st.fall, transform_type = "box-cox")
+species.data.st.winter <- transform_data (data = species.data.st.winter, transform_type = "box-cox")
+species.data.st.spring <- transform_data (data = species.data.st.spring, transform_type = "box-cox")
+
+species.data.st.bcd <- bcdist(species.data.st, rmzero=FALSE)
+species.data.st.fall.bcd <- bcdist(species.data.st.fall, rmzero=FALSE)
+species.data.st.winter.bcd <- bcdist(species.data.st.winter, rmzero=FALSE)
+species.data.st.spring.bcd <- bcdist(species.data.st.spring, rmzero=FALSE)
+
+distance <- dist(cbind(data.st$Longitude_DD, data.st$Latitude_DD))
+distancefall<- dist(cbind(data.st.fall$Longitude_DD, data.st.fall$Latitude_DD))
+distancewinter<- dist(cbind(data.st.winter$Longitude_DD, data.st.winter$Latitude_DD))
+distancespring<- dist(cbind(data.st.spring$Longitude_DD, data.st.spring$Latitude_DD))
+
+set.seed(318)
+mantel <- mantel(species.data.st.bcd ~ distance) #positive, sig 2-tail
+mantelfall <- mantel(species.data.st.fall.bcd ~ distancefall) #positive, sig 2-tail
+mantelwinter <- mantel(species.data.st.winter.bcd ~ distancewinter)#postive, no sig
+mantelspring <- mantel(species.data.st.spring.bcd ~ distancespring)#postive, sig 2-tail
+
+
+#mantel.correlog <- mantel.correlog(species.data.st.bcd, distance)
+#plot(mantel.correlog, alpha= 0.05)
+
+#mantel.correlog.fall <- mantel.correlog(species.data.st.fall.bcd, distancefall)
+#plot(mantel.correlog.fall, alpha= 0.05)
+
+#mantel.correlog.winter <- mantel.correlog(species.data.st.winter.bcd, distancewinter)
+#plot(mantel.correlog.winter, alpha= 0.05)
+
+#mantel.correlog.spring <- mantel.correlog(species.data.st.spring.bcd, distancespring)
+#plot(mantel.correlog.spring, alpha= 0.05)
+
+```
+
+```{r distance_NR}
+
+all.species.f <- as.data.frame(all.species.f)
+
+site370prep <- filter(all.species.f, IN_Site == "370" & NEAR_Site == "370")
+nr370 <- filter(site370prep, IN_Subsite == "NR1" | IN_Subsite == "NR2")
+site372prep <- filter(all.species.f, IN_Site == "372" & NEAR_Site == "372")
+nr372 <- filter(site372prep, IN_Subsite == "NR1" | IN_Subsite == "NR2")
+site378prep <- filter(all.species.f, IN_Site == "378" & NEAR_Site == "378")
+nr378 <- filter(site378prep, IN_Subsite == "NR1" | IN_Subsite == "NR2")
+
+nr <- rbind(nr370,nr372,nr378)
+nr <- filter(nr, NEAR_Subsite != "NR2")
+
+nranova <- lm(BCD ~ NEAR_DIST_km, data = nr)
+anova(nranova)
+summary(nranova)
+
+
+names(nr) <- c("IN_Site", "IN_Subsite", "IN_FID", "Site", "Subsite", "NEAR_FID", "Sampling_Period", "BCD", "NEAR_DIST", "NEAR_DIST_km")
+
+nrmetrics <- join(nr, comm_mets, by = c ("Site", "Subsite", "Sampling_Period"))
+nrmetrics <- filter(nrmetrics, Transect_Type == "Structural")
+
+nrabundtest <- summarySE(nrmetrics, measurevar = "abund", groupvars = "NEAR_DIST_km")
+nrbiomtest <- summarySE(nrmetrics, measurevar = "biom", groupvars = "NEAR_DIST_km" )
+nrdiversitytest <- summarySE(nrmetrics, measurevar = "shan", groupvars = "NEAR_DIST_km")
+nrrichtest <- summarySE(nrmetrics, measurevar = "S", groupvars = "NEAR_DIST_km")
+nreventest <- summarySE(nrmetrics, measurevar = "J", groupvars = "NEAR_DIST_km")
+
+#nrabundanova <- lm(abund ~ NEAR_DIST_km, data = nrabundtest)
+#anova(nrabundanova)
+#summary(nrabundanova)
+
+
+nrabunda <- lm(abund ~ NEAR_DIST_km, data = nrmetrics)
+summary(nrabunda)
+
+
+nrmetrics$Site <- as.factor(nrmetrics$Site)
+nrabundsite <- lm(abund ~ NEAR_DIST_km + Site + IN_FID + NEAR_FID, data = nrmetrics)
+anova(nrabundsite)
+summary(nrabundsite)
+#nrbiomanova <- lm(biom ~ NEAR_DIST_km, data = nrbiomtest)
+#anova(nrabundanova)
+#summary(nrabundanova)
+
+nrbioma <- lm(biom ~ NEAR_DIST_km, data = nrmetrics)
+summary(nrbioma)
+
+#nrdiversityanova <-lm(shan ~ NEAR_DIST_km, data = nrdiversitytest)
+#anova(nrdiversityanova)
+#summary(nrdiversityanova)
+
+nrdiversitya <- lm(shan ~ NEAR_DIST_km, data = nrmetrics)
+summary(nrdiversitya)
+  
+#nrrichanova <-lm(S ~ NEAR_DIST_km, data = nrrichtest)
+#anova(nrrichanova)
+#summary(nrrichanova)  
+
+nrricha <- lm(S ~ NEAR_DIST_km, data = nrmetrics)
+summary(nrricha)
+
+#nrevenanova <-lm(J ~ NEAR_DIST_km, data = nreventest)
+#anova(nrevenanova)
+#summary(nrevenanova)
+
+nrevena <- lm(J ~ NEAR_DIST_km, data = nrmetrics)
+summary(nrevena)
+
+plot.nr = ggplot(nr, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
+
+plot.nr + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 0.6), breaks=seq(0, 0.6, by=0.1)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Bray Curtis Dissimilarty of AR communities by Distance from NR")
+
+plot.nr.abund = ggplot(nrabundtest, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(abund))) 
+
+plot.nr.abund + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Average Fish Abundance", limits=c(0, 20), breaks=seq(0, 20, by=5)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Average Fish Abundance on AR by Distance from NR")
+
+
+plot.nr.biom = ggplot(nrbiomtest, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(biom))) 
+
+plot.nr.biom + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Average Biomass (g/m2)", limits=c(0,8), breaks=seq(0, 8, by=2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Average Biomass on AR by Distance from NR")
+
+plot.nr.shan = ggplot(nrdiversitytest, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(shan))) 
+
+plot.nr.shan + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Shannon's Diversity", limits=c(0,3), breaks=seq(0, 3, by=1)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Shannon's Diversity on AR by Distance from NR")
+
+plot.nr.rich = ggplot(nrrichtest, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(S))) 
+
+plot.nr.rich + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Richness", limits=c(0,10), breaks=seq(0, 10, by=2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Richness on AR by Distance from NR")
+
+
+nreventest <- filter(nreventest, J > 0.5)
+plot.nr.even = ggplot(nreventest, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(J))) 
+
+plot.nr.even + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Evenness", limits=c(0,1), breaks=seq(0, 1, by=0.2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Evenness on AR by Distance from NR")
+
+```
+

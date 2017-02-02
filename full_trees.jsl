@@ -1,0 +1,299 @@
+
+Partition(
+	Y( :abund ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type
+	),
+	Show Points( 0 ),
+	Show Tree( 0 ),
+	Split History( 1 ),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {3, 2, 1},
+		{:DRR < 0.268677162966671, {:avg_dep < 19.1829257308696, {:avg_dep <
+		19.0624395647619, {:Transect_Number == {3, 2}, {:Temp_avg < 27.5904647887324,
+		{:Temp_avg < 17.094, {:ver_rel_m < 0.836399999999999, {:Site == {378, 345,
+		364, 370, 372}, {:Sampling_Period == {"Winter", "Spring"}, {:Reef_Type ==
+		{"Natural"}, {:Sampling_Period == {"Winter"}}, {:Site == {378, 345, 364},
+		{:avg_dep < 13.4212224980328, {:Structure_Material == {"METAL"}, {},
+		{:Transect_Number == {2}}}, {:Sampling_Period == {"Spring"}, {:avg_dep <
+		18.6899171171171}}}, {:Temp_avg < 16.427, {:avg_dep < 14.4320076335878,
+		{:Transect_Number == {2}}}, {:Site == {372}}}}}}, {:Sampling_Period ==
+		{"Spring"}}}}, {:Sampling_Period == {"Spring", "Fall"}, {:Sampling_Period
+		 == {"Spring"}, {:Transect_Number == {2}}}}}, {:Structure_Material ==
+		{"CONCRETE", "ROCK"}, {:Transect_Number == {2}}}}, {:Site == {378, 370, 345,
+		330, 372}, {:Sampling_Period == {"Spring", "Winter"}, {:Site == {330, 378,
+		370, 345}, {:Structure_Material == {"CONCRETE", "ROCK"},
+		{:Structure_Material == {"CONCRETE"}, {:Sampling_Period == {"Winter"}}}}},
+		{:Structure_Material == {"CONCRETE"}}}, {:Structure_Material == {"METAL"}}}}
+		}}},
+		{:Site == {378, 370, 345, 364, 372}, {:Structure_Material == {"CONCRETE",
+		"ROCK"}, {:Site == {378, 370, 345, 364}, {:avg_dep < 15.0345785874912,
+		{:Site == {345, 370}, {}, {:Sampling_Period == {"Fall"}}}, {:Site == {378,
+		364}}}, {:Sampling_Period == {"Spring"}}}, {:Site == {370, 345}}}}
+	),
+	SendToReport(
+		Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 290 )} ),
+		Dispatch(
+			{"Split History"},
+			"1",
+			ScaleBox,
+			{Min( 0 ), Max( 45 ), Inc( 5 ), Minor Ticks( 0 )}
+		)
+	)
+);
+
+Partition(
+	Y( :biom ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Show Tree( 0 ),
+	Split History( 1 ),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:DRR < 0.510625936444009,
+		{:Transect_Number == {3, 2, 1}, {:GIS_FID == {15, 21, 13, 23, 6, 2, 14, 11,
+		19, 22, 17, 7, 10, 4, 9, 1, 12, 3, 16, 8, 18}, {:DRR < 0.190217837918043,
+		{:Temp_avg < 17.09324, {:max_dep < 18.9421, {:Transect_Number == {3, 2},
+		{:max_dep < 18.8093, {:Sampling_Period == {"Spring", "Winter"},
+		{:Distance_to_HB >= 241.8457581, {:Distance_to_HB < 1215.621172, {:Site ==
+		{345, 364, 370, 378}}}, {:max_dep < 15.1328, {:Sampling_Period == {"Spring"}
+		}}}}}, {:Site == {372, 370, 378, 345, 330}, {:Site == {372, 370},
+		{:Sampling_Period == {"Spring"}, {:GIS_FID == {6, 7, 12}}, {:Temp_min <
+		16.427}}, {:Distance_to_HB < 573.4517946}}}}, {:Sampling_Period == {"Winter"
+		}}}, {:DMF_Area_sqft >= 21198.3833, {:GIS_FID == {13, 19, 15, 10, 23, 6, 2,
+		9, 8}, {:Sampling_Period == {"Spring", "Winter"}, {:Sampling_Period ==
+		{"Spring"}}}}, {:Transect_Number == {2}, {:Reef_Type == {"Natural"}, {},
+		{:Site == {345, 378, 372}}}, {:max_dep < 17.7181, {:Transect_Number == {1}},
+		{:Transect_Number == {3}}}}}}}, {:Transect_Number == {3}, {}, {:DRR >=
+		0.145413516885995, {}, {:Sampling_Period == {"Spring"}}}}}, {:max_dep <
+		18.69695392, {:GIS_FID == {15, 13, 7, 21, 9, 20, 3, 14, 12, 17, 10, 1, 23,
+		11}, {:Temp_avg < 16.141, {}, {:GIS_FID == {15, 13, 12, 9, 7, 21},
+		{:Distance_To_Nearest_Land_ft < 14331.26953}}}, {:Sampling_Period ==
+		{"Spring"}}}}},
+		{:Distance_To_Nearest_Land_ft < 46204.48689, {:Sampling_Period == {"Fall",
+		"Spring"}}}
+	),
+	SendToReport(
+		Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 236 )} ),
+		Dispatch(
+			{"Split History"},
+			"1",
+			ScaleBox,
+			{Min( 0 ), Max( 45 ), Inc( 5 ), Minor Ticks( 0 )}
+		)
+	)
+);
+
+Partition(
+	Y( :shan ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:NEAR_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Show Tree( 0 ),
+	Split History( 1 ),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {2, 3, 1},
+		{:Sampling_Period == {"Spring", "Winter"}, {:Transect_Number == {2, 3},
+		{:max_dep < 18.9431, {:Time_Since_Deployment_yrs < 42, {:Transect_Number ==
+		{3}, {:Distance_to_HB < 1277.812829}, {:Distance_to_HB >= 205.5297521,
+		{:Sampling_Period == {"Spring"}, {}, {:Distance_To_Nearest_Land_ft <
+		30529.37064}}, {:Sampling_Period == {"Winter"}}}}}, {:Structure_Material ==
+		{"METAL"}, {:Transect_Number == {2}}}}, {:Temp_min < 16.046, {:Site == {330,
+		364, 370}}, {:Site == {378, 330, 370, 372, 345}, {:Structure_Material ==
+		{"CONCRETE"}, {:Time_Since_Deployment_yrs < 15, {:Distance_to_AR >=
+		546.5150004}}, {:Sampling_Period == {"Winter"}, {:Structure_Material ==
+		{"METAL"}}}}}}}, {:Reef_Type == {"Artificial"}, {:Transect_Number == {2, 3},
+		{:NEAR_FID == {0, 22, 24, 25, 28, 30, 32, 33}, {}, {:Structure_Material ==
+		{"METAL"}}}, {:Time_Since_Deployment_yrs < 16}}}},
+		{:Sampling_Period == {"Spring", "Winter"}, {:ver_rel_m < 0.82, {},
+		{:Temp_max < 17.094, {:avg_dep < 16.6168395588235, {:ver_rel_m >= 1.26000701,
+		{:Sampling_Period == {"Winter"}}}}}}, {:NEAR_FID == {0, 31, 30, 22, 11, 9,
+		21, 16, 26, 1, 24}, {:Temp_min >= 27.665}, {:NEAR_FID == {29, 8, 20, 25, 23}
+		}}}
+	),
+	SendToReport(
+		Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 182 )} ),
+		Dispatch(
+			{"Split History"},
+			"1",
+			ScaleBox,
+			{Min( 0 ), Max( 35 ), Inc( 5 ), Minor Ticks( 0 )}
+		)
+	)
+);
+
+Partition(
+	Y( :S ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Show Tree( 0 ),
+	Split History( 1 ),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {2, 3, 1},
+		{:Temp_min < 23.966, {:Sampling_Period == {"Spring", "Winter"},
+		{:Transect_Number == {2, 3}, {:min_dep < 14.6938102, {:ver_rel_m <
+		0.836399999999999, {:Time_Since_Deployment_yrs >= 8, {:Distance_to_HB <
+		1215.621172}, {:Transect_Number == {2}, {}, {:Sampling_Period == {"Winter"}}
+		}}}, {:Structure_Material == {"CONCRETE", "ROCK"}, {:Temp_min < 17.094,
+		{:DMF_Area_sqft < 14375.0054, {:Distance_To_Nearest_Land_ft >= 30989.65145},
+		{:Sampling_Period == {"Winter"}, {:Structure_Material == {"ROCK"}, {},
+		{:Transect_Number == {2}}}}}}, {:Sampling_Period == {"Spring"}, {:max_dep <
+		18.96736856}, {:Distance_To_Nearest_Land_ft >= 46204.48689}}}}, {:Temp_min
+		 < 16.046, {:Site == {330, 364, 370}, {:Temp_min < 13.846}}, {:GIS_FID ==
+		{23, 3, 15, 4, 13, 21, 22, 0, 9, 7, 19, 1, 6, 11}, {:Sampling_Period ==
+		{"Spring"}, {:Structure_Material == {"CONCRETE"},
+		{:Distance_To_Nearest_Land_ft >= 30616.24317}},
+		{:Distance_To_Nearest_Land_ft < 14466.24304, {}, {:Site == {370}}}},
+		{:GIS_FID == {10, 5}}}}}, {:Site == {364}}}, {:Sampling_Period == {"Winter",
+		"Spring"}, {:Structure_Material == {"ROCK"}}, {:Transect_Number == {2, 3},
+		{:GIS_FID == {11, 21, 1, 2, 4, 14, 23, 3, 0, 9}, {:GIS_FID == {11, 21, 1, 2,
+		4, 14, 23}, {:ver_rel_m >= 0.333600000000001}}, {:GIS_FID == {8, 6, 18}}},
+		{:Structure_Material == {"CONCRETE"}}}}},
+		{:Temp_min < 16.046, {:ver_rel_m < 1.934, {}, {:Distance_To_Nearest_Land_ft
+		 < 15784.41584}}, {:DRR < 0.308637451097345, {:Structure_Material ==
+		{"CONCRETE"}, {:Distance_To_Nearest_Land_ft < 14331.26953},
+		{:Structure_Material == {"ROCK"}}}, {:Sampling_Period == {"Spring"}, {},
+		{:Structure_Material == {"CONCRETE"}, {:max_dep >= 16.04152845}}}}}
+	),
+	SendToReport(
+		Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 218 )} ),
+		Dispatch(
+			{"Split History"},
+			"1",
+			ScaleBox,
+			{Min( 0 ), Max( 50 ), Inc( 10 ), Minor Ticks( 1 )}
+		)
+	)
+);
+
+Partition(
+	Y( :J ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Show Tree( 0 ),
+	Split History( 1 ),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {2, 3, 1},
+		{:Sampling_Period == {"Spring", "Winter"}, {:Transect_Number == {2, 3},
+		{:max_dep < 18.9431, {:DMF_Area_sqft < 28644.423, {:Site == {345, 378, 364,
+		330}, {:DRR < 0.141861708622032, {:Site == {345, 364, 378}}}, {:max_dep <
+		15.5635, {:Sampling_Period == {"Winter"}}, {:Transect_Number == {3}}}},
+		{:Temp_avg < 16.427}}, {:Transect_Number == {2}}}, {:DMF_Area_sqft >=
+		14375.0054, {:max_dep >= 14.4517, {:Temp_max < 16.141, {}, {:Distance_to_AR
+		 >= 205.5297521}}}, {:Temp_min < 16.141, {:Distance_to_HB >= 468.4185554},
+		{:ver_rel_m >= 0.703199999999999, {}, {:Sampling_Period == {"Spring"},
+		{:Distance_To_Nearest_Land_ft < 45683.28237}}}}}}, {:GIS_FID == {1, 11, 21,
+		5, 0, 2}, {:Transect_Number == {2, 3}}, {:Reef_Type == {"Artificial"}, {:DRR
+		 >= 0.078110039913247, {:Site == {345, 370}}}}}},
+		{:Structure_Material == {"METAL"}, {:Sampling_Period == {"Winter", "Fall"},
+		{:Sampling_Period == {"Winter"}}}, {:Site == {372, 364}, {:Sampling_Period
+		 == {"Fall", "Winter"}, {:Distance_to_HB >= 1154.990287}},
+		{:Structure_Material == {"CONCRETE"}, {:Sampling_Period == {"Spring"}, {},
+		{:Site == {370, 330}}}}}}
+	),
+	SendToReport(
+		Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 164 )} ),
+		Dispatch(
+			{"Split History"},
+			"1",
+			ScaleBox,
+			{Min( 0 ), Max( 40 ), Inc( 5 ), Minor Ticks( 0 )}
+		)
+	)
+);

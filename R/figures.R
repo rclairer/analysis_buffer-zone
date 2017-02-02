@@ -1335,7 +1335,8 @@ plot_pca_transect_number <- function(){
     theme_bw()+ # basic theme
     #env_data$Transect_Number <- as.character(env_data$Transect_Number)
     geom_point(aes(shape=env_data$Transect_Number, colour=env_data$Transect_Number), size=5)+
-    geom_hline(aes(yintercept=0), linetype="dashed")+
+    #geom_point(aes(shape=env_data$Transect_Number), size=5)+
+        #geom_hline(aes(yintercept=0), linetype="dashed")+
     geom_vline(aes(xintercept=0), linetype="dashed")+
     #scale_y_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) +
     #scale_x_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) + 
@@ -1344,7 +1345,7 @@ plot_pca_transect_number <- function(){
     scale_colour_discrete(name = "Distance from Reef",
                           labels=c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3"= "60-90 m"))+
     #scale_colour_manual(name = "Distance from Structure", 
-         #               values = c("0" = "Structure"= "indianred2", "1" ="0-30 m" = "darkturquoise", "2" ="30-60 m" = "blueviolet", "3" ="60-90 m" = "olivedrab4"))+
+                  #  values = c("0" = "Structure"= "grey20", "1" ="0-30 m" = "grey40", "2" ="30-60 m" = "grey60", "3" ="60-90 m" = "grey80"))+
     theme(axis.text=element_text(size=12), 
           axis.title=element_text(size=12), 
           legend.text=element_text(color="black", size=12), 
@@ -1423,6 +1424,40 @@ plot_pca_sampling_period <- function(){
               size = 5)
 }
 
+
+plot_pca_structure_type <- function(){
+  PCA = data.frame(PCA1 = env.pca.scores$Comp.1, PCA2 = env.pca.scores$Comp.2)
+  library(ggplot2)
+  library(gridExtra)
+  vf<-envfit(env.pca.scores[,c(1:2)],env.data.pca)
+  vect.vf <- as.data.frame(scores(vf, display = "vectors"))
+  vect.vf <- cbind(vect.vf, Env = rownames(vect.vf))
+  ggplot(PCA, aes(PCA1, PCA2))+
+    coord_equal()+ # axes sizes equal
+    theme_bw()+ # basic theme
+    geom_point(aes(shape=env_data$Structure_Type, colour=env_data$Structure_Type), size=5)+
+    geom_hline(aes(yintercept=0), linetype="dashed")+
+    geom_vline(aes(xintercept=0), linetype="dashed")+
+    #scale_y_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) +
+    #scale_x_continuous  (limits=c(-4.5, 4.5), breaks = seq(-4.5, 4.5, by = 1)) + 
+    scale_shape_discrete(name="Structure Type", 
+                         labels=c("Atlantic Pods", "Natural Reef", "Pipes", "Reef Balls", "Ship"))+ 
+    scale_colour_discrete(name="Structure Type", 
+                          labels=c("Atlantic Pods", "Natural Reef", "Pipes", "Reef Balls", "Ship"))+
+    #scale_colour_manual(name = "Sampling Period", 
+    #        values = c("Fall" = "indianred2",  "Winter" = "darkturquoise", "Spring" = "blueviolet"))+
+    theme(axis.text=element_text(size=12), 
+          axis.title=element_text(size=12), 
+          legend.text=element_text(color="black", size=12), 
+          legend.position="bottom")+
+    geom_segment(data = vect.vf,
+                 aes(x = 0, xend = Comp.1, y = 0, yend = Comp.2), 
+                 arrow = arrow(length = unit(0.25, "cm")), 
+                 colour = "red") +
+    geom_text(data = vect.vf, 
+              aes(x = Comp.1 + 0.3, y = Comp.2 + 0.06, label = Env),
+              size = 5)
+}
 
 
 

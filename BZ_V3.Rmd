@@ -209,14 +209,15 @@ species.orig<-species.data # fish data, no transform
 species.data.biom <- databiom[,sp.start:ncol(databiom)]
 species.orig.biom <- species.data.biom
 #species.data <- transform_data (data = species.data, transform_type = "square_root")
-#species.data <- transform_data (data = species.data, transform_type = "cube_root")
+#species.data.biom <- transform_data (data = species.data.biom, transform_type = "square_root")
+species.data <- transform_data (data = species.orig, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 #we need to look at this with Avery
 #species.data <- transform_data (data = species.data, transform_type = "square_root_plus_number")
 #species.data.biom <- transform_data (data = species.data.biom, transform_type = "square_root_plus_number")
 
-species.data <- transform_data (data = species.data, transform_type = "box-cox")
-species.data.biom <- transform_data (data = species.data.biom, transform_type = "box-cox")
+#species.data <- transform_data (data = species.orig, transform_type = "box-cox")
+#species.data.biom <- transform_data (data = species.data.biom, transform_type = "box-cox")
 
 ```
 
@@ -242,6 +243,7 @@ library(vegan)
 library(ggplot2)
 
 structural.data <- filter(data, Transect_Type == "Structural")
+#structural.data <- filter(data, ID != "AR-378_RB1_2015-09-21_S_T0")
 fall.structural.data <- filter(structural.data, Sampling_Period == "Fall")
 winter.structural.data <- filter(structural.data, Sampling_Period == "Winter")
 spring.structural.data <- filter(structural.data, Sampling_Period == "Spring")
@@ -301,7 +303,9 @@ species.data.structural.spring.wil <-spring.wil.data[,sp.start:ncol(spring.wil.d
 species.orig.structural.spring.wil <-species.data.structural.spring.wil # fish data, no transform
 
 
-species.data.structural <- transform_data (data = species.data.structural, transform_type = "cube_root")
+#species.data.structural <- transform_data (data = species.data.structural, transform_type = "cube_root")
+species.data.structural <- transform_data (data = species.data.structural, transform_type = "box-cox")
+
 species.data.structural.fall <- transform_data (data = species.data.structural.fall, transform_type = "cube_root")
 species.data.structural.winter <- transform_data (data = species.data.structural.winter, transform_type = "cube_root")
 species.data.structural.spring <- transform_data (data = species.data.structural.spring, transform_type = "cube_root")
@@ -315,6 +319,7 @@ species.data.structural.spring.wil <- transform_data (data = species.data.struct
 
 set.seed(318) # for reproducibility
 species.bcd<-bcdist(species.data.structural, rmzero=FALSE) # build distance matrix based on bray curtis
+#species.bcd <- bcdist(species.orig.structural, rmzero = FALSE)
 species.bcd.fall <-bcdist(species.data.structural.fall, rmzero=FALSE) # build distance matrix based on bray curtis
 species.bcd.winter <-bcdist(species.data.structural.winter, rmzero=FALSE) # build distance matrix based on bray curtis
 species.bcd.spring <-bcdist(species.data.structural.spring, rmzero=FALSE) # build distance matrix based on bray curtis
@@ -372,6 +377,7 @@ env.species.bcd <- as.data.frame(env.species.bcd)
 env.species.bcd$Site <- as.character(env.species.bcd$Site)
 env.species.bcd$Subsite <- as.character(env.species.bcd$Subsite)
 
+#env.species.bcd <- filter(env.species.bcd, ID != "AR-378_RB1_2015-09-21_S_T0")
 
 
 #For FALL
@@ -669,6 +675,7 @@ spring.wil<-calc_bcd_dist_matrix(data=env.bcd.spring.wil) # where you use the fu
 
 ```{r BCD_filter}
 
+all.species <- dist.IN.NEAR.DISS
 all.species.f <- filter(all.species, BCD != 'NA')
 all.species.f <- filter(all.species.f, NEAR_DIST != 'NA')
 all.species.f$BCD <- as.character(all.species.f$BCD)
@@ -800,8 +807,8 @@ geom_point (colour = "grey") +
 
 
 less40 <- filter(all.species.f, NEAR_DIST_km < 40)
-greater70 <- filter
-testing <- geom_smooth(data = less40, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD)))
+greater70 <- filter(all.species.f, NEAR_DIST_km > 40)
+#testing <- geom_smooth(data = less40, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD)))
 
 plot.all.ggplot + 
   theme_classic()+
@@ -812,12 +819,31 @@ plot.all.ggplot +
         axis.line.x = element_line(color="black", size = 0.5), 
         axis.line.y = element_line(color="black", size = 0.5))+
 geom_point (colour = "grey") + 
-  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.2)) +
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 0.75), breaks=seq(0, 0.75, by=0.1)) +
   scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + 
-  geom_smooth(data = less40, colour = "black", fullrange = FALSE)+
-  geom_smooth(data = greater70, colour = "black", fullrange = FALSE)+
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
   #testing+
   ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
+site <- filter(all.species.f, NEAR_DIST_km < 5)
+
+plot.site = ggplot(site, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
+plot.site + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 1), breaks=seq(0, 1, by=0.2)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.5), breaks=seq(0, 1.5,by=0.25)) + 
+  geom_smooth(colour = "black", fullrange = FALSE, method = "lm")+
+  ggtitle("Bray Curtis Dissimilarty between Sites by Distance")
+
 
 
 
@@ -1143,7 +1169,7 @@ species.orig.st.378 <- species.data.st.378
 #species.data <- transform_data (data = species.data, transform_type = "cube_root")
 #species.data <- transform_data (data = species.data, transform_type = "pres_abs")
 
-species.data.st <- transform_data (data = species.data.st, transform_type = "square_root_plus_number")
+species.data.st <- transform_data (data = species.data.st, transform_type = "box-cox")
 species.data.st.fall <- transform_data (data = species.data.st.fall, transform_type = "square_root_plus_number")
 species.data.st.winter <- transform_data (data = species.data.st.winter, transform_type = "square_root_plus_number")
 species.data.st.spring <- transform_data (data = species.data.st.spring, transform_type = "square_root_plus_number")
@@ -1177,6 +1203,7 @@ distance372 <- dist(cbind(data.st.372$Longitude_DD, data.st.372$Latitude_DD))
 distance378 <- dist(cbind(data.st.378$Longitude_DD, data.st.378$Latitude_DD))
 
 set.seed(318)
+#species.data.st.bcd <- species.bcd
 mantel <- mantel(species.data.st.bcd ~ distance) #positive, sig 2-tail
 mantelfall <- mantel(species.data.st.fall.bcd ~ distancefall) #positive, sig 2-tail
 mantelwinter <- mantel(species.data.st.winter.bcd ~ distancewinter)#postive, no sig
@@ -1206,7 +1233,93 @@ plot(mantel.correlog.spring, alpha= 0.05)
 
 all.species.f <- as.data.frame(all.species.f)
 
-NRin <- filter(all.species.f, NEAR_Subsite == "NR1")
+site370prep <- filter(all.species.f, IN_Site == "370" & NEAR_Site == "370")
+nr370 <- filter(site370prep, IN_Subsite == "NR1" | IN_Subsite == "NR2")
+site372prep <- filter(all.species.f, IN_Site == "372" & NEAR_Site == "372")
+nr372 <- filter(site372prep, IN_Subsite == "NR1" | IN_Subsite == "NR2")
+site378prep <- filter(all.species.f, IN_Site == "378" & NEAR_Site == "378")
+nr378 <- filter(site378prep, IN_Subsite == "NR1" | IN_Subsite == "NR2")
+
+nr <- rbind(nr370,nr372,nr378)
+nr <- filter(nr, NEAR_Subsite != "NR2")
+
+nranova <- lm(BCD ~ NEAR_DIST_km, data = nr)
+anova(nranova)
+summary(nranova)
+
+#library(agricolae)
+#nrhsd <- HSD.test(nranova, c("NEAR_DIST_km"))
+#nrhsd
+
+names(nr) <- c("IN_Site", "IN_Subsite", "IN_FID", "Site", "Subsite", "NEAR_FID", "Sampling_Period", "BCD", "NEAR_DIST", "NEAR_DIST_km")
+
+nrmetrics <- join(nr, comm_mets, by = c ("Site", "Subsite", "Sampling_Period"))
+nrmetrics <- filter(nrmetrics, Transect_Type == "Structural")
+
+nrabundtest <- summarySE(nrmetrics, measurevar = "abund", groupvars = c("NEAR_DIST_km", "Structure_Type"))
+nrdiversitytest <- summarySE(nrmetrics, measurevar = "shan", groupvars = "NEAR_DIST_km")
+
+
+
+nrabundanova <- lm(abund ~ NEAR_DIST_km, data = nrabundtest)
+anova(nrabundanova)
+summary(nrabundanova)
+
+
+nrdiversityanova <-lm(shan ~ NEAR_DIST_km, data = nrdiversitytest)
+anova(nrdiversityanova)
+summary(nrdiversityanova)
+  
+  
+  
+  
+plot.nr.abund = ggplot(nrabundtest, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(abund))) 
+
+plot.nr.abund + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Abundance", limits=c(0, 300), breaks=seq(0, 300, by=50)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Abundance on AR by Distance from NR")
+
+nrbiomass <- join(nr, fishbiomass, by = c ("Site", "Subsite"))
+nrbiomassanova <- lm(Biomass ~ NEAR_DIST_km, data = nrbiomass)
+anova(nbiomassdanova)
+summary(nrbiomassanova)
+
+plot.nr = ggplot(nr, aes(x=as.numeric(NEAR_DIST_km), y=as.numeric(BCD))) 
+
+plot.nr + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+
+geom_point (colour = "grey") + 
+  scale_y_continuous(name="Bray Curtis Dissimilarity", limits=c(0, 0.6), breaks=seq(0, 0.6, by=0.1)) +
+  scale_x_continuous(name = "Distance (km)", limits=c(0, 1.2), breaks=seq(0, 1.2,by=0.2)) + 
+  #geom_smooth(data = less40, colour = "black", fullrange = FALSE, method = "lm")+
+  #geom_smooth(data = greater70, colour = "black", fullrange = FALSE, method = "lm")+
+  geom_smooth(colour = "black",fullrange = FALSE, method = "lm")+
+  #testing+
+  ggtitle("Bray Curtis Dissimilarty of AR communities by Distance from NR")
+
+
+
+
+NRin <- filter(all.species.f, IN_Subsite == "NR1"| IN_Subsite == "NR2")
 
 
 #site 370
@@ -1739,6 +1852,23 @@ ggtitle("Fish Abundance per Latitude")
 ```
 
 ```{r ANOVA}
+
+#testing univariate normality
+attach(fishabundance)
+qqnorm(Abundance)
+qqline(Abundance)
+shapiro.test(Abundance)
+
+y <- Abundance
+G <- Transect_Number
+
+# Bartlett Test of Homogeneity of Variances
+bartlett.test(y~G, data=fishabundance)
+
+# Figner-Killeen Test of Homogeneity of Variances
+fligner.test(y~G, data=fishabundance)
+
+
 library(agricolae)
 #abund, biom, S, shan
 fishabundance <- mutate(data, Abundance = rowSums(data[,30:ncol(data)]))
@@ -1751,7 +1881,7 @@ fishbiomass$Site <- as.factor(fishbiomass$Site)
 
 #########################################################################################################
 
-everything <- lm(Abundance ~ Transect_Number * Sampling_Period * Site * Reef_Type * DRR * Latitude_DD * Temp_min, data = fishabundance)
+everything <- lm(Abundance ~ Transect_Number * Sampling_Period * Site * Reef_Type * DRR * Latitude_DD * Temp_min * avg_dep * Structure_Type * Distance_To_Nearest_Land_ft* ver_rel_m, data = fishabundance)
 anova(everything)
 summary(everything)
 
@@ -1953,6 +2083,11 @@ library(agricolae)
 hsd13.reef.biom <- HSD.test(mod13biom, c("Reef_Type"))
 hsd13.reef.biom
 
+############################BCD and DISt
+
+BCDanova <- lm(BCD ~ NEAR_DIST_km, data = all.species.f)
+anova(BCDanova)
+summary(BCDanova)
 
 
 ```
@@ -1964,6 +2099,27 @@ hsd13.reef.biom
 
 #multivariate statistics/visualizations
 ```{r PERMANOVA}
+
+
+#testing for normality
+library(mvoutlier)
+outliers <- 
+aq.plot(species.data[c("mpg","disp","hp","drat","wt","qsec")])
+outliers # show list of outliers
+
+
+library(mvnormtest)
+mshapiro.test(species.data)
+x <- as.matrix(species.data) # n x p numeric matrix
+center <- colMeans(x) # centroid
+n <- nrow(x); p <- ncol(x); cov <- cov(x); 
+d <- mahalanobis(x,center,cov) # distances 
+qqplot(qchisq(ppoints(n),df=p),d,
+  main="QQ Plot Assessing Multivariate Normality",
+  ylab="Mahalanobis D2")
+abline(a=0,b=1)
+
+
 
 # permanova to test for effect of relief and complexity
 
@@ -2383,7 +2539,7 @@ print(sc2) # so these are great indicators for the site group that was coded in;
 library(vegan)
 set.seed(318) 
 
-species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 2000, autotransform = FALSE) 
+species.metaMDS <- metaMDS(species.data, distance = "bray", k=2, trymax = 1000, autotransform = FALSE) 
   # performs nMDS; arguments are as follows:
   # 1st argument: input data; these data should already be transformed if autotransform is set to FALSE
   # 2nd argument: dissimilarity index
@@ -2441,8 +2597,8 @@ species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-               aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
+    #geom_point(data = NMDS, 
+              # aes(x = MDS1, y = MDS2, color = species.nms$Transect_Number), size = 5) +
   stat_ellipse(data = NMDS, 
                  aes(x=MDS1,y=MDS2,colour=species.nms$Transect_Number),
                  level = 0.50, linetype=2, size =1)+

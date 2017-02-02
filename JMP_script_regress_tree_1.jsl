@@ -1,0 +1,223 @@
+
+Partition(
+	Y( :abund ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {3, 2, 1},
+		{:DRR < 0.268677162966671, {:avg_dep < 19.1829257308696, {:Sampling_Period
+		 == {"Spring"}, {:avg_dep < 18.8591983333333}}}},
+		{:Site == {378, 370, 345, 364, 372}}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 110 )} ) )
+);
+
+Partition(
+	Y( :abund ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {3, 2, 1},
+		{:DRR < 0.268677162966671, {:avg_dep < 19.1829257308696, {:Sampling_Period
+		 == {"Spring"}, {:avg_dep < 18.8591983333333}}}}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 200 )} ) )
+);
+
+Partition(
+	Y( :biom ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:DRR < 0.510625936444009,
+		{:Transect_Number == {3, 2, 1}, {:GIS_FID == {15, 21, 13, 23, 6, 2, 19, 14,
+		11, 22, 17, 7, 10, 4, 9, 1, 12, 3, 16, 8, 18}, {:DRR < 0.190217837918043,
+		{:Temp_avg < 17.09324}}}}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 128 )} ) )
+);
+
+Partition(
+	Y( :biom ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:DRR < 0.510625936444009,
+		{:Transect_Number == {3, 2, 1}, {:GIS_FID == {15, 21, 13, 23, 6, 2, 19, 14,
+		11, 22, 17, 7, 10, 4, 9, 1, 12, 3, 16, 8, 18}, {:DRR < 0.190217837918043,
+		{:Temp_avg < 17.09324}}}}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 128 )} ) )
+);
+
+Partition(
+	Y( :shan ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:NEAR_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {2, 3, 1},
+		{:Sampling_Period == {"Spring", "Winter"}, {}, {:Reef_Type == {"Artificial"},
+		{:Transect_Number == {2, 3}, {:NEAR_FID == {0, 22, 24, 25, 28, 30, 32, 33}}}
+		}},
+		{:Sampling_Period == {"Spring", "Winter"}}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 110 )} ) )
+);
+
+Partition(
+	Y( :S ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {2, 3, 1},
+		{:Temp_min < 23.966, {:Sampling_Period == {"Spring", "Winter"},
+		{:Transect_Number == {2, 3}}}},
+		{:Temp_min < 16.046}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 92 )} ) )
+);
+
+Partition(
+	Y( :J ),
+	X(
+		:Site,
+		:Sampling_Period,
+		:Transect_Number,
+		:Temp_avg,
+		:Temp_max,
+		:Temp_min,
+		:max_dep,
+		:min_dep,
+		:avg_dep,
+		:ver_rel_m,
+		:DRR,
+		:Structure_Material,
+		:Reef_Type,
+		:Time_Since_Deployment_yrs,
+		:DMF_Area_sqft,
+		:GIS_FID,
+		:Distance_to_HB,
+		:Distance_to_NR,
+		:Distance_to_AR,
+		:Distance_To_Nearest_Land_ft
+	),
+	Informative Missing( 0 ),
+	Column Contributions( 1 ),
+	Initial Splits(
+		:Transect_Number == {2, 3, 1},
+		{:Sampling_Period == {"Spring", "Winter"}, {:Transect_Number == {2, 3}},
+		{:GIS_FID == {1, 11, 21, 5, 0, 2}}},
+		{:Structure_Material == {"METAL"}, {}, {:Site == {372, 364}}}
+	),
+	SendToReport( Dispatch( {}, "Partition", FrameBox, {Frame Size( 480, 74 )} ) )
+);
