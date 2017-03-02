@@ -238,7 +238,9 @@ transform_data <- function(data, transform_type = c("square_root", "cube_root", 
   if (transform_type == "box-cox")
     data <- sqrt(data + 0.1) # c = 0.1, lambda = 0.5
   #if (transform_type == "box-cox")
-    #data <- (data + 0.1)^(1/4) # c = 0.1, lambda = 0.25
+   # data <- sqrt(data + 1)
+  #if (transform_type == "box-cox")
+    #data <- (data + 1)^(1/4) # c = 0.1, lambda = 0.25
   if (transform_type == "log + 1")
     data <- log(1 + data)
   data
