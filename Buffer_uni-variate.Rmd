@@ -162,8 +162,8 @@ joinbiom5 <- joinbiom4[,-c(11)]
 
 data <- join5
 databiom <- joinbiom5
-write.csv(data, file = "Metadata/data_for_Steve.csv", row.names = FALSE)
-write.csv(databiom, file = "Metadata/databiom_for_Steve.csv", row.names = FALSE)
+#write.csv(data, file = "Metadata/data_for_Steve.csv", row.names = FALSE)
+#write.csv(databiom, file = "Metadata/databiom_for_Steve.csv", row.names = FALSE)
 
 env.end<- 36
 sp.start<-37
@@ -294,8 +294,8 @@ mostabund4 <- species.data %>% summarise_each(funs(sum))#holy, it worked!
 
 ```{r univariate_transform}
 
-#species.data <- transform_data (data = species.orig, transform_type = "square_root")
-#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "square_root")
+species.data <- transform_data (data = species.orig, transform_type = "square_root")
+species.data.biom <- transform_data (data = species.orig.biom, transform_type = "square_root")
 #species.data <- transform_data (data = species.orig, transform_type = "cube_root")
 #species.data.biom <- transform_data (data = species.orig.biom, transform_type = "cube_root")
 species.data <- transform_data (data = species.orig, transform_type = "fourth_root")
@@ -359,7 +359,8 @@ x <- c(0,1,2,3)
 y <- abundpertran$abund
 
 #m<-nls(y~a*x/(b+x), start = list(a= 13, b=1))
-m <- nls(y~a*exp(-b*x), start = list(a= 13, b =1))
+m <- nls(y~a*exp(-b*x), start = list(a= 13, b =1))#####
+m <- nls(y~a*exp(-b*x), start = list (a = 350, b = 1))
 
 cor(y, predict(m))
 
@@ -572,6 +573,25 @@ geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.05, position=position_do
   #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
   scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
   ggtitle("Average Fish Abundance by Distance from Reef")
+
+#########################for un-transformed
+
+plot.all.tran + 
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5))+
+geom_point (colour = "grey") + 
+geom_line() +
+geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.05, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance (ind.)", limits=c(0,500), breaks=seq(0, 500, by=100)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Average Fish Abundance by Distance from Reef")
 ####################################################################################
  
 
@@ -768,8 +788,9 @@ geom_errorbar(aes(ymin=J-se, ymax=J+se), width=.05, position=position_dodge(0.9)
 qqnorm(abund)
 qqline(abund)
 shapiro.test(abund)
-bartlett.test(abund ~ GIS_FID, data = comm_mets)
+#bartlett.test(abund ~ GIS_FID, data = comm_mets)
 bartlett.test(abund ~ Transect_Number, data = comm_mets)
+fligner.test(abund~Transect_Number, data=comm_mets)
 
 #but not for transect number???? confused
 
@@ -779,9 +800,11 @@ qqnorm(residuals(mod.final))
 qqline(residuals(mod.final))
 shapiro.test(residuals(mod.final))
 
+
+
 library(nlme)
 
-mod.final2 <- lme(abund ~ Transect_Number, random = ~1|Site/GIS_FID, data = comm_mets)
+mod.final2 <- lme(abund ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
 
 qqnorm(residuals(mod.final2))
 qqline(residuals(mod.final2))
@@ -1075,6 +1098,16 @@ shapiro.test(residuals(mnew))
 
 
 
+mnew2 <- lme((abund +1) ^ (-0.1414141) ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+qqnorm(residuals(mnew2))
+qqline(residuals(mnew2))
+shapiro.test(residuals(mnew2))
+
+summary(mnew2)
+anova(mnew2)
+
+
+
 #SHOULD I INCLUDE SITE AND GIS_FID??????
 
 summary(model.lme)
@@ -1089,6 +1122,7 @@ fixef(model.lme)
 
 # step 6: identify final model
 mod.final <- model.lme
+mod.final <- mnew2
 
 # step 7: examine model fit
 #qqPlot(residuals(mod.final))

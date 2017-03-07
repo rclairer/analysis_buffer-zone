@@ -142,12 +142,12 @@ joinbiom4 <- cbind(joinbiom3[,1:6], joinbiom3[,79:109], joinbiom3[,7:78]) #NOFI 
 
 
 #join for family and exclusion of NOFI
-join4 <- cbind(join3[,1:6], join3[,33:63], join3[,7:32]) # species
-joinbiom4 <- cbind(joinbiom3[,1:6], joinbiom3[,33:63], joinbiom3[,7:32])
+#join4 <- cbind(join3[,1:6], join3[,33:63], join3[,7:32]) # species
+#joinbiom4 <- cbind(joinbiom3[,1:6], joinbiom3[,33:63], joinbiom3[,7:32])
 
 #join for functional group and exclusion of NOFI
-join4 <- cbind(join3[,1:6], join3[,14:44], join3[,7:13])
-joinbiom4 <- cbind(joinbiom3[,1:6], joinbiom3[,14:44], joinbiom3[,7:13])
+#join4 <- cbind(join3[,1:6], join3[,14:44], join3[,7:13])
+#joinbiom4 <- cbind(joinbiom3[,1:6], joinbiom3[,14:44], joinbiom3[,7:13])
 
 
 #join4 <- cbind(join3[,1:7], join3[,81:110], join3[,8:80]) # species
