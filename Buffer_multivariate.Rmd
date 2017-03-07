@@ -273,6 +273,9 @@ summary(permanova.everything2)
 
 #transect
 
+perm.trans <- adonis (species.data ~ Transect_Number, env_data, permutations = 999, method = "bray")
+perm.trans
+
 permanova.transect<-adonis(species.data ~ Transect_Number, strata = env_data$Transect_Number, env_data, permutations = 999, method = "bray")
 permanova.transect
   
@@ -381,13 +384,13 @@ species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
     #geom_point(data = NMDS, 
-               #aes(x = MDS1, y = MDS2, shape = species.nms$Transect_Number), size = 5) +
+     #          aes(x = MDS1, y = MDS2, shape = species.nms$Transect_Number), size = 5, alpha = 0.1) +
  #stat_ellipse(data = NMDS, 
               #aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
                # level = 0.95, linetype=2, size =1)+
      stat_ellipse(data = NMDS, 
               aes(x=MDS1,y=MDS2,linetype=species.nms$Transect_Number),
-                level = 0.95, size =1)+
+                level = 0.5, size =1)+
     # stat_ellipse(data = NMDS, 
              # aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
                # level = 0.5, linetype=2, size =1)+
