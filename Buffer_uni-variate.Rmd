@@ -304,8 +304,8 @@ species.data.biom <- transform_data (data = species.orig.biom, transform_type = 
 #species.data.biom <- transform_data (data = species.orig.biom, transform_type = "log")
 #species.data <- transform_data (data = species.orig, transform_type = "pres_abs")
 #species.data.biom <- transform_data (data = species.orig.biom, transform_type = "pres_abs")
-#species.data <- transform_data (data = species.orig, transform_type = "box-cox")
-#species.data.biom <- transform_data (data = species.orig.biom, transform_type = "box-cox")
+species.data <- transform_data (data = species.orig, transform_type = "box-cox")
+species.data.biom <- transform_data (data = species.orig.biom, transform_type = "box-cox")
 #species.data <- transform_data (data = species.orig, transform_type = "log +1")
 #species.data.biom <- transform_data (data = species.orig.biom, transform_type = "log +1")
 
