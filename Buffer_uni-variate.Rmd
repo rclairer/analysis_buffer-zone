@@ -290,7 +290,44 @@ mostabund4 <- species.data %>% summarise_each(funs(sum))#holy, it worked!
 ```
 
 
+```{r species_table}
+
+#if sum per transect, use "data""
+p<-colSums(species.orig, na.rm=FALSE, dims=1)
+ptest<-rbind()
+summary(species.orig)
+# find the sum and mean for each column
+sum<-apply(species.orig, 2, sum)
+mean<-apply(species.orig, 2, mean)
+stats<-cbind(sum, mean)
+stats<-stats[order(-mean),]
+stats<-data.frame(stats)
+rownames(stats) -> stats$Species_Code
+plank_table <- combine_data_meta (stats, 
+                   file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
+                   merge_by = "Species_Code")
+plank_table<-plank_table[,c(1, 2, 3, 4, 5, 6, 7, 9, 10)]
+#plank_table<-plank_table[order(-mean),]
+plank_table <- plank_table[order(plank_table$Family),]
+#plank_table <- plank_table[1:10,]
+rownames(plank_table)<-NULL
+write.csv(plank_table,'Figures/Figs_for_paper/fish_species_table3.csv')
+
+
+#library(xtable)
+#test<- xtable(stats)
+#print.xtable(test, type="html", file="Figures/planktivore_table.html")
+#print(test, floating = FALSE)
+
+#rownames(stats) -> stats$Species_Code
+
+
+```
+
+
+
 #UNIVARIATE ANALYSIS
+
 
 ```{r univariate_transform}
 
@@ -333,15 +370,605 @@ library(vegan)
 
 ```
 
+```{r depth}
+
+comm_mets_test <- filter(comm_mets, Transect_Number == "0")
+  
+comm_mets_test_na <- filter(comm_mets_test, avg_dep != "NA")
+  
+testingthis <- summarySE(comm_mets_test_na, measurevar = "avg_dep", groupvars = c("Site", "Subsite"))  
+    
+  
+```
+
+
+
+```{r zeros}
+  
+countzero0 <- filter(comm_mets, Transect_Number == "0" & abund < 1)
+  
+  transzero <- filter(comm_mets, Transect_Number == "0")
+  
+countzero1 <- filter(comm_mets, Transect_Number == "1" & abund < 1)
+
+  transone <- filter(comm_mets, Transect_Number == "1")
+
+countzero2 <- filter(comm_mets, Transect_Number == "2" & abund < 1)
+
+  transtwo <- filter(comm_mets, Transect_Number == "2")
+
+countzero3 <- filter(comm_mets, Transect_Number == "3" & abund < 1)
+  
+  transthree <- filter(comm_mets, Transect_Number == "3")
+```
+
+
+```{r abundance}
+  
+library(agricolae)
+library(nlme)
+  
+comm_mets$Transect_Number <- as.factor(comm_mets$Transect_Number)
+  
+#model <- lm(abund ~ Transect_Number, data = comm_mets)
+#summary(model)
+#anova(model)
+
+#model.lme <- lme(abund~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+
+
+library(MASS)
+#model <- lm(abund + 1 ~ Transect_Number, data = comm_mets)
+bc <- boxcox(abund +1 ~ Transect_Number, data = comm_mets)
+trans <- bc$x[which.max(bc$y)]
+#mnew <- lm((abund +1) ^ trans ~ Transect_Number, data = comm_mets)
+#op <- par(pty = "s", mfrow = c(1, 2))
+#qqnorm(model$residuals); qqline(model$residuals)
+#qqnorm(mnew$residuals); qqline(mnew$residuals)
+#par(op)
+#qqnorm(residuals(mnew))
+#qqline(residuals(mnew))
+#shapiro.test(residuals(mnew))
+
+
+
+mnew2 <- lme((abund +1) ^ (-0.1414141) ~ Transect_Number + Reef_Type, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+qqnorm(residuals(mnew2))
+qqline(residuals(mnew2))
+shapiro.test(residuals(mnew2))
+
+summary(mnew2)
+anova(mnew2)
+
+hsd <- HSD.test(mnew2, c("Transect_Number"))
+hsd
+
+mnew2lm <- lm((abund +1) ^ (-0.1414141) ~ Transect_Number, data = comm_mets)
+qqnorm(residuals(mnew2lm))
+qqline(residuals(mnew2lm))
+shapiro.test(residuals(mnew2lm))
+
+
+#SHOULD I INCLUDE SITE AND GIS_FID??????
+
+#summary(model.lme)
+#anova(model.lme)
+
+#thething <- vcov(model.lme)
+#vcov(model.lme)
+
+#fixef(thething)
+#fixef(model.lme)
+
+
+# step 6: identify final model
+#mod.final <- model.lme
+mod.final <- mnew2
+
+# step 7: examine model fit
+#qqPlot(residuals(mod.final))
+#qqnorm(residuals(mod.final))
+#qqline(residuals(mod.final))
+#shapiro.test(residuals(mod.final))
+
+
+# step 8: gather data to plot
+intervals(mod.final) # confidence intervals
+intervals(mod.final, which = 'fixed')
+plot.lme(mod.final)
+library(lattice)
+#xyplot( abund ~ Reef_type|Site, fish)
+xyplot( abund ~ Transect_Number|GIS_FID, comm_mets)
+#had to choose GIS_FID here because could not use Site/GIS_FID
+
+fixef(mod.final) # fixed estimates of intercept and treatment effect
+ranef(mod.final) # random effects estimate
+coef(mod.final) # estimates of intercept that vary by random effect (the site; aka block)
+predict(mod.final) # estimates of population means for fixed and random effects
+predict(mod.final, level=0) # estimates of fixed effects prediction of the mean (marginal means)
+fitted(mod.final) # estimates of the conditional means
+
+vcov(mod.final) # variance-covariance matrix of parameter estimates; these are effects estimates, not indificual treatment means
+# find treatment means
+fixef(mod.final)
+
+
+#fish$dep <- as.factor(fish$dep)
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), season = levels(fish$season))
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), dep = levels(fish$dep))
+newdat <- expand.grid(Transect_Number = levels (comm_mets$Transect_Number))
+newdat$pred <- predict(mod.final, newdat, level=0)
+
+## [-2] drops response from formula
+Designmat <- model.matrix(formula(mod.final)[-2], newdat)
+predvar <- diag(Designmat %*% vcov(mod.final) %*% t(Designmat)) 
+newdat$SE <- sqrt(predvar) 
+newdat$SE2 <- sqrt(predvar+mod.final$sigma^2)
+  # code adapted from http://glmm.wikidot.com/faq
+
+
+#newdat with back transform
+
+backtransabund <- mutate(newdat, backtransform = (pred ^ (-1/0.1414141)) -1)
+backtransabund <- mutate(backtransabund, pSE = ((pred + SE)^(-1/0.1414141)) -1)
+backtransabund <- mutate(backtransabund, nSE = ((pred - SE)^(-1/0.1414141)) -1)
+
+backtransabund2 <- mutate(newdat, backtransform = (1/pred)^(1/0.1414141)-1)
+
+
+#now plot
+library(ggplot2)
+pd <- position_dodge(width=0.4) 
+cmult <- 1  ## could use 1.96 instead
+
+
+ggplot(backtransabund, aes(x = Transect_Number, y = backtransform, group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5))+
+geom_point (colour = "grey") + 
+geom_line() +
+geom_errorbar(aes(ymin=pSE, ymax=nSE), width=.05, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance (ind.)", limits=c(0, 150), breaks=seq(0, 150, by=50)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
+
+#########################
+
+
+#ggplot(newdat, aes(x=Transect_Number, y=pred, group = 1))+
+ #   theme_classic()+
+  #  geom_point(stat = "identity", position = pd)+
+   # geom_line(stat = "identity", position = pd, colour = "black", size = 1)+
+    #geom_point(data=comm_mets, aes(x=Transect_Number, y=abund), position=pd, alpha = 0.3)+
+    #geom_jitter(data = comm_mets, aes(x = Transect_Number, y=abund), alpha = 0.3) +
+  #  geom_errorbar(data=newdat, aes(ymin=pred-SE, ymax=pred+SE, width=0.1), size=1, color = "black", position=pd)+
+#  theme(axis.text=element_text(size=16, colour="black"), 
+ #       axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+  #      axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+   #     legend.position="none", 
+    #    axis.line.x = element_line(color="black", size = 0.5), 
+     #   axis.line.y = element_line(color="black", size = 0.5),
+    #    panel.background = element_blank(),
+     #   panel.border = element_rect(colour = "black", fill = NA, size = 1))+
+  #cale_y_continuous(name="Average Fish Abundance", limits=c(0, 50), breaks=seq(0, 50, by=10)) +
+#  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+ # scale_y_continuous(name = "Fourth Root Transformed Fish Abundance (ind.)")
+     #scale_y_continuous(name="Fish abundance", 
+                      # expand = c(0, 0),
+                       #limits=c(0, 35), 
+                       #breaks=seq(0,35,by=5)) + 
+       # scale_x_discrete(name="Distance from Reef") + 
+   # scale_color_manual(name="Distance from Reef", values = c("Artificial" = ar_color, "Natural" = nr_color))
+
+
+
+
+  
+```  
+
+```{r biomass}
+#have to clear history to run
+
+
+library(agricolae)
+library(nlme)
+  
+comm_mets$Transect_Number <- as.factor(comm_mets$Transect_Number)
+
+#model.biom <- lm(biom ~ Transect_Number, data = comm_mets)
+#summary(model.biom)
+#anova(model.biom)
+
+#qqnorm(residuals(model.biom))
+#qqline(residuals(model.biom))
+#shapiro.test(residuals(model.biom))
+
+#model.lme.biom <- lme(biom ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+#summary(model.lme.biom)
+#anova(model.lme.biom)
+
+#qqnorm(residuals(model.lme.biom))
+#qqline(residuals(model.lme.biom))
+#shapiro.test(residuals(model.lme.biom))
+
+
+library(MASS)
+#model <- lm(abund + 1 ~ Transect_Number, data = comm_mets)
+bc.biom <- boxcox(biom +1 ~ Transect_Number, data = comm_mets)
+trans.biom <- bc.biom$x[which.max(bc.biom$y)]
+#mnew.biom <- lm((biom +1) ^ trans.biom ~ Transect_Number, data = comm_mets)
+#op <- par(pty = "s", mfrow = c(1, 2))
+#qqnorm(model$residuals); qqline(model$residuals)
+#qqnorm(mnew$residuals); qqline(mnew$residuals)
+#par(op)
+#qqnorm(residuals(mnew.biom))
+#qqline(residuals(mnew.biom))
+#shapiro.test(residuals(mnew.biom))
+
+
+#mnew2.biom <- lme((biom + 1) ^ (-0.6666667) ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+
+mnew2.biom <- lme((biom + 0.09) ^ (-0.6666667) ~ Transect_Number + Reef_Type, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+qqnorm(residuals(mnew2.biom))
+qqline(residuals(mnew2.biom))
+shapiro.test(residuals(mnew2.biom))
+
+
+summary(mnew2.biom)
+anova(mnew2.biom)
+
+
+#very close
+
+mod.final.biom <- mnew2.biom
+
+# step 7: examine model fit
+#qqPlot(residuals(mod.final))
+#qqnorm(residuals(mod.final))
+#qqline(residuals(mod.final))
+#shapiro.test(residuals(mod.final))
+
+
+# step 8: gather data to plot
+intervals(mod.final.biom) # confidence intervals
+intervals(mod.final.biom, which = 'fixed')
+plot.lme(mod.final.biom)
+library(lattice)
+#xyplot( abund ~ Reef_type|Site, fish)
+xyplot(biom ~ Transect_Number|GIS_FID, comm_mets)
+#had to choose GIS_FID here because could not use Site/GIS_FID
+
+fixef(mod.final.biom) # fixed estimates of intercept and treatment effect
+ranef(mod.final.biom) # random effects estimate
+coef(mod.final.biom) # estimates of intercept that vary by random effect (the site; aka block)
+predict(mod.final.biom) # estimates of population means for fixed and random effects
+predict(mod.final.biom, level=0) # estimates of fixed effects prediction of the mean (marginal means)
+fitted(mod.final.biom) # estimates of the conditional means
+
+vcov(mod.final.biom) # variance-covariance matrix of parameter estimates; these are effects estimates, not indificual treatment means
+# find treatment means
+fixef(mod.final.biom)
+
+
+#fish$dep <- as.factor(fish$dep)
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), season = levels(fish$season))
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), dep = levels(fish$dep))
+newdat.biom <- expand.grid(Transect_Number = levels (comm_mets$Transect_Number))
+newdat.biom$pred <- predict(mod.final.biom, newdat.biom, level=0)
+
+## [-2] drops response from formula
+Designmat.biom <- model.matrix(formula(mod.final.biom)[-2], newdat.biom)
+predvar.biom <- diag(Designmat.biom %*% vcov(mod.final.biom) %*% t(Designmat.biom)) 
+newdat.biom$SE <- sqrt(predvar.biom) 
+newdat.biom$SE2 <- sqrt(predvar.biom+mod.final.biom$sigma^2)
+  # code adapted from http://glmm.wikidot.com/faq
+
+
+#newdat with back transform
+
+backtransbiom <- mutate(newdat.biom, backtransform = (pred ^ (-1/0.6666667)) -0.09)
+backtransbiom <- mutate(backtransbiom, pSE = ((pred + SE)^(-1/0.6666667)) -0.09)
+backtransbiom <- mutate(backtransbiom, nSE = ((pred - SE)^(-1/0.6666667)) -0.09)
+
+
+library(ggplot2)
+pd <- position_dodge(width=0.4) 
+cmult <- 1  ## could use 1.96 instead
+
+
+ggplot(backtransbiom, aes(x = Transect_Number, y = backtransform, group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5))+
+geom_point (colour = "grey") + 
+geom_line() +
+geom_errorbar(aes(ymin=pSE, ymax=nSE), width=.05, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Biomass (kg/m2)", limits=c(0, 12), breaks=seq(0, 12, by=2)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
+
+
+
+```
+
+```{r richness}
+#have to clear history to run
+
+library(agricolae)
+library(nlme)
+  
+comm_mets$Transect_Number <- as.factor(comm_mets$Transect_Number)
+#comm_mets$Site <- as.factor(comm_mets$Site)
+#comm_mets$Sampling_Period <- as.factor(comm_mets$Sampling_Period)
+#comm_mets$Reef_Type <- as.factor(comm_mets$Reef_Type)
+#comm_mets$Structure_Type <- as.factor(comm_mets$Structure_Type)
+#comm_mets$GIS_FID <- as.factor(comm_mets$GIS_FID)
+
+#model.S <- lm(S ~ Transect_Number, data = comm_mets)
+#summary(model.S)
+#anova(model.S)
+
+#qqnorm(residuals(model.S))
+#qqline(residuals(model.S))
+#shapiro.test(residuals(model.S))
+
+#model.lme.S <- lme(S ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+#summary(model.lme.S)
+#anova(model.lme.S)
+
+#qqnorm(residuals(model.lme.S))
+#qqline(residuals(model.lme.S))
+#shapiro.test(residuals(model.lme.S))
+
+
+library(MASS)
+#model <- lm(abund + 1 ~ Transect_Number, data = comm_mets)
+bc.S <- boxcox((S +1) ~ Transect_Number, data = comm_mets)
+trans.S <- bc.S$x[which.max(bc.S$y)]
+#mnew.S <- lm((S +1) ^ trans.S ~ Transect_Number, data = comm_mets)
+#op <- par(pty = "s", mfrow = c(1, 2))
+#qqnorm(model$residuals); qqline(model$residuals)
+#qqnorm(mnew$residuals); qqline(mnew$residuals)
+#par(op)
+#qqnorm(residuals(mnew.S))
+#qqline(residuals(mnew.S))
+#shapiro.test(residuals(mnew.S))
+
+
+#mnew2.S <- lme((S+1) ^ (0.02020202) ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+mnew2.S <- lme((S+2) ^ (0.02020202) ~ Transect_Number + Reef_Type, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+qqnorm(residuals(mnew2.S))
+qqline(residuals(mnew2.S))
+shapiro.test(residuals(mnew2.S))
+
+
+summary(mnew2.S)
+anova(mnew2.S)
+
+# > 0.05
+
+mod.final.S <- mnew2.S
+
+# step 7: examine model fit
+#qqPlot(residuals(mod.final))
+#qqnorm(residuals(mod.final))
+#qqline(residuals(mod.final))
+#shapiro.test(residuals(mod.final))
+
+
+# step 8: gather data to plot
+intervals(mod.final.S) # confidence intervals
+intervals(mod.final.S, which = 'fixed')
+plot.lme(mod.final.S)
+library(lattice)
+#xyplot( abund ~ Reef_type|Site, fish)
+xyplot(S ~ Transect_Number|GIS_FID, comm_mets)
+#had to choose GIS_FID here because could not use Site/GIS_FID
+
+fixef(mod.final.S) # fixed estimates of intercept and treatment effect
+ranef(mod.final.S) # random effects estimate
+coef(mod.final.S) # estimates of intercept that vary by random effect (the site; aka block)
+predict(mod.final.S) # estimates of population means for fixed and random effects
+predict(mod.final.S, level=0) # estimates of fixed effects prediction of the mean (marginal means)
+fitted(mod.final.S) # estimates of the conditional means
+
+vcov(mod.final.S) # variance-covariance matrix of parameter estimates; these are effects estimates, not indificual treatment means
+# find treatment means
+fixef(mod.final.S)
+
+
+#fish$dep <- as.factor(fish$dep)
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), season = levels(fish$season))
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), dep = levels(fish$dep))
+newdat.S <- expand.grid(Transect_Number = levels (comm_mets$Transect_Number))
+newdat.S$pred <- predict(mod.final.S, newdat.S, level=0)
+
+## [-2] drops response from formula
+Designmat.S <- model.matrix(formula(mod.final.S)[-2], newdat.S)
+predvar.S <- diag(Designmat.S %*% vcov(mod.final.S) %*% t(Designmat.S)) 
+newdat.S$SE <- sqrt(predvar.S) 
+newdat.S$SE2 <- sqrt(predvar.S+mod.final.S$sigma^2)
+  # code adapted from http://glmm.wikidot.com/faq
+
+
+#newdat with back transform
+
+backtransS <- mutate(newdat.S, backtransform = (pred ^ (1/0.02020202)) -2)
+backtransS <- mutate(backtransS, pSE = ((pred + SE)^(1/0.02020202)) -2)
+backtransS <- mutate(backtransS, nSE = ((pred - SE)^(1/0.02020202)) -2)
+
+library(ggplot2)
+pd <- position_dodge(width=0.4) 
+cmult <- 1  ## could use 1.96 instead
+
+
+ggplot(backtransS, aes(x = Transect_Number, y = backtransform, group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5))+
+geom_point (colour = "grey") + 
+geom_line() +
+geom_errorbar(aes(ymin=nSE, ymax=pSE), width=.05, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Species Richness (S)", limits=c(0, 8), breaks=seq(0, 8, by=2)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
+
+
+
+
+
+```
+
+```{r evenness}
+library(agricolae)
+library(nlme)
+  
+comm_mets$Transect_Number <- as.factor(comm_mets$Transect_Number)
+#comm_mets$Site <- as.factor(comm_mets$Site)
+#comm_mets$Sampling_Period <- as.factor(comm_mets$Sampling_Period)
+#comm_mets$Reef_Type <- as.factor(comm_mets$Reef_Type)
+#comm_mets$Structure_Type <- as.factor(comm_mets$Structure_Type)
+#comm_mets$GIS_FID <- as.factor(comm_mets$GIS_FID)
+
+#model.J <- lm(J ~ Transect_Number, data = comm_mets)
+#model.J <- lm(asin(sqrt(J)) ~ Transect_Number, data = comm_mets.J)
+
+#also normal
+#summary(model.J)
+#anova(model.J)
+
+#qqnorm(residuals(model.J))
+#qqline(residuals(model.J))
+#shapiro.test(residuals(model.J))
+
+comm_mets.J <- filter(comm_mets, J > 0)
+
+#model.lme.J <- lme(J ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets)
+model.lme.J <- lme(asin(sqrt(J)) ~ Transect_Number, random = ~1|Site/GIS_FID, method = "ML", data = comm_mets.J)
+
+#probably want to use this one!!
+summary(model.lme.J)
+anova(model.lme.J)
+
+qqnorm(residuals(model.lme.J))
+qqline(residuals(model.lme.J))
+shapiro.test(residuals(model.lme.J))
+
+
+mod.final.J <- model.lme.J
+
+# step 7: examine model fit
+#qqPlot(residuals(mod.final))
+#qqnorm(residuals(mod.final))
+#qqline(residuals(mod.final))
+#shapiro.test(residuals(mod.final))
+
+
+# step 8: gather data to plot
+intervals(mod.final.J) # confidence intervals
+intervals(mod.final.J, which = 'fixed')
+plot.lme(mod.final.J)
+library(lattice)
+#xyplot( abund ~ Reef_type|Site, fish)
+xyplot(J ~ Transect_Number|GIS_FID, comm_mets)
+#had to choose GIS_FID here because could not use Site/GIS_FID
+
+fixef(mod.final.J) # fixed estimates of intercept and treatment effect
+ranef(mod.final.J) # random effects estimate
+coef(mod.final.J) # estimates of intercept that vary by random effect (the site; aka block)
+predict(mod.final.J) # estimates of population means for fixed and random effects
+predict(mod.final.J, level=0) # estimates of fixed effects prediction of the mean (marginal means)
+fitted(mod.final.J) # estimates of the conditional means
+
+vcov(mod.final.J) # variance-covariance matrix of parameter estimates; these are effects estimates, not indificual treatment means
+# find treatment means
+fixef(mod.final.J)
+
+
+#fish$dep <- as.factor(fish$dep)
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), season = levels(fish$season))
+#newdat <- expand.grid(Reef_type = levels(fish$Reef_type), dep = levels(fish$dep))
+newdat.J <- expand.grid(Transect_Number = levels (comm_mets$Transect_Number))
+newdat.J$pred <- predict(mod.final.J, newdat.J, level=0)
+
+## [-2] drops response from formula
+Designmat.J <- model.matrix(formula(mod.final.J)[-2], newdat.J)
+predvar.J <- diag(Designmat.J %*% vcov(mod.final.J) %*% t(Designmat.J)) 
+newdat.J$SE <- sqrt(predvar.J) 
+newdat.J$SE2 <- sqrt(predvar.J+mod.final.J$sigma^2)
+  # code adapted from http://glmm.wikidot.com/faq
+
+
+#newdat with back transform
+
+backtransJ <- mutate(newdat.J, backtransform = (sin(pred))^2)
+backtransJ <- mutate(backtransJ, pSE = (sin(pred + SE))^2)
+backtransJ <- mutate(backtransJ, nSE = (sin(pred - SE))^2)
+
+library(ggplot2)
+pd <- position_dodge(width=0.4) 
+cmult <- 1  ## could use 1.96 instead
+
+
+ggplot(backtransJ, aes(x = Transect_Number, y = backtransform, group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5))+
+geom_point (colour = "grey") + 
+geom_line() +
+geom_errorbar(aes(ymin=nSE, ymax=pSE), width=.05, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Species Richness (S)", limits=c(0.5, 1), breaks=seq(0.5, 1, by=0.1)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
+
+
+
+
+
+```
+
+
+
+
+
+
 ```{r exponential}
   
 
-abundpertran <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number"))
+#abundpertran <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number"))
 
   
-abundpertran$Transect_Number <- as.numeric(abundpertran$Transect_Number) 
-abundpertran$abund <- as.numeric(abundpertran$abund)
+#abundpertran$Transect_Number <- as.numeric(abundpertran$Transect_Number) 
+#abundpertran$abund <- as.numeric(abundpertran$abund)
 
+comm_mets$abund <- (comm_mets$abund +1) ^ (-0.1414141)
+#write.csv(comm_mets, file = "Metadata/transformed_comm_for_curve2.csv", row.names = FALSE)
+abundpertran <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number"))
 
 #abundance is transformed  
 #expon.model <- lm(abund ~ Transect_Number, data = abundpertran)  
@@ -356,16 +983,58 @@ abundpertran$abund <- as.numeric(abundpertran$abund)
 
 
 x <- c(0,1,2,3)
+x <- comm_mets$Transect_Number
 y <- abundpertran$abund
+y <- comm_mets$abund
 
 #m<-nls(y~a*x/(b+x), start = list(a= 13, b=1))
 m <- nls(y~a*exp(-b*x), start = list(a= 13, b =1))#####
+m <- nls(y~a*exp(b*x), start = list (a = 0.3, b = 1))
+m <- nls(y~a*exp(b*x), start = list(a = 0.5636, b = 0.1641))
+m <- nls(y~a*exp(b*x), start = list(a = 0.5, b = 1))
 m <- nls(y~a*exp(-b*x), start = list (a = 350, b = 1))
+m <- nls(y~a*exp(-b*x), start = list (a = 3.5, b = 1))
+
+
+m <- nls(y ~ d + (a - d) / (1 + (x / c)*exp(b)), start = list(a = 0.523, b = 4.935838, c = 1.051717, d = 0.869954))
+
+a <- 0.523
+b <- 4.935838
+c <- 1.051717
+d <- 0.869954
+
+m <- lm(y~x)
+
+y <- comm_mets$abund
 
 cor(y, predict(m))
 
-plot(abundpertran$Transect_Number, abundpertran$abund)
+plot(x,y)
+#plot(abundpertran$Transect_Number, abundpertran$abund)
+plot(comm_mets$Transect_Number, comm_mets$abund)
 lines(x,predict(m),col="red",lty=2,lwd=3)
+lines(sort(x),predict(m,list(x=sort(x))), col = "red", lty=2, lwd=3)
+
+
+library(ggplot2)
+
+ggplot(comm_mets, aes(x=as.numeric(Transect_Number), y=abund)) +
+  theme_classic()+
+  geom_point() +
+  geom_line(formula = y ~ 0.5636*exp(0.1641*x))
+  geom_bar(position=position_dodge(), stat="identity", colour="black")+
+  geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance", 
+                     limits=c(0, 15), 
+                     breaks=seq(0, 15,by=5)) + 
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5))+ 
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+  ggtitle("Fish Abundance by Distance from Reef")+
 
 
 
@@ -571,8 +1240,8 @@ geom_line() +
 geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.05, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance (ind.) (Forth Root Transformed)", limits=c(0, 15), breaks=seq(0, 15, by=5)) +
   #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
-  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-  ggtitle("Average Fish Abundance by Distance from Reef")
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
 
 #########################for un-transformed
 
@@ -590,8 +1259,8 @@ geom_line() +
 geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.05, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance (ind.)", limits=c(0,500), breaks=seq(0, 500, by=100)) +
   #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
-  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-  ggtitle("Average Fish Abundance by Distance from Reef")
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
 ####################################################################################
  
 
@@ -634,7 +1303,7 @@ plot.all.tran.biom +
 geom_point (colour = "grey") + 
 geom_line() +
 geom_errorbar(aes(ymin=biom-se, ymax=biom+se), width=.05, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Fish Biomass (kg/m2)", limits=c(0, 7), breaks=seq(0, 7, by=2)) +
+  scale_y_continuous(name="Average Fish Biomass (kg/m2)", limits=c(0, 42), breaks=seq(0, 42, by=10)) +
   #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
   scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
   ggtitle("Average Fish Biomass by Distance from Reef")
@@ -726,7 +1395,7 @@ plot.all.tran.rich +
 geom_point (colour = "grey") + 
 geom_line() +
 geom_errorbar(aes(ymin=S-se, ymax=S+se), width=.05, position=position_dodge(0.9))+
-  scale_y_continuous(name="Average Species Richness", limits=c(0, 9), breaks=seq(0, 9, by=2)) +
+  scale_y_continuous(name="Average Species Richness (S)", limits=c(0, 8.5), breaks=seq(0, 8.5, by=2)) +
   #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
   scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
   ggtitle("Average Species Richness by Distance from Reef")
@@ -985,11 +1654,11 @@ comm_mets$Reef_Type <- as.factor(comm_mets$Reef_Type)
 comm_mets$GIS_FID <- as.factor(comm_mets$GIS_FID)
 
 
-library(tree)
-treeeeees <- tree(abund~Transect_Number + Temp_avg + avg_dep + DRR, data = comm_mets)
+#library(tree)
+#treeeeees <- tree(abund~Transect_Number + Temp_avg + avg_dep + DRR, data = comm_mets)
 
-plot(treeeeees)
-text(treeeeees, cex=0.6)
+#plot(treeeeees)
+#text(treeeeees, cex=0.6)
 
 
 
@@ -997,55 +1666,267 @@ text(treeeeees, cex=0.6)
 # CART using RPART ...
 library(rpart)
 #test111 <- rpart(abund ~ Transect_Number + Temp_avg + DRR + avg_dep, data = comm_mets, method = "anova", control = rpart.control(minsplit = 10))
-test111 <- rpart(abund ~ Transect_Number + Temp_avg + DRR + avg_dep, data = comm_mets, method = "anova")
+abund.tree <- rpart(abund ~ Transect_Number + Temp_avg + DRR + avg_dep + Reef_Type, data = comm_mets, method = "anova")
+
+art_comm_mets <- filter (comm_mets, Reef_Type == "Artificial")
+artificial_abund <- rpart(abund ~ Transect_Number + Temp_avg + DRR + avg_dep + Reef_Type + DMF_Area_sqft, data = art_comm_mets, method = "anova")
+
+
+###sp.rpart <- rpart(as.factor(sp)~., data=sp.data, method="class")
+# print the corss-validation table (already computed):
+printcp(abund.tree)
+printcp(artificial_abund)
+###printcp(sp.rpart)
+# or plot it:
+plotcp(abund.tree)
+plotcp(artificial_abund)
+###plotcp(sp.rpart)
+# the tree itself:
+plot(abund.tree)
+###plot(sp.rpart)
+# add labels, including sample sizes per node:
+text(abund.tree)
+text(abund.tree, cex = 0.6, use.n = TRUE)
+###text(sp.rpart, cex=0.6, use.n=TRUE)
+# try a postscript output file (probably won't work):
+#post(sp.rpart,"piwa_rpart.ps")
+
+predict.test.abund <- predict(abund.tree, type = "matrix")
+
+table(predict.test.abund)
+
+
+library(rpart.plot)
+prp(abund.tree)
+
+make_tiff_ggplot <- function (expr, filename, ..., verbose = TRUE){
+  if (verbose){
+    message("Generating TIF: ", filename) # this tells it to talk to us and let us know that it's generating a pdf
+  }
+  tiff(file = filename, ...) # create pdf file with argument filename that you'd provide. the ... means that anything else (height, width, etc) can be put there or the user can just use the default
+  on.exit(dev.off()) # so do dev.off before you exit
+  eval.parent(substitute(print(expr))) # black magic that takes the function you're using and expresss it inside the environment and makes it go in the pdf somehow
+}
+
+###prp(sp.rpart)
+
+#sp.rpart <- rpart(as.factor(sp)~., data= test111,method="anova", control=rpart.control(minsplit=10))
+plot_abund_tree <- function (text_size){
+prp(artificial_abund, 
+    type = 2,  # set tree type #avery had this as 1 
+    extra = 100, # display percent of observations
+    #box.col=c("indianred2", "turquoise")[abund.tree$frame$yval], 
+    tweak=1.0, # makes smaller so less cluttered
+    faclen=0, # do not abbreviate factor levels
+    varlen = 0, # do not abbreviate variable levels
+    under = TRUE, # percentage text under the boxes
+    fallen.leaves = TRUE, # puts fallen leaves at the bottom of plot
+    split.prefix = "Is ",
+    split.suffix = "?",
+    split.border.col=1, 
+    yesno = 2)
+}
+
+make_tiff_ggplot (plot_abund_tree(text_size=10)
+                  ,
+                  filename = "Figures/Figs_for_paper/abund_tree_ar.tiff", width = 80, height = 90, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+
+
+
+
+#can I add mean +- SE = ? Can I add SE? Can I change text of "Transect_Number" to distance from reef? CAn I add units?
+
+
+
+# predict with an RPART tree:
+#sp.rpart.pred <- predict(test111, type="anova")
+#table(sp.rpart.pred,sp)
+###################################################################
+
+
+biom.tree <- rpart(biom ~ Transect_Number + Temp_avg + DRR + avg_dep + Reef_Type, data = comm_mets, method = "anova")
+
+###sp.rpart <- rpart(as.factor(sp)~., data=sp.data, method="class")
+# print the corss-validation table (already computed):
+printcp(biom.tree)
+###printcp(sp.rpart)
+# or plot it:
+plotcp(biom.tree)
+###plotcp(sp.rpart)
+# the tree itself:
+plot(biom.tree)
+###plot(sp.rpart)
+# add labels, including sample sizes per node:
+text(biom.tree)
+text(biom.tree, cex = 0.6, use.n = TRUE)
+###text(sp.rpart, cex=0.6, use.n=TRUE)
+# try a postscript output file (probably won't work):
+#post(sp.rpart,"piwa_rpart.ps")
+
+
+predict.test.biom <- predict(biom.tree, type = "matrix")
+
+table(predict.test.biom)
+
+
+library(rpart.plot)
+prp(biom.tree)
+
+###prp(sp.rpart)
+
+#sp.rpart <- rpart(as.factor(sp)~., data= test111,method="anova", control=rpart.control(minsplit=10))
+plot_biom_tree <- function (text_size){
+prp(biom.tree, 
+    type = 2,  # set tree type 
+    extra = 100, # display percent of observations
+    #box.col=c("indianred2", "turquoise")[biom.tree$frame$yval], 
+    tweak=1.0, # makes smaller so less cluttered
+    faclen=0, # do not abbreviate factor levels
+    varlen = 0, # do not abbreviate variable levels
+    under = TRUE, # percentage text under the boxes
+    fallen.leaves = TRUE, # puts fallen leaves at the bottom of plot
+    split.prefix = "Is ",
+    split.suffix = "?",
+    split.border.col=1, 
+    yesno = 2)
+}
+  
+make_tiff_ggplot (plot_biom_tree(text_size=10)
+                  ,
+                  filename = "Figures/Figs_for_paper/biom_tree.tiff", width = 76, height = 90, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+  
+# predict with an RPART tree:
+#sp.rpart.pred <- predict(test111, type="anova")
+#table(sp.rpart.pred,sp)
+####################################################################
+rich.tree <- rpart(S ~ Transect_Number + Temp_avg + DRR + avg_dep + Reef_Type, data = comm_mets, method = "anova")
 
 
 
 
 ###sp.rpart <- rpart(as.factor(sp)~., data=sp.data, method="class")
 # print the corss-validation table (already computed):
-printcp(test111)
+printcp(rich.tree)
 ###printcp(sp.rpart)
 # or plot it:
-plotcp(test111)
+plotcp(rich.tree)
+
+#prune(rich.tree, cp = 0.014511)
 ###plotcp(sp.rpart)
 # the tree itself:
-plot(test111)
+plot(rich.tree)
 ###plot(sp.rpart)
 # add labels, including sample sizes per node:
-text(test111)
-text(test111, cex = 0.6, use.n = TRUE)
+text(rich.tree)
+text(rich.tree, cex = 0.6, use.n = TRUE)
 ###text(sp.rpart, cex=0.6, use.n=TRUE)
 # try a postscript output file (probably won't work):
 #post(sp.rpart,"piwa_rpart.ps")
 
+#prune.rich <- prune(rich.tree, cp = 0.014511)
+prune.rich <- prune(rich.tree, cp = 0.037416)
 
-predict.test <- predict(test111, type = "matrix")
+plot(prune.rich)
 
-table(predict.test)
+predict.test.rich <- predict(rich.tree, type = "matrix")
+
+table(predict.test.rich)
 
 
 library(rpart.plot)
-prp(test111)
+#prp(rich.tree)
+prp(prune.rich)
 
 ###prp(sp.rpart)
 
 #sp.rpart <- rpart(as.factor(sp)~., data= test111,method="anova", control=rpart.control(minsplit=10))
-prp(test111, 
-    type = 1,  # set tree type 
+plot_rich_tree <- function (text_size){
+prp(prune.rich, 
+    type = 2,  # set tree type #I like two better
     extra = 100, # display percent of observations
-    box.col=c("indianred2", "turquoise")[test111$frame$yval], 
+    #box.col=c("indianred2", "turquoise")[prune.rich$frame$yval], 
     tweak=1.0, # makes smaller so less cluttered
     faclen=0, # do not abbreviate factor levels
     varlen = 0, # do not abbreviate variable levels
     under = TRUE, # percentage text under the boxes
     fallen.leaves = TRUE, # puts fallen leaves at the bottom of plot
-    split.prefix = "is ",
-    split.suffix = "?")
+    split.prefix = "Is ",
+    split.suffix = "?",
+    split.border.col=1, 
+    yesno = 2)
+}
+
+make_tiff_ggplot (plot_rich_tree(text_size=10)
+                  ,
+                  filename = "Figures/Figs_for_paper/rich_tree.tiff", width = 92, height = 90, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+
+#rsq.rpart(rich.tree)
+# predict with an RPART tree:
+#sp.rpart.pred <- predict(test111, type="anova")
+#table(sp.rpart.pred,sp)
+
+#########################################################
+even.tree <- rpart(J ~ Transect_Number + Temp_avg + DRR + avg_dep, data = comm_mets, method = "anova")
+
+
+
+
+###sp.rpart <- rpart(as.factor(sp)~., data=sp.data, method="class")
+# print the corss-validation table (already computed):
+printcp(even.tree)
+###printcp(sp.rpart)
+# or plot it:
+plotcp(even.tree)
+###plotcp(sp.rpart)
+# the tree itself:
+plot(even.tree)
+###plot(sp.rpart)
+# add labels, including sample sizes per node:
+text(even.tree)
+text(even.tree, cex = 0.6, use.n = TRUE)
+###text(sp.rpart, cex=0.6, use.n=TRUE)
+# try a postscript output file (probably won't work):
+#post(sp.rpart,"piwa_rpart.ps")
+
+prune.even <- prune(even.tree, cp = 0.032260)
+predict.test.even <- predict(even.tree, type = "matrix")
+
+table(predict.test.even)
+
+
+library(rpart.plot)
+prp(even.tree)
+
+###prp(sp.rpart)
+
+#sp.rpart <- rpart(as.factor(sp)~., data= test111,method="anova", control=rpart.control(minsplit=10))
+prp(prune.even, 
+    type = 2,  # set tree type 
+    extra = 100, # display percent of observations
+    #box.col=c("indianred2", "turquoise")[even.tree$frame$yval], 
+    tweak=1.0, # makes smaller so less cluttered
+    faclen=0, # do not abbreviate factor levels
+    varlen = 0, # do not abbreviate variable levels
+    under = TRUE, # percentage text under the boxes
+    fallen.leaves = TRUE, # puts fallen leaves at the bottom of plot
+    split.prefix = "Is ",
+    split.suffix = "?",
+    split.border.col=1, 
+    yesno = 2,
+    cex = 10)
 
 # predict with an RPART tree:
 #sp.rpart.pred <- predict(test111, type="anova")
 #table(sp.rpart.pred,sp)
+
+
+
 
 # end of RPART
 # end of CART
@@ -1165,10 +2046,41 @@ newdat$SE <- sqrt(predvar)
 newdat$SE2 <- sqrt(predvar+mod.final$sigma^2)
   # code adapted from http://glmm.wikidot.com/faq
 
+
+#newdat with back transform
+
+backtransabund <- mutate(newdat, backtransform = (pred ^ (-1/0.1414141)) -1)
+backtransabund <- mutate(backtransabund, pSE = ((pred + SE)^(-1/0.1414141)) -1)
+backtransabund <- mutate(backtransabund, nSE = ((pred - SE)^(-1/0.1414141)) -1)
+
+
+
+
 #now plot
 library(ggplot2)
 pd <- position_dodge(width=0.4) 
 cmult <- 1  ## could use 1.96 instead
+
+
+ggplot(backtransabund, aes(x = Transect_Number, y = backtransform, group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=16, colour="black"), 
+        axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=16, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.5), 
+        axis.line.y = element_line(color="black", size = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5))+
+geom_point (colour = "grey") + 
+geom_line() +
+geom_errorbar(aes(ymin=pSE, ymax=nSE), width=.05, position=position_dodge(0.9))+
+  scale_y_continuous(name="Average Fish Abundance (ind.)", limits=c(0, 150), breaks=seq(0, 150, by=50)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))#+
+  #ggtitle("Average Fish Abundance by Distance from Reef")
+
+#########################for un-transformed
+
 
 ggplot(newdat, aes(x=Transect_Number, y=pred, group = 1))+
     theme_classic()+
@@ -1601,6 +2513,125 @@ hsd.reefanovabio
 
 ```
 
+```{r figs}
+library(ggplot2)
+
+make_tiff_ggplot <- function (expr, filename, ..., verbose = TRUE){
+  if (verbose){
+    message("Generating TIF: ", filename) # this tells it to talk to us and let us know that it's generating a pdf
+  }
+  tiff(file = filename, ...) # create pdf file with argument filename that you'd provide. the ... means that anything else (height, width, etc) can be put there or the user can just use the default
+  on.exit(dev.off()) # so do dev.off before you exit
+  eval.parent(substitute(print(expr))) # black magic that takes the function you're using and expresss it inside the environment and makes it go in the pdf somehow
+}
+
+abundpertran <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number"))
+
+plot_line_abund <- function (text_size){
+ggplot(abundpertran, aes(x=as.factor(Transect_Number), y=as.numeric(abund), group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=text_size, colour="black"), 
+        axis.title.x=element_text(size=text_size, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=text_size, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.3), 
+        axis.line.y = element_line(color="black", size = 0.3),
+        plot.title = element_text(size = text_size, hjust = 0.5))+
+#geom_point (colour = "grey") + 
+geom_line(size = 0.3) +
+geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.1, size = 0.3, position=position_dodge(0.9))+
+  scale_y_continuous(name= expression(Abundance~(fishes~per~120~m^{2})), limits=c(0,500), breaks=seq(0, 500, by=100)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+}
+
+make_tiff_ggplot (plot_line_abund(text_size=10)
+                  ,
+                  filename = "Figures/Figs_for_paper/abundance_1.tiff", width = 100, height = 100, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+
+
+biompertran <- summarySE(comm_mets, measurevar = "biom", groupvars = c("Transect_Number"))
+
+plot_line_biom <- function (text_size){
+ggplot(biompertran, aes(x=as.factor(Transect_Number), y=as.numeric(biom), group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=text_size, colour="black"), 
+        axis.title.x=element_text(size=text_size, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=text_size, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.3), 
+        axis.line.y = element_line(color="black", size = 0.3))+
+#geom_point (colour = "grey") + 
+geom_line(size = 0.3) +
+geom_errorbar(aes(ymin=biom-se, ymax=biom+se), width=.1, size = 0.3, position=position_dodge(0.9))+
+  scale_y_continuous(name=expression(Biomass~(kg~per~120~m^{2})), limits=c(0, 42), breaks=seq(0, 42, by=10)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))
+}
+
+make_tiff_ggplot (plot_line_biom(text_size=6)
+                  ,
+                  filename = "Figures/Figs_for_paper/biomass_1.tiff", width = 50, height = 50, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+
+richpertran <- summarySE(comm_mets, measurevar = "S", groupvars = c("Transect_Number"))
+
+plot_line_rich <- function (text_size){
+ggplot(richpertran, aes(x=as.factor(Transect_Number), y=as.numeric(S), group = 1))+
+  theme_classic()+
+  theme(axis.text=element_text(size=text_size, colour="black"), 
+        axis.title.x=element_text(size=text_size, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=text_size, colour="black", vjust=1.3), 
+        legend.position="none", 
+        axis.line.x = element_line(color="black", size = 0.3), 
+        axis.line.y = element_line(color="black", size = 0.3))+
+#geom_point (colour = "grey") + 
+geom_line(size = 0.3) +
+geom_errorbar(aes(ymin=S-se, ymax=S+se), width=.1, size = 0.3, position=position_dodge(0.9))+
+  scale_y_continuous(name=expression(Species~richness~(S~per~120~m^{2})), limits=c(0, 8.5), breaks=seq(0, 8.5, by=2)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))  
+}
+
+make_tiff_ggplot (plot_line_rich(text_size=6)
+                  ,
+                  filename = "Figures/Figs_for_paper/richness_1.tiff", width = 50, height = 50, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+
+##############################################################################################
+abundpertranreef <- summarySE(comm_mets, measurevar = "abund", groupvars = c("Transect_Number", "Reef_Type"))
+
+
+ggplot(abundpertranreef, aes(x=as.factor(Transect_Number), y=as.numeric(abund), group = Reef_Type))+
+  theme_classic()+
+  theme(axis.text=element_text(size=text_size, colour="black"), 
+        axis.title.x=element_text(size=text_size, colour="black", vjust=-.5), 
+        axis.title.y=element_text(size=text_size, colour="black", vjust=1.3), 
+        legend.position="bottom", 
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 18),
+        axis.line.x = element_line(color="black", size = 1), 
+        axis.line.y = element_line(color="black", size = 1),
+        plot.title = element_text(size = text_size, hjust = 0.5))+
+geom_point (colour = "grey", position = position_dodge(0.2)) + 
+geom_line(aes(linetype = Reef_Type), size = 1, position= position_dodge(0.2)) +
+geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.1, size = 1, position = position_dodge(0.2))+
+  scale_y_continuous(name= expression(Abundance~(fishes~per~120~m^{2})), limits=c(0,510), breaks=seq(0, 510, by=100)) +
+  #scale_x_continuous(name = "Distance (km)", limits=c(0, 120), breaks=seq(0, 120,by=20)) + geom_smooth(colour = "black", fullrange = FALSE)+
+  scale_x_discrete(name = "Distance from reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+scale_linetype_manual(name = "Reef type", values = c("solid", "dotdash"))
+
+
+
+```
+
+
+
+
 ```{r ggplot2}
 
 library(ggplot2)
@@ -1829,8 +2860,8 @@ ggplot(testabund4, aes(x=as.factor(Reef_Type), y=abund)) +
   geom_bar(position=position_dodge(), stat="identity", colour="black")+
   geom_errorbar(aes(ymin=abund-se, ymax=abund+se), width=.2, position=position_dodge(0.9))+
   scale_y_continuous(name="Average Fish Abundance", 
-                     limits=c(0, 6), 
-                     breaks=seq(0, 6,by=1)) + 
+                     limits=c(0, 250), 
+                     breaks=seq(0, 250,by=50)) + 
   theme(axis.text=element_text(size=16, colour="black"), 
         axis.title.x=element_text(size=16, colour="black", vjust=-.5), 
         axis.title.y=element_text(size=16, colour="black", vjust=1.3), 

@@ -136,6 +136,12 @@ joinbiom1 <- join(fishbiom, temp, by = c("Site", "Subsite", "Date", "Transect_Ty
 joinbiom2 <- join(joinbiom1, comp, by = c("Site", "Subsite", "Date", "Transect_Type","Transect_Number"))
 joinbiom3 <- join(joinbiom2, sites, by = c("Site", "Subsite")) 
 
+#with NOFI
+
+#join4 <- cbind(join3[,1:6], join3[,80:110], join3[,7:79]) # species
+
+
+
 #join for species and exclusion of NOFI
 join4 <- cbind(join3[,1:6], join3[,79:109], join3[,7:78]) # species NOFI excluded
 joinbiom4 <- cbind(joinbiom3[,1:6], joinbiom3[,79:109], joinbiom3[,7:78]) #NOFI excluded
@@ -177,8 +183,14 @@ joinbiom5 <- joinbiom4[,-c(11)]
 
 data <- join5
 databiom <- joinbiom5
+##################################################
 
+#data <- filter(data, Transect_Number != "2")
+#data <- filter(data, Transect_Number != "3")
 
+#data <- data[,-c(77)]
+
+###########################################
 env.end<- 36
 sp.start<-37
 
@@ -245,30 +257,43 @@ species.bcd <- bcdist(species.data, rmzero=FALSE)###### CR added this
 groups_transect <- paste(as.character(env_data$Transect_Number))
 groups_transect <- as.factor(groups_transect)
 
-
+groups_reef <- paste(as.character(env_data$Reef_Type))
+groups_reef <- as.factor(groups_reef)
 
 ## Calculate multivariate dispersions
 #mod <- betadisper(dis, groups)
 mod <- betadisper(species.bcd, groups_transect)
 mod
 
+modreef <- betadisper(species.bcd, groups_reef)
+modreef
+
 ## Perform test
 anova(mod)
 
+anova(modreef)
+
 ## Permutation test for F
 permutest(mod, pairwise = TRUE)
+permutest(modreef, pairwise = TRUE)
 
 ## Tukey's Honest Significant Differences
 (mod.HSD <- TukeyHSD(mod))
 plot(mod.HSD)
 
+(modreef.HSD <- TukeyHSD(modreef))
+plot(modreef.HSD)
+
 ## Plot the groups and distances to centroids on the
 ## first two PCoA axes
 plot(mod)
 
+plot(modreef)
+
 ## Draw a boxplot of the distances to centroid for each group
 boxplot(mod)
 
+boxplot(modreef)
 ## simulate missing values in 'd' and 'group'
 #groups[c(2,20)] <- NA
 #dis[c(2, 20)] <- NA
@@ -332,7 +357,7 @@ summary(permanova.everything2)
 
 #transect
 
-perm.trans <- adonis (species.data ~ Transect_Number, env_data, permutations = 999, method = "bray")
+perm.trans <- adonis (species.data ~ Transect_Number, env_data, permutations = 1000, method = "bray")
 perm.trans
 
 permanova.transect<-adonis(species.data ~ Transect_Number, strata = env_data$Transect_Number, env_data, permutations = 999, method = "bray")
@@ -368,11 +393,11 @@ perm.site <- adonis(species.data ~ Site, env_data, permutation = 999, method = "
 perm.site
 summary(perm.site)
 
-perm.trans.reef <- adonis(species.data ~ Transect_Number * Reef_Type, env_data, permutation = 999, method = "bray")
+perm.trans.reef <- adonis(species.data ~ Transect_Number * Reef_Type, env_data, permutation = 1000, method = "bray")
 perm.trans.reef
 summary(perm.trans.reef)
 
-perm.reef <- adonis(species.data ~ Reef_Type, env_data, permutation = 999, method = "bray")
+perm.reef <- adonis(species.data ~ Reef_Type, env_data, permutation = 1000, method = "bray")
 perm.reef
 summary(perm.reef)
 
@@ -433,26 +458,39 @@ r2.2<-r2.2-r2.1
 NMDS = data.frame(MDS1 = species.nms[,1], MDS2 = species.nms[,2]) # data frame to work with
   yl<-paste("NMS 2 ", '(', as.character(round(r2.2, digits=2)*100), '%', ')', sep='') # y axis label
   xl<-paste("NMS 1 ", '(', as.character(round(r2.1, digits=2)*100), '%', ')', sep='') # x axis label
-  title<-paste(" ", 'stress = ', as.character(round(stress, digits=2)), '', sep='') # title
+  title<-paste(" ", '2D stress = ', as.character(round(stress, digits=2)), '', sep='') # title
   library(colorspace)
   
 species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
   
+make_tiff_ggplot <- function (expr, filename, ..., verbose = TRUE){
+  if (verbose){
+    message("Generating TIF: ", filename) # this tells it to talk to us and let us know that it's generating a pdf
+  }
+  tiff(file = filename, ...) # create pdf file with argument filename that you'd provide. the ... means that anything else (height, width, etc) can be put there or the user can just use the default
+  on.exit(dev.off()) # so do dev.off before you exit
+  eval.parent(substitute(print(expr))) # black magic that takes the function you're using and expresss it inside the environment and makes it go in the pdf somehow
+}
+
+plot_nmds <- function (text_size){
    library(ggplot2) 
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
     #geom_point(data = NMDS, 
-     #          aes(x = MDS1, y = MDS2, shape = species.nms$Transect_Number), size = 5, alpha = 0.1) +
+         # aes(x = MDS1, y = MDS2, shape = species.nms$Transect_Number), size = 5, alpha = 0.1) +
  #stat_ellipse(data = NMDS, 
               #aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
                # level = 0.95, linetype=2, size =1)+
-     stat_ellipse(data = NMDS, 
-              aes(x=MDS1,y=MDS2,linetype=species.nms$Transect_Number),
-                level = 0.5, size =1)+
-    # stat_ellipse(data = NMDS, 
-             # aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
-               # level = 0.5, linetype=2, size =1)+
+    stat_ellipse(data = NMDS, 
+             aes(x=MDS1,y=MDS2,colour=species.nms$Transect_Number),
+               level = 0.5, linetype=1, size =1)+
+#$stat_ellipse(data = NMDS, 
+             #$aes(x=MDS1,y=MDS2,linetype=species.nms$Transect_Number),
+              #$level = 0.5, size =1)+
+    #stat_ellipse(data = NMDS, 
+             #aes(x=MDS1,y=MDS2,shape=species.nms$Transect_Number),
+              # level = 0.5, linetype=2, size =1)+
   #ordihull(NMDS,groups=species.nms$Transect_Number,draw="polygon",col="grey90",label=F)+
   #geom_text(data=species.wa,
              # aes(x=species.wa[,2],y=species.wa[,3],label=species_code),
@@ -460,17 +498,32 @@ species.nms$Transect_Number <- as.factor(species.nms$Transect_Number)
              # position=position_jitter(width=0.1,height=0.2))+
     scale_y_continuous(name=yl) + # names y axis
     scale_x_continuous(name=xl) + # names x axis
-    theme(axis.text=element_text(size=16), 
-          axis.title=element_text(size=16), 
-          legend.text=element_text(color="black", size=16), 
-          legend.title=element_text(color="black", size = 16), 
-          legend.position="bottom") + 
+    theme(axis.text=element_text(size=text_size), 
+          axis.title=element_text(size=text_size), 
+          legend.text=element_text(color="black", size=text_size), 
+          legend.title=element_text(color="black", size = text_size), 
+          legend.position="bottom",
+          plot.title = element_text(size = text_size, hjust = 0.5))+
+          #title = element_text(size = text_size))+ 
+  #scale_color_discrete(name = "Distance from reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
+    scale_color_manual(name = "Distance from reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"), values = c("0" = "grey0", "1" = "grey25", "2" = "grey50", "3" = "grey75"))+
       #scale_linetype_discrete(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"))+
-     scale_linetype_manual(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
-          values = c("0" = "dashed", "1" = "twodash", "2" = "dotted", "3"= "solid"))+
+  #$scale_linetype_manual(name = "Distance from Reef", labels = c("0" = "Reef", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
+        #$ values = c("0" = "dashed", "1" = "twodash", "2" = "dotted", "3"= "solid"))+
                       #values = c("0" = 0, "1" = 1, "2" = 2, "3"= 3))+
-      ggtitle(title)
-  
+    ggtitle(title)
+}
+make_tiff_ggplot (plot_nmds(text_size=10)
+                  ,
+                  filename = "Figures/Figs_for_paper/nmds_big_grey.tiff", width = 168, height = 80, 
+                  units = "mm", pointsize = 8.5, compression = "none", 
+                  bg = "white", res = 600, verbose = TRUE)
+
+
+
+
+
+
   species.nms$Sampling_Period <- as.factor(species.nms$Sampling_Period)
   
 species.nms$Sampling_Period <- factor(species.nms$Sampling_Period, c("Fall", "Winter", "Spring"))
@@ -501,7 +554,7 @@ library(ggplot2)
   #   scale_colour_manual(name = "Site") +
     #, #labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
                       # values = c("330" = "indianred2", "345" = "seagreen", "2" = "chartreuse", "3"= "darkturquoise"))+
-      ggtitle(title)
+      ggtitle("Stress = 0.17")
   
 species.nms$Site <- as.factor(species.nms$Site)
  
@@ -542,8 +595,8 @@ library(ggplot2)
   ggplot()+
     coord_equal()+ # axes sizes equal
     theme_bw()+ # basic theme
-    geom_point(data = NMDS, 
-              aes(x = MDS1, y = MDS2, color = species.nms$Reef_Type), size = 5) +
+    #geom_point(data = NMDS, 
+              #aes(x = MDS1, y = MDS2, color = species.nms$Reef_Type), size = 5) +
   stat_ellipse(data = NMDS, 
                  aes(x=MDS1,y=MDS2,colour=species.nms$Reef_Type),
                  level = 0.50, linetype=2, size =1)+
@@ -555,9 +608,10 @@ library(ggplot2)
     scale_x_continuous(name=xl) + # names x axis
     theme(axis.text=element_text(size=16), 
           axis.title=element_text(size=16), 
-          legend.text=element_text(color="black", size=16), 
-          legend.title=element_text(color="black", size = 16), 
-          legend.position="bottom") + 
+          legend.text=element_text(color="black", size=20), 
+          legend.title=element_text(color="black", size = 20), 
+          legend.position="bottom",
+          title= element_text(size = 20))+ 
       #scale_colour_manual(name = "Site",#, labels = c("0" = "Structure", "1" = "0-30 m", "2" = "30-60 m", "3" = "60-90 m"),
                    #  values = c("330" = "indianred2", "345" = "Seagreen", "364" = "darkturquoise", "370" = "chartreuse", "372" = "coral", "378" = "magenta"))+
   #   scale_colour_manual(name = "Site") +
@@ -812,7 +866,7 @@ env_data <- data[,1:env.end]
 library(vegan)
 groups_transect <- paste(as.character(env_data$Transect_Number))
 groups_transect <- as.factor(groups_transect)
-simp_transect <- simper(species.data, groups_transect)
+simp_transect <- simper(species.data, groups_transect, permutations = 1000)
 simp_transect
 summary(simp_transect, ordered = TRUE)
 
@@ -839,13 +893,16 @@ summary(simp_reef, ordered = TRUE)
 
 ```{r indicator_species}
 library(indicspecies)
-species.data <- as.data.frame(species.data)
-env_data <- as.data.frame(env_data)
+#species.data <- as.data.frame(species.data)
+#env_data <- as.data.frame(env_data)
 
 
-groups_transect <- env_data$Transect_Number
+#groups_transect <- env_data$Transect_Number
+#groups_transect <- as.factor(groups_transect)
+groups_transect <- paste(as.character(env_data$Transect_Number))
 groups_transect <- as.factor(groups_transect)
-B=strassoc(species.data, cluster=groups_transect,func="B")
+
+#B=strassoc(species.data, cluster=groups_transect,func="B")
 indval_transect <- multipatt(species.data, groups_transect, control=how(nperm=999))
 summary(indval_transect, indvalcomp = TRUE)
 

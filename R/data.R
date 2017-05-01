@@ -235,13 +235,13 @@ transform_data <- function(data, transform_type = c("square_root", "cube_root", 
     data <- log(data)
   if (transform_type == "square_root_plus_number")
     data <- sqrt(data)+ 0.3 # 0.11
-  #if (transform_type == "box-cox")####################
-   #data <- sqrt(data + 0.1) # c = 0.1, lambda = 0.5################
+  if (transform_type == "box-cox")####################
+   data <- sqrt(data + 0.001) # c = 0.1, lambda = 0.5################
    #trying to make multivariate work
   #if (transform_type == "box-cox")
     #data <- (data + 0.1)^(1/4)
-  if (transform_type == "box-cox")
-    data <- (data + 1) ^ (-0.1414141)
+  #if (transform_type == "box-cox")
+    #data <- (data + 1) ^ (-0.1414141)
   #if (transform_type == "box-cox")
    # data <- sqrt(data + 1)
   #if (transform_type == "box-cox")
