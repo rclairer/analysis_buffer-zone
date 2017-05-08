@@ -314,6 +314,74 @@ rownames(plank_table)<-NULL
 write.csv(plank_table,'Figures/Figs_for_paper/fish_species_table3.csv')
 
 
+zerotrans <- filter(data, Transect_Number == "0")
+zerotrans <- zerotrans[,sp.start:ncol(zerotrans)]
+#p<-colSums(zerotrans, na.rm=FALSE, dims=1)
+#ptest<-rbind()
+#summary(zerotrans)
+sum<-apply(zerotrans, 2, sum)
+mean<-apply(zerotrans, 2, mean)
+stats<-cbind(sum, mean)
+stats<-stats[order(-mean),]
+stats<-data.frame(stats)
+rownames(stats) -> stats$Species_Code
+colnames(stats) [1] <- "sum_0"
+
+onetrans <- filter(data, Transect_Number == "1")
+onetrans <- onetrans[,sp.start:ncol(onetrans)]
+sum1 <- apply(onetrans, 2, sum)
+mean1 <- apply(onetrans, 2, mean)
+stats1 <- cbind(sum1, mean1)
+stats1 <- stats1[order(-mean1),]
+stats1 <- data.frame(stats1)
+rownames(stats1) -> stats1$Species_Code
+colnames(stats1) [1] <- "sum_1"
+
+twotrans <- filter(data, Transect_Number == "2")
+twotrans <- twotrans[,sp.start:ncol(twotrans)]
+sum2 <- apply(twotrans, 2, sum)
+mean2 <- apply(twotrans, 2, mean)
+stats2 <- cbind(sum2, mean2)
+stats2 <- stats2[order(-mean2),]
+stats2 <- data.frame(stats2)
+rownames(stats2) -> stats2$Species_Code
+colnames(stats2) [1] <- "sum_2"
+
+threetrans <- filter(data, Transect_Number == "3")
+threetrans <- threetrans[,sp.start:ncol(threetrans)]
+sum3 <- apply(threetrans, 2, sum)
+mean3 <- apply(threetrans, 2, mean)
+stats3 <- cbind(sum3, mean3)
+stats3 <- stats3[order(-mean3),]
+stats3 <- data.frame(stats3)
+rownames(stats3) -> stats3$Species_Code
+colnames(stats3) [1] <- "sum_3"
+
+library(plyr)
+
+jointrans <- join(stats, stats1, by = c("Species_Code"))
+jointrans1 <- join(jointrans, stats2, by = c("Species_Code"))
+jointrans2 <- join(jointrans1, stats3, by = c("Species_Code")) 
+
+speciestrans <- jointrans2 [,c(3,1,4,6,8)]
+
+plank_table <- combine_data_meta (speciestrans, 
+                   file_meta = "Metadata/Fish/Fish_Codes_CRFL-AR.csv", 
+                   merge_by = "Species_Code")
+plank_table<-plank_table[,c(6,7,8,9,2,3,4,5)]
+#plank_table<-plank_table[order(-mean),]
+plank_table <- plank_table[order(plank_table$Family),]
+#plank_table <- plank_table[1:10,]
+rownames(plank_table)<-NULL
+write.csv(plank_table,'Figures/Figs_for_paper/fish_species_table_alltrans.csv')
+
+
+
+
+
+
+
+
 #library(xtable)
 #test<- xtable(stats)
 #print.xtable(test, type="html", file="Figures/planktivore_table.html")
